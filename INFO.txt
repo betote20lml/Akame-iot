@@ -1,0 +1,121 @@
+import androidx.compose.foundation.layout.Box
+
+Trae el componente Box.
+Box es un contenedor (como un div) que te permite poner cosas adentro.
+----------------------------
+
+import androidx.compose.foundation.layout.fillMaxSize
+
+Trae la función fillMaxSize() que se usa en Modifier.
+Significa: ocupa todo el ancho y todo el alto disponible.
+----------------------------
+
+import androidx.compose.material3.Button
+
+Trae el componente Button (botón) de Material Design 3.
+----------------------------
+
+import androidx.compose.material3.Text
+
+Trae el componente Text para mostrar texto.
+--------------
+
+import androidx.compose.runtime.Composable
+
+Trae la anotación @Composable.
+----------------
+
+import androidx.compose.ui.Alignment
+
+Trae Alignment para alinear contenido (centro, arriba, etc.).
+-----------------
+
+import androidx.compose.ui.Modifier
+
+Trae Modifier, que es clave en Compose.
+
+Modifier es como el “CSS” de Compose: tamaño, padding, alineación, etc.
+------------------
+
+@Composable
+
+Esto es una anotación (como una etiqueta) que le dice a Compose:
+
+“Esta función no es una función normal. Esta función produce UI.”
+
+Sin @Composable, no puedes poner dentro cosas como Text(), Button(), Box(), etc.
+
+Analogía JS:
+Es como decir “esto es un componente React”.
+------------------
+
+fun LoginScreen(onLoginSuccess: () -> Unit) {
+fun
+
+Significa “función”.
+(En JS sería function.)
+
+LoginScreen
+
+Nombre de la función.
+Por convención, Composables van con PascalCase (mayúscula al inicio), como componentes.
+
+(onLoginSuccess: () -> Unit)
+
+Esto es un parámetro que le pasas a tu pantalla.
+
+onLoginSuccess es el nombre.
+
+: () -> Unit es el tipo.
+
+Qué significa () -> Unit:
+
+() = no recibe parámetros
+
+-> = “regresa”
+
+Unit = “nada” (como void en JS/TS)
+
+O sea:
+
+onLoginSuccess es una función que no recibe nada y no regresa nada.
+-------------
+
+Box(
+    modifier = Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+) {
+   ...
+}
+
+Box(...)
+
+Creas un contenedor que puede tener hijos.
+
+modifier = Modifier.fillMaxSize()
+
+Aquí aplicas “estilos” (modificadores).
+
+Modifier es el objeto base.
+
+.fillMaxSize() significa “llena toda la pantalla”.
+
+Analogía CSS:
+
+width: 100%;
+height: 100%;
+
+contentAlignment = Alignment.Center
+
+Dice: “todo lo que metas dentro del Box, ponlo centrado”.
+
+Analogía CSS:
+
+como centrar contenido dentro de un contenedor.
+
+{ ... }
+
+Esto es el “cuerpo” del Box.
+Todo lo que esté dentro son hijos de ese Box (como elementos dentro de un div).
+---------------------
+

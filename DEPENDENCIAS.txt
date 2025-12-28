@@ -1,0 +1,38 @@
+Android Studio (incluye SDK Manager y Emulator):
+https://developer.android.com/studio
+
+Build your first app / guias de inicio:
+https://developer.android.com/get-started/overview
+
+SDK Manager / sdkmanager (instalar y actualizar SDK por linea de comandos):
+https://developer.android.com/tools/sdkmanager
+
+Command-line tools / paquetes del SDK:
+https://developer.android.com/tools
+
+Platform-Tools (ADB, etc.) + descargas directas:
+https://developer.android.com/tools/releases/platform-tools
+
+Kotlin docs (home):
+https://kotlinlang.org/docs/home.html
+
+Kotlin basic syntax:
+https://kotlinlang.org/docs/basic-syntax.html
+
+Kotlin “getting started”:
+https://kotlinlang.org/docs/getting-started.html
+
+Kotlin + Android (Android Developers):
+https://developer.android.com/kotlin
+
+
+
+//RUTA DE SDK
+C:\Users\josea\AppData\Local\Android\Sdk
+
+ANDROID SDK PATH (Windows):
+C:\Users\josea\AppData\Local\Android\Sdk
+
+PATH entries:
+- %ANDROID_SDK%\platform-tools
+- %ANDROID_SDK%\emulator
