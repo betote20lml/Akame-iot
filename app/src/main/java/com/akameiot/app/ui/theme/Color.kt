@@ -1,11 +1,16 @@
 package com.akameiot.app.ui.theme
 
+//Importa clase de color de compose, ayuda a definir colores RGB/ARGB
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFF4802F1)
-val PurpleGrey80 = Color(0xFF5522A6)
-val Pink80 = Color(0xFFAD2A50)
+// 🎨 Paleta Akame (aqui cambias todo)
+val AkameBlue = Color(0xFF1732A1)
+val AkameBlueDark = Color(0xFF102070)
 
-val Purple40 = Color(0xFF0C17D3)
-val PurpleGrey40 = Color(0xFF262693)
-val Pink40 = Color(0xFF801438)
+val AkameBackground = Color(0xFF1732A1)
+val AkameSurface = Color(0xFFDEDEDE)
+
+val AkameError = Color(0xFFD32F2F)
+
+val White = Color.White
+val Black = Color.Black

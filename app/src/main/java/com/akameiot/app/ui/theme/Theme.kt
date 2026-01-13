@@ -1,55 +1,57 @@
 package com.akameiot.app.ui.theme
 
-import android.app.Activity
-import android.os.Build
+//Función que detecta si el sistema está en modo oscuro
 import androidx.compose.foundation.isSystemInDarkTheme
+//MaterialTheme = el contenedor global del tema.
 import androidx.compose.material3.MaterialTheme
+//darkColorScheme y lightColorScheme crean esquemas de color
+// “con roles” para Material 3.
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
+//Para poder crear la función AkameIotTheme como Composable
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF1732A1),
-    secondary = Color(0xFF1732A1),
-    tertiary = Pink80
+    //primary es el color principal de la app.
+    primary = AkameBlue,
+    //secondary es un color de apoyo.
+    secondary = AkameBlueDark,
+    //background: fondo general.
+    background = AkameBackground,
+    //surface: tarjetas/paneles/superficies.
+    surface = AkameSurface,
+    //Aquí defines que “error” es rojo.
+    error = AkameError,
+
+    //onX = color del contenido encima de X
+    //si el botón es primary (azul), el texto debe ser onPrimary (blanco).
+    onPrimary = White,
+    onSecondary = White,
+    onBackground = White,
+    onSurface = Black,
+    onError = White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF1732A1),
-    secondary = Color(0xFF1732A1),
-    tertiary = Pink40
+    primary = AkameBlue,
+    secondary = AkameBlueDark,
+    background = AkameBackground,
+    surface = AkameSurface,
+    error = AkameError,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    onPrimary = White,
+    onSecondary = White,
+    onBackground = White,
+    onSurface = Black,
+    onError = White
 )
 
 @Composable
 fun AkameIotTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
