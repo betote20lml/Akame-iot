@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 //Manejo de focus
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.draw.clip
@@ -51,6 +50,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import com.akameiot.app.R
 
+// Imports para conectar LoginViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
 
 
 // @Composable indica que esta funcion dibuja interfaz de usuario
@@ -60,14 +62,27 @@ fun LoginScreen(
     // No recibe parametros y no regresa nada (Unit = void)
     onLoginSuccess: () -> Unit
 ) {
+    //Crear nuesto VM
+    val vm: LoginViewModel = viewModel()
+
+    //Leer estados del VM, variables de lectura
+    val user = vm.user.collectAsState().value
+    val password = vm.password.collectAsState().value
+    val rememberUser = vm.rememberUser.collectAsState().value
+    //Estados de validacion
+    val userError = vm.userError.collectAsState().value
+    val passError = vm.passError.collectAsState().value
+
+    /*---Ya no usaremos las var locales, porque las traemos desde el VM
     // Estado local (solo UI). Mas adelante esto lo movemos a ViewModel.
-    var user by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var rememberUser by remember { mutableStateOf(false) }
+    //var user by remember { mutableStateOf("") }
+    //var password by remember { mutableStateOf("") }
+    //var rememberUser by remember { mutableStateOf(false) }
 
     //Estados para la validacion de campos String? permite que el valor sea null
-    var userError by remember { mutableStateOf<String?>(null) }
-    var passError by remember { mutableStateOf<String?>(null) }
+    //var userError by remember { mutableStateOf<String?>(null) }
+    //var passError by remember { mutableStateOf<String?>(null) }
+    */
 
     //Crea el FocusRequester para el password
     val userFocusRequester = remember { FocusRequester() }
@@ -75,7 +90,7 @@ fun LoginScreen(
     var passwordVisible by remember {mutableStateOf(false)}
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    // Colores desde el Theme (ya no hardcodeos)
+    // Colores desde el Theme.kt (ya no hardcodeos)
     val bgColor = MaterialTheme.colorScheme.background
     val panelColor = MaterialTheme.colorScheme.surface
     val primary = MaterialTheme.colorScheme.primary
@@ -96,25 +111,21 @@ fun LoginScreen(
     //Funciones
     //Validar el login
     fun validateAndLogin() {
-        val u = user.trim()
+        val ok = vm.validate()
 
-        //Verificar si hay datos en las variables del usuario
-        userError = if (u.isEmpty()) "El usuario es obligatorio" else null
-        passError = when {
-            password.isEmpty() -> "La contraseña es obligatoria"
-            password.length < 6 -> "Minimo 6 caracteres"
-            else -> null
-        }
-
-        when {
-            userError != null -> userFocusRequester.requestFocus()
-            passError != null -> passwordFocusRequester.requestFocus()
-            else -> {
-                keyboardController?.hide()
-                onLoginSuccess()
+        if (!ok) {
+            when (vm.firstErrorField())
+            {
+                LoginViewModel.LoginField.USER -> userFocusRequester.requestFocus()
+                LoginViewModel.LoginField.PASSWORD -> passwordFocusRequester.requestFocus()
+                null -> {}
             }
+            return
         }
+        keyboardController?.hide()
+        onLoginSuccess()
     }
+
 
     // Box es un contenedor, como un div en HTML
     Box(
@@ -141,10 +152,7 @@ fun LoginScreen(
             // Input Usuario
             OutlinedTextField(
                 value = user,
-                onValueChange = {
-                    user = it
-                    if (userError != null) userError = null //Limpia error al ecribir
-                },
+                onValueChange = {vm.onUserChange(it)},
                 label = { Text(text = "Usuario")},
                 singleLine = true,
                 isError = userError != null,
@@ -152,7 +160,9 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(userFocusRequester),
-                keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardOptions = KeyboardOptions(
+                    autoCorrect = false,
+                    keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
                 keyboardActions = KeyboardActions(
@@ -166,10 +176,7 @@ fun LoginScreen(
             // Input Contrasena
             OutlinedTextField(
                 value = password,
-                onValueChange = {
-                    password = it
-                    if (passError != null) passError = null
-                },
+                onValueChange = { vm.onPasswordChange(it)},
                 label = { Text("Contraseña") },
                 singleLine = true,
                 isError = passError != null,
@@ -215,7 +222,7 @@ fun LoginScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { rememberUser = !rememberUser},
+                    .clickable { vm.toggleRememberUser()},
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Checkbox(
