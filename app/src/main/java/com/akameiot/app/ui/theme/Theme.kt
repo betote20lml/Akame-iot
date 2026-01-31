@@ -1,57 +1,60 @@
 package com.akameiot.app.ui.theme
 
-//Función que detecta si el sistema está en modo oscuro
 import androidx.compose.foundation.isSystemInDarkTheme
-//MaterialTheme = el contenedor global del tema.
 import androidx.compose.material3.MaterialTheme
-//darkColorScheme y lightColorScheme crean esquemas de color
-// “con roles” para Material 3.
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
-//Para poder crear la función AkameIotTheme como Composable
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.compose.runtime.SideEffect
+import android.app.Activity
+
+/* ─────────────────────────────
+   🎨 PALETA DE COLORES
+───────────────────────────── */
 
 private val DarkColorScheme = darkColorScheme(
-    //primary es el color principal de la app.
-    primary = AkameBlue,
-    //secondary es un color de apoyo.
-    secondary = AkameBlueDark,
-    //background: fondo general.
-    background = AkameBackground,
-    //surface: tarjetas/paneles/superficies.
-    surface = AkameSurface,
-    //Aquí defines que “error” es rojo.
-    error = AkameError,
-
-    //onX = color del contenido encima de X
-    //si el botón es primary (azul), el texto debe ser onPrimary (blanco).
-    onPrimary = White,
-    onSecondary = White,
-    onBackground = White,
-    onSurface = Black,
-    onError = White
+    primary = Color(0xFF135BEC),
+    onPrimary = Color.White,
+    background = Color(0xFF101622),
+    onBackground = Color.White,
+    surface = Color(0xFF1A2032),
+    onSurface = Color.White,
+    error = Color(0xFFCF6679)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = AkameBlue,
-    secondary = AkameBlueDark,
-    background = AkameBackground,
-    surface = AkameSurface,
-    error = AkameError,
-
-    onPrimary = White,
-    onSecondary = White,
-    onBackground = White,
-    onSurface = Black,
-    onError = White
+    primary = Color(0xFF135BEC),
+    onPrimary = Color.White,
+    background = Color(0xFFF6F6F8),
+    onBackground = Color.Black,
+    surface = Color.White,
+    onSurface = Color.Black,
+    error = Color(0xFFB00020)
 )
 
+/* ─────────────────────────────
+   🧠 THEME PRINCIPAL
+───────────────────────────── */
+
 @Composable
-fun AkameIotTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+fun AppTheme(
+    //darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val view = LocalView.current
+
+    // Manejo correcto del sistema de ventanas
+    SideEffect {
+        val window = (view.context as? Activity)?.window
+        window?.let {
+            WindowCompat.setDecorFitsSystemWindows(it, false)
+        }
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -59,3 +62,4 @@ fun AkameIotTheme(
         content = content
     )
 }
+
