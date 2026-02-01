@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalContext
 import android.app.Activity
 
 /* ─────────────────────────────
@@ -16,7 +17,7 @@ import android.app.Activity
 ───────────────────────────── */
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF135BEC),
+    primary = Color(0xFF2E7D32), // verde fuerte
     onPrimary = Color.White,
     background = Color(0xFF101622),
     onBackground = Color.White,
@@ -26,7 +27,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF135BEC),
+    primary = Color(0xFF2E7D32),
     onPrimary = Color.White,
     background = Color(0xFFF6F6F8),
     onBackground = Color.Black,
@@ -41,8 +42,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun AppTheme(
-    //darkTheme: Boolean = isSystemInDarkTheme(),
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -62,4 +62,5 @@ fun AppTheme(
         content = content
     )
 }
+
 

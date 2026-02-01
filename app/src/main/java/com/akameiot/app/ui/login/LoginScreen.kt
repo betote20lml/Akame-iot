@@ -7,10 +7,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.akameiot.app.R
 
 @Composable
 fun LoginScreen(
@@ -18,6 +26,7 @@ fun LoginScreen(
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -29,33 +38,36 @@ fun LoginScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-
             // CONTENIDO CENTRAL
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(modifier = Modifier.height(30.dp))
 
-                Spacer(modifier = Modifier.height(80.dp))
-
-                Text(
-                    text = "Iniciar Sesión",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 28.sp
-                )
-
-                Text(
-                    text = "Ingresa tus credenciales para continuar",
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
-                )
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier.size(260.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.akame_logo_text1),
+                            contentDescription = "Akame Logo",
+                            modifier = Modifier.size(240.dp)
+                        )
+                    }
+                }
 
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
                     placeholder = { Text("Ingresa tu usuario") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    maxLines = 1,
                     shape = RoundedCornerShape(50),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -73,7 +85,21 @@ fun LoginScreen(
                     onValueChange = { password = it },
                     placeholder = { Text("Ingresa tu contraseña") },
                     modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    maxLines = 1,
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        autoCorrectEnabled = false
+                    ),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = "Mostrar contraseña"
+                            )
+                        }
+                    },
                     shape = RoundedCornerShape(50),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -84,7 +110,19 @@ fun LoginScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = { /* TODO: flujo recuperación */ },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text(
+                        text = "Olvidé mi contraseña",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = { },
@@ -116,20 +154,8 @@ fun LoginScreen(
                 }
             }
 
-            // ICONO ABAJO
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("💧", fontSize = 40.sp)
-                }
-            }
+
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }
