@@ -29,16 +29,13 @@ class LoginViewModel : ViewModel() {
     private val _passError = MutableStateFlow<String?>(null)
     val passError: StateFlow<String?> = _passError
 
+
     //Crear funciones para manejar eventos (event handlers)
     //La UI no debe hacer user = it. En vez de eso, la UI le dice al VM:“cambió el user”.
-    fun onUserChange(value: String)
-    {
-        //Actualiza valor de variable "_user"
+    fun onUserChange(value: String) {
         _user.value = value
-        //Limpia _userError
-        if (_userError.value != null) _userError.value = null
+        _userError.value = null
     }
-
 
     fun onPasswordChange(value: String)
     {

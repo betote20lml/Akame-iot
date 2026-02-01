@@ -156,7 +156,8 @@ fun LoginScreen(
                 label = { Text(text = "Usuario")},
                 singleLine = true,
                 isError = userError != null,
-                supportingText = { if (userError != null) Text(userError!!)},
+                supportingText = {
+                    if (userError != null) Text(userError!!)},
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(userFocusRequester),
