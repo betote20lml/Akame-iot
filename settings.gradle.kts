@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Akame iot"
 include(":app")
+include(":coreui")
