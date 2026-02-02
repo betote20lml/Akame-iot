@@ -1,6 +1,6 @@
 package com.akameiot.app.ui.register
 
-import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,21 +16,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.tooling.preview.Preview
-import com.akameiot.coreui.theme.AppTheme
 
-@Preview(
-    name = "Register - Light",
-    showBackground = true
-)
-@Composable
-fun RegisterScreenPreview() {
-    AppTheme {
-        RegisterScreen(
-            onBackClick = {}
-        )
-    }
-}
 
 @Composable
 fun RegisterScreen(
@@ -142,6 +128,10 @@ fun RegisterScreen(
                 visualTransformation =
                     if (confirmPasswordVisible) VisualTransformation.None
                     else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    autoCorrectEnabled = false
+                ),
                 trailingIcon = {
                     IconButton(onClick = {
                         confirmPasswordVisible = !confirmPasswordVisible
@@ -188,7 +178,6 @@ fun RegisterScreen(
             }
         }
 
-        /* ───────────── FOOTER ───────────── */
 
 
     }
