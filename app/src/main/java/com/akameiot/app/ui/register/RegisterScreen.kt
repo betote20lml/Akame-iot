@@ -21,6 +21,8 @@ import com.akameiot.coreui.components.PasswordTextField
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.material3.HorizontalDivider
+import com.akameiot.coreui.theme.LocalSpacing
+
 
 @Composable
 fun RegisterScreen(
@@ -28,6 +30,7 @@ fun RegisterScreen(
     onGuestLogin: () -> Unit = {},
     onLoginClick: () -> Unit = {}
 ) {
+    val spacing = LocalSpacing.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -39,7 +42,7 @@ fun RegisterScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
+            .padding(spacing.lg)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -59,7 +62,8 @@ fun RegisterScreen(
                     modifier = Modifier.size(220.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+
+
 
                 AppTextField(
                     value = email,
@@ -68,7 +72,8 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing.md))
+
 
                 PasswordTextField(
                     value = password,
@@ -76,7 +81,8 @@ fun RegisterScreen(
                     placeholder = "Contraseña"
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing.md))
+
 
                 PasswordTextField(
                     value = confirmPassword,
@@ -86,7 +92,7 @@ fun RegisterScreen(
                 )
 
                 if (!passwordsMatch) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(spacing.xs))
                     Text(
                         text = "Las contraseñas no coinciden",
                         color = MaterialTheme.colorScheme.error,
@@ -95,7 +101,8 @@ fun RegisterScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing.md))
+
 
                 PrimaryButton(
                     text = "Registrar cuenta",
@@ -103,7 +110,8 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing.md))
+
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -113,7 +121,7 @@ fun RegisterScreen(
 
                     Text(
                         text = "o",
-                        modifier = Modifier.padding(horizontal = 12.dp),
+                        modifier = Modifier.padding(horizontal = spacing.md),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -121,7 +129,8 @@ fun RegisterScreen(
                     HorizontalDivider(modifier = Modifier.weight(1f))
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing.md))
+
 
                 SecondaryButton(
                     text = "Entrar como invitado",
@@ -130,6 +139,7 @@ fun RegisterScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.height(spacing.sm))
             /* ───────────── FOOTER ───────────── */
 
             Row(
@@ -149,7 +159,8 @@ fun RegisterScreen(
                     maxLines = 1
                 )
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(spacing.xs))
+
 
                 TextButton(
                     onClick = onLoginClick,
