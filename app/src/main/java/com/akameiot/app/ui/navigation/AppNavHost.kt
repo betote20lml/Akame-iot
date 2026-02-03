@@ -16,19 +16,30 @@ fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN,
+        startDestination = Routes.REGISTER,
         modifier = modifier
     ) {
-        composable(Routes.LOGIN) {
-            LoginScreen(
-                onRegisterClick = {
-                    navController.navigate(Routes.REGISTER)
+
+        /* ───────────── REGISTER (HOME) ───────────── */
+
+        composable(Routes.REGISTER) {
+            RegisterScreen(
+                onRegister = {
+                    // TODO: ir a la app principal
+                },
+                onGuestLogin = {
+                    // TODO: entrar como invitado
+                },
+                onLoginClick = {
+                    navController.navigate(Routes.LOGIN)
                 }
             )
         }
 
-        composable(Routes.REGISTER) {
-            RegisterScreen(
+        /* ───────────── LOGIN (SECUNDARIO) ───────────── */
+
+        composable(Routes.LOGIN) {
+            LoginScreen(
                 onBackClick = {
                     navController.popBackStack()
                 }
