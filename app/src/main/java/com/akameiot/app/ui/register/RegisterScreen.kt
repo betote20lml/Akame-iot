@@ -1,39 +1,35 @@
 package com.akameiot.app.ui.register
 
-import androidx.compose.foundation.Image
+import com.akameiot.app.ui.navigation.Routes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.akameiot.app.R
 import com.akameiot.coreui.components.PrimaryButton
-import com.akameiot.coreui.components.SecondaryButton
 import com.akameiot.coreui.components.AppTextField
 import com.akameiot.coreui.components.PasswordTextField
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.material3.HorizontalDivider
 import com.akameiot.coreui.theme.LocalSpacing
+import androidx.navigation.NavController
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
 
 
 @Composable
 fun RegisterScreen(
+    navController: NavController,
     onRegister: () -> Unit = {},
-    onGuestLogin: () -> Unit = {},
-    onLoginClick: () -> Unit = {}
 ) {
     val spacing = LocalSpacing.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var acceptedTerms by remember { mutableStateOf(false) }
 
     val passwordsMatch =
         confirmPassword.isEmpty() || password == confirmPassword
@@ -56,14 +52,7 @@ fun RegisterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Image(
-                    painter = painterResource(id = R.drawable.akame_logo_text1),
-                    contentDescription = "Akame Logo",
-                    modifier = Modifier.size(220.dp)
-                )
-
-
-
+                Spacer(modifier = Modifier.height(spacing.xl))
 
                 AppTextField(
                     value = email,
@@ -108,70 +97,52 @@ fun RegisterScreen(
                     text = "Registrar cuenta",
                     onClick = onRegister,
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = acceptedTerms
                 )
 
                 Spacer(modifier = Modifier.height(spacing.md))
-
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+
                 ) {
-                    HorizontalDivider(modifier = Modifier.weight(1f))
+
+                    Checkbox(
+                        checked = acceptedTerms,
+                        onCheckedChange = { acceptedTerms = it }
+                    )
+
+                    val annotatedString = buildAnnotatedString {
+
+                        append("Acepto los ")
+
+                        withLink(
+                            LinkAnnotation.Clickable(
+                                tag = "terms",
+                                styles = TextLinkStyles(
+                                    style = SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                ),
+                                linkInteractionListener = {
+                                    navController.navigate(Routes.TERMS)
+                                }
+                            )
+                        ) {
+                            append("Términos y Condiciones")
+                        }
+                    }
 
                     Text(
-                        text = "o",
-                        modifier = Modifier.padding(horizontal = spacing.md),
+                        text = annotatedString,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    HorizontalDivider(modifier = Modifier.weight(1f))
-                }
-
-                Spacer(modifier = Modifier.height(spacing.md))
-
-
-                SecondaryButton(
-                    text = "Entrar como invitado",
-                    onClick = onGuestLogin,
-                    icon = Icons.Default.QrCodeScanner
-                )
-            }
-
-            Spacer(modifier = Modifier.height(spacing.sm))
-            /* ───────────── FOOTER ───────────── */
-
-            Row(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .wrapContentWidth()
-                    .padding(
-                        bottom = WindowInsets.navigationBars
-                            .asPaddingValues()
-                            .calculateBottomPadding()
-                    ),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "¿Ya tienes una cuenta?",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-
-                Spacer(modifier = Modifier.width(spacing.xs))
-
-
-                TextButton(
-                    onClick = onLoginClick,
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text(
-                        text = "Inicia sesión",
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
+                        modifier = Modifier.weight(1f)
                     )
                 }
+
+
+
             }
         }
     }

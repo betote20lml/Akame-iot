@@ -7,6 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.akameiot.app.ui.login.LoginScreen
 import com.akameiot.app.ui.register.RegisterScreen
+import com.akameiot.app.ui.terms.TermsScreen
+import com.akameiot.app.ui.landing.LandingScreen
 
 @Composable
 fun AppNavHost(
@@ -16,22 +18,20 @@ fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = Routes.REGISTER,
+        startDestination = Routes.LANDING,
         modifier = modifier
     ) {
 
         /* ───────────── REGISTER (HOME) ───────────── */
 
         composable(Routes.REGISTER) {
+            //popUpTo(Routes.LANDING) {
+            //    inclusive = true
+            //}
             RegisterScreen(
+                navController = navController,
                 onRegister = {
-                    // TODO: ir a la app principal
-                },
-                onGuestLogin = {
-                    // TODO: entrar como invitado
-                },
-                onLoginClick = {
-                    navController.navigate(Routes.LOGIN)
+                    // TODO
                 }
             )
         }
@@ -45,5 +45,14 @@ fun AppNavHost(
                 }
             )
         }
+
+        composable(Routes.TERMS) {
+            TermsScreen(navController)
+        }
+
+        composable(Routes.LANDING) {
+            LandingScreen(navController)
+        }
+
     }
 }

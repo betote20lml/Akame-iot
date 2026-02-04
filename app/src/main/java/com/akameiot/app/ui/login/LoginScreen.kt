@@ -1,22 +1,16 @@
 package com.akameiot.app.ui.login
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.akameiot.app.R
 import com.akameiot.coreui.components.AppTextField
 import com.akameiot.coreui.components.PasswordTextField
 import com.akameiot.coreui.components.PrimaryButton
 import com.akameiot.coreui.theme.LocalSpacing
-
 
 @Composable
 fun LoginScreen(
@@ -40,13 +34,14 @@ fun LoginScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-                Image(
-                    painter = painterResource(id = R.drawable.akame_logo_text1),
-                    contentDescription = "Akame Logo",
-                    modifier = Modifier.size(220.dp)
-                )
+            /* ───────────── CONTENIDO ───────────── */
 
-                Spacer(modifier = Modifier.height(spacing.md))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Spacer(modifier = Modifier.height(spacing.xl))
 
                 AppTextField(
                     value = email,
@@ -85,12 +80,10 @@ fun LoginScreen(
                 )
 
                 Spacer(modifier = Modifier.height(spacing.md))
-
-
             }
-
-
         }
     }
+}
+
 
 
