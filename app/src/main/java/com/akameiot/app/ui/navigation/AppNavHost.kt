@@ -9,6 +9,7 @@ import com.akameiot.app.ui.login.LoginScreen
 import com.akameiot.app.ui.register.RegisterScreen
 import com.akameiot.app.ui.terms.TermsScreen
 import com.akameiot.app.ui.landing.LandingScreen
+import com.akameiot.app.ui.verification.VerificationScreen
 
 @Composable
 fun AppNavHost(
@@ -22,27 +23,25 @@ fun AppNavHost(
         modifier = modifier
     ) {
 
-        /* ───────────── REGISTER (HOME) ───────────── */
+
 
         composable(Routes.REGISTER) {
-            //popUpTo(Routes.LANDING) {
-            //    inclusive = true
-            //}
             RegisterScreen(
                 navController = navController,
                 onRegister = {
-                    // TODO
+                    navController.navigate(Routes.VERIFICATION) {
+                        popUpTo(Routes.REGISTER) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }
 
-        /* ───────────── LOGIN (SECUNDARIO) ───────────── */
 
         composable(Routes.LOGIN) {
             LoginScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                }
+                navController = navController
             )
         }
 
@@ -52,6 +51,10 @@ fun AppNavHost(
 
         composable(Routes.LANDING) {
             LandingScreen(navController)
+        }
+
+        composable(Routes.VERIFICATION) {
+            VerificationScreen(navController)
         }
 
     }

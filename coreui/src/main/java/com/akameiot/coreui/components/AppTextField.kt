@@ -14,7 +14,7 @@ fun AppTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
-    keyboardType: KeyboardType = KeyboardType.Text, // 👈 DEFAULT
+    keyboardType: KeyboardType = KeyboardType.Text, //
     modifier: Modifier = Modifier,
     isError: Boolean = false
 ) {

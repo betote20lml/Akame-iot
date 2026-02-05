@@ -9,15 +9,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import com.akameiot.coreui.components.PrimaryButton
 import com.akameiot.coreui.components.AuthScaffold
+import com.akameiot.coreui.components.TermsRow
 import com.akameiot.coreui.components.AppTextField
 import com.akameiot.coreui.components.PasswordTextField
+import com.akameiot.coreui.components.AuthHeader
 import com.akameiot.coreui.theme.LocalSpacing
 import androidx.navigation.NavController
-import androidx.compose.ui.text.*
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withLink
 
 
 @Composable
@@ -36,50 +33,13 @@ fun RegisterScreen(
     val passwordsMatch =
         confirmPassword.isEmpty() || password == confirmPassword
 
-    AuthScaffold(
+    AuthScaffold {
 
-        bottomContent = {
+        AuthHeader(
+            text = "Crea tu cuenta para continuar"
+        )
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-
-                Checkbox(
-                    checked = acceptedTerms,
-                    onCheckedChange = { acceptedTerms = it }
-                )
-
-                val annotatedString = buildAnnotatedString {
-
-                    append("Acepto los ")
-
-                    withLink(
-                        LinkAnnotation.Clickable(
-                            tag = "terms",
-                            styles = TextLinkStyles(
-                                style = SpanStyle(
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            ),
-                            linkInteractionListener = {
-                                navController.navigate(Routes.TERMS)
-                            }
-                        )
-                    ) {
-                        append("Términos y Condiciones")
-                    }
-                }
-
-                Text(
-                    text = annotatedString,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-    ) {
+        Spacer(modifier = Modifier.height(spacing.md))
 
         AppTextField(
             value = email,
@@ -126,5 +86,13 @@ fun RegisterScreen(
         )
 
         Spacer(modifier = Modifier.height(spacing.md))
+
+        TermsRow(
+            acceptedTerms = acceptedTerms,
+            onCheckedChange = { acceptedTerms = it },
+            onTermsClick = {
+                navController.navigate(Routes.TERMS)
+            }
+        )
     }
 }

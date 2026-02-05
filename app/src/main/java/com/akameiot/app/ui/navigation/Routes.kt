@@ -5,5 +5,7 @@ object Routes {
     const val REGISTER = "register"
     const val TERMS = "terms"
     const val LANDING = "landing"
+
+    const val VERIFICATION = "verification"
 }
 
