@@ -76,6 +76,7 @@ fun LandingScreen(
                 text = "Crear cuenta",
                 onClick = {
                     navController.navigate(Routes.REGISTER) {
+                        launchSingleTop = true
                         popUpTo(Routes.LANDING) { inclusive = true }
                     }
                 },
@@ -85,7 +86,9 @@ fun LandingScreen(
             SecondaryButton(
                 text = "Acceder con token",
                 onClick = {
-                    // TODO -> navegar al home sin auth
+                    navController.navigate(Routes.QR_AUTH) {
+                        launchSingleTop = true
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -95,6 +98,7 @@ fun LandingScreen(
                 text = "Iniciar sesión",
                 onClick = {
                     navController.navigate(Routes.LOGIN) {
+                        launchSingleTop = true
                         popUpTo(Routes.LANDING) { inclusive = true }
                     }
                 },

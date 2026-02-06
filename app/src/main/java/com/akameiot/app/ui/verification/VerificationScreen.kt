@@ -58,10 +58,10 @@ fun VerificationScreen(
             text = when(type) {
 
                 VerificationType.REGISTER ->
-                    "Ingresa el código que enviamos a tu correo para activar tu cuenta."
+                    "Ingresa el código que enviamos a tu correo para activar tu cuenta. Si no lo ves revisa tu carpeta de spam."
 
                 VerificationType.PASSWORDLESS_LOGIN ->
-                    "Ingresa el código para acceder nuevamente a tu cuenta."
+                    "Ingresa el código que enviamos a tu correo para acceder nuevamente a tu cuenta."
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant

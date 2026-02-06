@@ -7,6 +7,8 @@ object Routes {
     const val TERMS = "terms"
     const val LANDING = "landing"
 
+    const val QR_AUTH = "qr_auth"
+
     // Ruta base SIN argumentos
     const val VERIFICATION = "verification"
 

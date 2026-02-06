@@ -17,7 +17,7 @@ import com.akameiot.coreui.theme.LocalSpacing
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akameiot.app.ui.navigation.VerificationType
-
+import androidx.compose.runtime.collectAsState
 
 
 
@@ -32,13 +32,10 @@ fun RegisterScreen(
     val viewModel: RegisterViewModel = viewModel()
 
 
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var acceptedTerms by remember { mutableStateOf(false) }
+    val state by viewModel.uiState.collectAsState()
 
     val passwordsMatch =
-        confirmPassword.isEmpty() || password == confirmPassword
+        state.confirmPassword.isEmpty() || state.password == state.confirmPassword
 
     AuthScaffold {
 
@@ -49,8 +46,8 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(spacing.md))
 
         AppTextField(
-            value = email,
-            onValueChange = { email = it },
+            value = state.email,
+            onValueChange = viewModel::onEmailChange,
             placeholder = "Correo electrónico",
             modifier = Modifier.fillMaxWidth()
         )
@@ -58,16 +55,16 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(spacing.md))
 
         PasswordTextField(
-            value = password,
-            onValueChange = { password = it },
+            value = state.password,
+            onValueChange = viewModel::onPasswordChange,
             placeholder = "Contraseña"
         )
 
         Spacer(modifier = Modifier.height(spacing.md))
 
         PasswordTextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it },
+            value = state.confirmPassword,
+            onValueChange = viewModel::onConfirmPasswordChange,
             placeholder = "Confirmar contraseña",
             isError = !passwordsMatch
         )
@@ -89,7 +86,7 @@ fun RegisterScreen(
             text = "Registrar cuenta",
             onClick = {
 
-                viewModel.register(email, password)
+                viewModel.register()
 
                 navController.navigate(
                     Routes.verification(VerificationType.REGISTER)
@@ -100,14 +97,14 @@ fun RegisterScreen(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = acceptedTerms
+            enabled = state.acceptedTerms
         )
 
         Spacer(modifier = Modifier.height(spacing.md))
 
         TermsRow(
-            acceptedTerms = acceptedTerms,
-            onCheckedChange = { acceptedTerms = it },
+            acceptedTerms = state.acceptedTerms,
+            onCheckedChange = viewModel::onTermsAccepted,
             onTermsClick = {
                 navController.navigate(Routes.TERMS)
             }

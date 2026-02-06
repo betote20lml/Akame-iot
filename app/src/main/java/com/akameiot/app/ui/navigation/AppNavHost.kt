@@ -10,6 +10,7 @@ import com.akameiot.app.ui.login.LoginScreen
 import com.akameiot.app.ui.register.RegisterScreen
 import com.akameiot.app.ui.terms.TermsScreen
 import com.akameiot.app.ui.verification.VerificationScreen
+import com.akameiot.app.ui.qrauth.QrAuthScreen
 
 @Composable
 fun AppNavHost(
@@ -26,6 +27,10 @@ fun AppNavHost(
 
         composable(Routes.LANDING) {
             LandingScreen(navController)
+        }
+
+        composable(Routes.QR_AUTH) {
+            QrAuthScreen(navController)
         }
 
         composable(Routes.LOGIN) {
