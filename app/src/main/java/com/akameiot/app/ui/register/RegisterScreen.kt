@@ -15,6 +15,11 @@ import com.akameiot.coreui.components.PasswordTextField
 import com.akameiot.coreui.components.AuthHeader
 import com.akameiot.coreui.theme.LocalSpacing
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.akameiot.app.ui.navigation.VerificationType
+
+
+
 
 
 @Composable
@@ -24,6 +29,8 @@ fun RegisterScreen(
 ) {
 
     val spacing = LocalSpacing.current
+    val viewModel: RegisterViewModel = viewModel()
+
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -80,7 +87,18 @@ fun RegisterScreen(
 
         PrimaryButton(
             text = "Registrar cuenta",
-            onClick = onRegister,
+            onClick = {
+
+                viewModel.register(email, password)
+
+                navController.navigate(
+                    Routes.verification(VerificationType.REGISTER)
+                ) {
+                    popUpTo(Routes.REGISTER) {
+                        inclusive = true
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             enabled = acceptedTerms
         )

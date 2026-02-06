@@ -2,19 +2,20 @@ package com.akameiot.app.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.compose.*
+import androidx.navigation.navArgument
+import com.akameiot.app.ui.landing.LandingScreen
 import com.akameiot.app.ui.login.LoginScreen
 import com.akameiot.app.ui.register.RegisterScreen
 import com.akameiot.app.ui.terms.TermsScreen
-import com.akameiot.app.ui.landing.LandingScreen
 import com.akameiot.app.ui.verification.VerificationScreen
 
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier
 ) {
+
     val navController = rememberNavController()
 
     NavHost(
@@ -23,39 +24,47 @@ fun AppNavHost(
         modifier = modifier
     ) {
 
-
-
-        composable(Routes.REGISTER) {
-            RegisterScreen(
-                navController = navController,
-                onRegister = {
-                    navController.navigate(Routes.VERIFICATION) {
-                        popUpTo(Routes.REGISTER) {
-                            inclusive = true
-                        }
-                    }
-                }
-            )
+        composable(Routes.LANDING) {
+            LandingScreen(navController)
         }
 
-
         composable(Routes.LOGIN) {
-            LoginScreen(
-                navController = navController
-            )
+            LoginScreen(navController)
+        }
+
+        composable(Routes.REGISTER) {
+            RegisterScreen(navController)
         }
 
         composable(Routes.TERMS) {
             TermsScreen(navController)
         }
 
-        composable(Routes.LANDING) {
-            LandingScreen(navController)
-        }
+        //  Ruta con argumento REAL
+        composable(
+            route = "${Routes.VERIFICATION}/{type}",
+            arguments = listOf(
+                navArgument("type") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
 
-        composable(Routes.VERIFICATION) {
-            VerificationScreen(navController)
-        }
+            val typeString =
+                backStackEntry.arguments?.getString("type")
+                    ?: VerificationType.REGISTER.name
 
+            val type = try {
+                VerificationType.valueOf(typeString)
+            } catch (e: Exception) {
+                VerificationType.REGISTER
+            }
+
+            VerificationScreen(
+                navController = navController,
+                type = type
+            )
+        }
     }
 }
+

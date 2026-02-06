@@ -12,6 +12,9 @@ import com.akameiot.coreui.components.PrimaryButton
 import com.akameiot.coreui.theme.LocalSpacing
 import androidx.navigation.NavController
 import com.akameiot.coreui.components.*
+import com.akameiot.app.ui.navigation.VerificationType
+import com.akameiot.app.ui.navigation.Routes
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun LoginScreen(
@@ -20,9 +23,10 @@ fun LoginScreen(
 ) {
 
     val spacing = LocalSpacing.current
-
+    val viewModel: LoginViewModel = viewModel()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
 
     AuthScaffold {
 
@@ -50,7 +54,11 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(spacing.xs))
 
         TextButton(
-            onClick = { /* TODO recovery */ },
+            onClick = {
+                navController.navigate(
+                    Routes.verification(VerificationType.PASSWORDLESS_LOGIN)
+                )
+            },
             modifier = Modifier.align(Alignment.End),
             contentPadding = PaddingValues(0.dp)
         ) {
@@ -64,7 +72,9 @@ fun LoginScreen(
 
         PrimaryButton(
             text = "Ingresar",
-            onClick = onLogin,
+            onClick = {
+                viewModel.login(email, password)
+            },
             modifier = Modifier.fillMaxWidth()
         )
 

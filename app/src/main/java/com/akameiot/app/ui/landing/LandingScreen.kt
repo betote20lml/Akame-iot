@@ -83,7 +83,7 @@ fun LandingScreen(
             )
 
             SecondaryButton(
-                text = "Ingresar como invitado",
+                text = "Acceder con token",
                 onClick = {
                     // TODO -> navegar al home sin auth
                 },
