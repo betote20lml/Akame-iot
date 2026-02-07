@@ -9,4 +9,16 @@ data class RegisterUiState(
 
     val isLoading: Boolean = false,
     val error: String? = null
-)
+) {
+
+    val passwordsMatch: Boolean
+        get() = confirmPassword.isEmpty() || password == confirmPassword
+
+    val isFormValid: Boolean
+        get() =
+            email.isNotBlank() &&
+                    password.isNotBlank() &&
+                    passwordsMatch &&
+                    acceptedTerms
+}
+

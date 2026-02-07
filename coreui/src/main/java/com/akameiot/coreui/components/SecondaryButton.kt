@@ -17,15 +17,16 @@ import androidx.compose.foundation.layout.width
 fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    modifier: Modifier = Modifier
+
 ) {
     OutlinedButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp),
-        shape = RoundedCornerShape(50)
+            .height(52.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         if (icon != null) {
             Icon(

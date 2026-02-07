@@ -19,16 +19,12 @@ import androidx.compose.ui.text.style.TextAlign
 @Composable
 fun OtpField(
     otpLength: Int = 6,
-    onOtpComplete: (String) -> Unit
+    value: String,
+    onValueChange: (String) -> Unit,
 ) {
 
     val spacing = LocalSpacing.current
-
     val focusRequesters = List(otpLength) { FocusRequester() }
-
-    var otpValues by remember {
-        mutableStateOf(List(otpLength) { "" })
-    }
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
@@ -36,27 +32,36 @@ fun OtpField(
         verticalAlignment = Alignment.CenterVertically
     ) {
 
-        otpValues.forEachIndexed { index, value ->
+        repeat(otpLength) { index ->
+
+            val char = value.getOrNull(index)?.toString() ?: ""
 
             BasicTextField(
-                value = value,
+                value = char,
                 onValueChange = { newValue ->
 
                     if (newValue.length <= 1 && newValue.all { it.isDigit() }) {
 
-                        val updated = otpValues.toMutableList()
-                        updated[index] = newValue
-                        otpValues = updated
+                        val updated = value.toMutableList()
 
-                        // avanzar focus
-                        if (newValue.isNotEmpty() && index < otpLength - 1) {
-                            focusRequesters[index + 1].requestFocus()
+                        if (newValue.isEmpty()) {
+                            if (index < updated.size) {
+                                updated.removeAt(index)
+                            }
+                        } else {
+
+                            if (index < updated.size) {
+                                updated[index] = newValue.first()
+                            } else {
+                                updated.add(newValue.first())
+                            }
+
+                            if (index < otpLength - 1) {
+                                focusRequesters[index + 1].requestFocus()
+                            }
                         }
 
-                        // OTP completo
-                        if (otpValues.all { it.isNotEmpty() }) {
-                            onOtpComplete(otpValues.joinToString(""))
-                        }
+                        onValueChange(updated.joinToString(""))
                     }
                 },
                 modifier = Modifier
@@ -73,7 +78,7 @@ fun OtpField(
                         if (
                             event.key == Key.Backspace &&
                             event.type == KeyEventType.KeyDown &&
-                            otpValues[index].isEmpty() &&
+                            char.isEmpty() &&
                             index > 0
                         ) {
                             focusRequesters[index - 1].requestFocus()
@@ -104,8 +109,8 @@ fun OtpField(
         }
     }
 
-    // autofocus en el primero
     LaunchedEffect(Unit) {
         focusRequesters.first().requestFocus()
     }
 }
+

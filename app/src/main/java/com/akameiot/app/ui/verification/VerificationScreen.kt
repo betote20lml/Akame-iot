@@ -10,7 +10,8 @@ import androidx.compose.runtime.Composable
 import com.akameiot.app.ui.navigation.VerificationType
 import androidx.compose.runtime.LaunchedEffect
 import com.akameiot.app.ui.navigation.Routes
-
+import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun VerificationScreen(
@@ -20,30 +21,35 @@ fun VerificationScreen(
 ) {
 
     val spacing = LocalSpacing.current
-    val state = viewModel.uiState
+    val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Escuchar eventos UNA sola vez
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel) {
 
-        viewModel.events.collect { event ->
+        viewModel.events.collectLatest { event ->
 
             when(event) {
 
                 VerificationEvent.Success -> {
 
                     navController.navigate(Routes.LANDING) {
-                        popUpTo(0)
+                        popUpTo(navController.graph.id) {
+                            inclusive = true
+                        }
                     }
                 }
 
                 is VerificationEvent.Error -> {
-                    // luego podemos usar Snackbar
+                    snackbarHostState.showSnackbar(event.message)
                 }
             }
         }
     }
 
-    AuthScaffold {
+        AuthScaffold (
+            snackbarHostState = snackbarHostState
+        ){
 
         AuthHeader(
             text = when(type) {
@@ -69,27 +75,20 @@ fun VerificationScreen(
 
         Spacer(modifier = Modifier.height(spacing.xl))
 
-        OtpField(
-            onOtpComplete = {
-                viewModel.onCodeChange(it)
-            }
-        )
+            OtpField(
+                value = state.code,
+                onValueChange = viewModel::onCodeChange
+            )
 
         Spacer(modifier = Modifier.height(spacing.sm))
 
-        state.error?.let {
 
-            Text(
-                text = it,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
 
         Spacer(modifier = Modifier.height(spacing.xl))
 
         PrimaryButton(
             text = if (state.isLoading) "Verificando..." else "Continuar",
-            enabled = !state.isLoading,
+            enabled = state.code.length == 6 && !state.isLoading,
             onClick = {
                 viewModel.verify()
             }
@@ -98,6 +97,7 @@ fun VerificationScreen(
         Spacer(modifier = Modifier.height(spacing.lg))
 
         TextButton(
+            enabled = !state.isLoading,
             onClick = {
                 viewModel.resend()
             }

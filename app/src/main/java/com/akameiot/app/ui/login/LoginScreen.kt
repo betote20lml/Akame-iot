@@ -5,30 +5,52 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.akameiot.coreui.components.AppTextField
-import com.akameiot.coreui.components.PasswordTextField
-import com.akameiot.coreui.components.PrimaryButton
-import com.akameiot.coreui.theme.LocalSpacing
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akameiot.coreui.components.*
+import com.akameiot.coreui.theme.LocalSpacing
 import com.akameiot.app.ui.navigation.VerificationType
 import com.akameiot.app.ui.navigation.Routes
-import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.unit.dp
+
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    onLogin: () -> Unit = {},
 ) {
 
     val spacing = LocalSpacing.current
     val viewModel: LoginViewModel = viewModel()
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.uiState.collectAsState()
 
-    AuthScaffold {
+    LaunchedEffect(viewModel) {
+
+        viewModel.events.collectLatest { event ->
+
+            when(event) {
+
+                LoginEvent.Success -> {
+
+                    navController.navigate(Routes.LANDING) {
+                        popUpTo(Routes.LOGIN) {
+                            inclusive = true
+                        }
+                    }
+                }
+
+                is LoginEvent.Error -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
+
+    AuthScaffold(
+        snackbarHostState = snackbarHostState
+    ) {
 
         AuthHeader(
             text = "Bienvenido de vuelta"
@@ -37,8 +59,8 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(spacing.md))
 
         AppTextField(
-            value = email,
-            onValueChange = { email = it },
+            value = state.email,
+            onValueChange = viewModel::onEmailChange,
             placeholder = "Correo electrónico",
             modifier = Modifier.fillMaxWidth()
         )
@@ -46,8 +68,8 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(spacing.md))
 
         PasswordTextField(
-            value = password,
-            onValueChange = { password = it },
+            value = state.password,
+            onValueChange = viewModel::onPasswordChange,
             placeholder = "Contraseña"
         )
 
@@ -62,22 +84,19 @@ fun LoginScreen(
             modifier = Modifier.align(Alignment.End),
             contentPadding = PaddingValues(0.dp)
         ) {
-            Text(
-                text = "Olvidé mi contraseña",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text("Olvidé mi contraseña")
         }
 
         Spacer(modifier = Modifier.height(spacing.md))
 
         PrimaryButton(
-            text = "Ingresar",
+            text = if(state.isLoading) "Ingresando..." else "Ingresar",
             onClick = {
-                viewModel.login(email, password)
+                viewModel.login()
             },
+            enabled = state.isFormValid && !state.isLoading,
             modifier = Modifier.fillMaxWidth()
         )
-
     }
 }
 

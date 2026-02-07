@@ -5,29 +5,61 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.akameiot.coreui.components.AuthHeader
 import com.akameiot.coreui.components.AuthScaffold
 import com.akameiot.coreui.components.PrimaryButton
 import com.akameiot.coreui.theme.LocalSpacing
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.getValue
+
 
 @Composable
 fun QrAuthScreen(
     navController: NavController,
-    onPasteToken: () -> Unit = {},
-    onQrScanned: (String) -> Unit = {}
+    viewModel: QrAuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
 
     val spacing = LocalSpacing.current
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    AuthScaffold {
+    val snackbarHostState = remember { SnackbarHostState() }
 
-        Text(
-            text = "Acceso rápido",
-            style = MaterialTheme.typography.headlineMedium
+    LaunchedEffect(viewModel) {
+
+        viewModel.events.collectLatest { event ->
+
+            when(event) {
+
+                QrAuthEvent.Success -> {
+
+                    navController.navigate("landing") {
+                        popUpTo(navController.graph.id) {
+                            inclusive = true
+                        }
+                    }
+                }
+
+                is QrAuthEvent.Error -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
+
+    AuthScaffold(
+        snackbarHostState = snackbarHostState
+    ) {
+
+        AuthHeader(
+            text = "Acceso rápido"
         )
 
         Spacer(modifier = Modifier.height(spacing.sm))
@@ -40,7 +72,6 @@ fun QrAuthScreen(
 
         Spacer(modifier = Modifier.height(spacing.xl))
 
-        // Área de escaneo QR
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -52,18 +83,33 @@ fun QrAuthScreen(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "Área de escaneo QR",
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+
+            if(state.isLoading) {
+
+                CircularProgressIndicator()
+
+            } else {
+
+                Text(
+                    text = "Área de escaneo QR",
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(spacing.xl))
 
         PrimaryButton(
-            text = "Pegar token de acceso desde el portapapeles",
-            onClick = onPasteToken,
+            text = if(state.isLoading)
+                "Procesando..."
+            else
+                "Pegar token de acceso desde el portapapeles",
+
+            onClick = { viewModel.pasteToken() },
+
+            enabled = !state.isLoading,
+
             modifier = Modifier.fillMaxWidth()
         )
     }

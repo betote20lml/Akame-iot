@@ -18,26 +18,49 @@ import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akameiot.app.ui.navigation.VerificationType
 import androidx.compose.runtime.collectAsState
-
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.flow.collectLatest
 
 
 
 @Composable
 fun RegisterScreen(
     navController: NavController,
-    onRegister: () -> Unit = {},
 ) {
 
     val spacing = LocalSpacing.current
     val viewModel: RegisterViewModel = viewModel()
 
-
+    val snackbarHostState = remember { SnackbarHostState() }
     val state by viewModel.uiState.collectAsState()
 
-    val passwordsMatch =
-        state.confirmPassword.isEmpty() || state.password == state.confirmPassword
+    LaunchedEffect(viewModel) {
 
-    AuthScaffold {
+        viewModel.events.collectLatest { event ->
+
+            when(event) {
+
+                RegisterEvent.Success -> {
+
+                    navController.navigate(
+                        Routes.verification(VerificationType.REGISTER)
+                    ) {
+                        popUpTo(Routes.REGISTER) {
+                            inclusive = true
+                        }
+                    }
+                }
+
+                is RegisterEvent.Error -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
+
+    AuthScaffold (
+            snackbarHostState = snackbarHostState
+        ){
 
         AuthHeader(
             text = "Crea tu cuenta para continuar"
@@ -66,10 +89,10 @@ fun RegisterScreen(
             value = state.confirmPassword,
             onValueChange = viewModel::onConfirmPasswordChange,
             placeholder = "Confirmar contraseña",
-            isError = !passwordsMatch
+            isError = !state.passwordsMatch
         )
 
-        if (!passwordsMatch) {
+        if (!state.passwordsMatch) {
             Spacer(modifier = Modifier.height(spacing.xs))
 
             Text(
@@ -82,32 +105,27 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(spacing.md))
 
-        PrimaryButton(
-            text = "Registrar cuenta",
-            onClick = {
-
-                viewModel.register()
-
-                navController.navigate(
-                    Routes.verification(VerificationType.REGISTER)
-                ) {
-                    popUpTo(Routes.REGISTER) {
-                        inclusive = true
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = state.acceptedTerms
-        )
-
-        Spacer(modifier = Modifier.height(spacing.md))
-
         TermsRow(
             acceptedTerms = state.acceptedTerms,
             onCheckedChange = viewModel::onTermsAccepted,
             onTermsClick = {
                 navController.navigate(Routes.TERMS)
             }
+        )
+
+        Spacer(modifier = Modifier.height(spacing.md))
+
+
+        PrimaryButton(
+            text = if(state.isLoading) "Creando cuenta..." else "Registrar cuenta",
+            onClick = {
+
+                viewModel.register()
+
+
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = state.isFormValid && !state.isLoading
         )
     }
 }

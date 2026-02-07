@@ -1,15 +1,23 @@
 package com.akameiot.app.ui.register
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class RegisterViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState = _uiState.asStateFlow()
 
+    private val _events = MutableSharedFlow<RegisterEvent>(
+        extraBufferCapacity = 1
+    )
+    val events = _events.asSharedFlow()
 
     fun onEmailChange(value: String) {
         _uiState.update { it.copy(email = value) }
@@ -27,13 +35,40 @@ class RegisterViewModel : ViewModel() {
         _uiState.update { it.copy(acceptedTerms = value) }
     }
 
-
     fun register() {
 
         val state = _uiState.value
 
-        // luego Cognito
-        println("Register: ${state.email}")
+        if (!state.isFormValid) {
+            viewModelScope.launch {
+                _events.emit(RegisterEvent.Error("Completa todos los campos correctamente"))
+            }
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.update { it.copy(isLoading = true) }
+
+            try {
+
+                // Aquí irá Cognito luego
+
+                kotlinx.coroutines.delay(1500) // simulación
+
+                _events.emit(RegisterEvent.Success)
+
+            } catch (e: Exception) {
+
+                _events.emit(
+                    RegisterEvent.Error("No se pudo crear la cuenta")
+                )
+
+            } finally {
+
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
     }
 }
 

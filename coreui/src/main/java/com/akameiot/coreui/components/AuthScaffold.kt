@@ -1,6 +1,5 @@
 package com.akameiot.coreui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,10 +10,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.imePadding
 import com.akameiot.coreui.theme.LocalSpacing
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+
 
 @Composable
 fun AuthScaffold(
     modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     topContent: (@Composable () -> Unit)? = null,
     bottomContent: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
@@ -22,19 +25,26 @@ fun AuthScaffold(
 
     val spacing = LocalSpacing.current
 
-    Box(
+    Scaffold(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .imePadding() // evita que el teclado tape inputs
-            .navigationBarsPadding() // evita que el sistema tape el bottom
-            .padding(spacing.lg)
-    ) {
+            .imePadding()
+            .navigationBarsPadding(),
+
+        snackbarHost = {
+            AppSnackbarHost(snackbarHostState)
+        },
+
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = spacing.lg)
                 .verticalScroll(rememberScrollState()),
+
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
@@ -50,14 +60,15 @@ fun AuthScaffold(
                 content()
             }
 
-            if (bottomContent != null) {
+            bottomContent?.let {
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = spacing.md),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    bottomContent()
+                    it()
                 }
             }
         }
