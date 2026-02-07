@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import com.akameiot.core.utils.isValidEmail
 
 class LoginViewModel : ViewModel() {
 
@@ -23,12 +24,40 @@ class LoginViewModel : ViewModel() {
         _uiState.update { it.copy(password = value) }
     }
 
+    fun onForgotPasswordClick() {
+
+        val email = _uiState.value.email
+
+        if (!email.isValidEmail()) {
+
+            viewModelScope.launch {
+                _events.emit(
+                    LoginEvent.Error("Ingresa tu correo primero")
+                )
+            }
+
+            return
+        }
+
+        viewModelScope.launch {
+            _events.emit(LoginEvent.NavigateToPasswordRecovery)
+        }
+    }
 
     fun login() {
 
         val state = _uiState.value
 
-        if (!state.isFormValid) return
+        if (!state.isFormValid) {
+
+            viewModelScope.launch {
+                _events.emit(
+                    LoginEvent.Error("Completa correo y contraseña")
+                )
+            }
+
+            return
+        }
 
         viewModelScope.launch {
 

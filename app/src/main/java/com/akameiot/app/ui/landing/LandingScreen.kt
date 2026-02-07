@@ -5,13 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.akameiot.app.R
@@ -44,18 +42,18 @@ fun LandingScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        /* 🔥 BLOQUE SUPERIOR — LOGO + TAGLINE */
+        //  BLOQUE SUPERIOR — LOGO
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.weight(1f) // centra perfecto en cualquier pantalla
+            modifier = Modifier.weight(1f)
         ) {
 
             Image(
                 painter = painterResource(id = R.drawable.akame_logo_text1),
                 contentDescription = "Akame Logo",
-                modifier = Modifier.size(230.dp) // sweet spot visual
+                modifier = Modifier.size(230.dp)
             )
 
             Spacer(modifier = Modifier.height(spacing.lg))
@@ -63,13 +61,13 @@ fun LandingScreen(
 
         }
 
-        /* BLOQUE INFERIOR — BOTONES */
+        // BLOQUE INFERIOR — BOTONES
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = spacing.sm), // aire extra sobre navbar
-            verticalArrangement = Arrangement.spacedBy(spacing.md)
+                .padding(bottom = spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(spacing.sm)
         ) {
 
             PrimaryButton(
@@ -84,22 +82,21 @@ fun LandingScreen(
             )
 
             SecondaryButton(
-                text = "Acceder con token",
-                onClick = {
-                    navController.navigate(Routes.QR_AUTH) {
-                        launchSingleTop = true
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-
-            SecondaryButton(
                 text = "Iniciar sesión",
                 onClick = {
                     navController.navigate(Routes.LOGIN) {
                         launchSingleTop = true
                         popUpTo(Routes.LANDING) { inclusive = true }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            SecondaryButton(
+                text = "Acceder con token",
+                onClick = {
+                    navController.navigate(Routes.QR_AUTH) {
+                        launchSingleTop = true
                     }
                 },
                 modifier = Modifier.fillMaxWidth()

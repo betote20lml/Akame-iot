@@ -13,6 +13,7 @@ import com.akameiot.app.ui.navigation.VerificationType
 import com.akameiot.app.ui.navigation.Routes
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 
 @Composable
@@ -24,9 +25,9 @@ fun LoginScreen(
     val viewModel: LoginViewModel = viewModel()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(Unit) {
 
         viewModel.events.collectLatest { event ->
 
@@ -39,6 +40,13 @@ fun LoginScreen(
                             inclusive = true
                         }
                     }
+                }
+
+                LoginEvent.NavigateToPasswordRecovery -> {
+
+                    navController.navigate(
+                        Routes.verification(VerificationType.PASSWORDLESS_LOGIN)
+                    )
                 }
 
                 is LoginEvent.Error -> {
@@ -77,9 +85,7 @@ fun LoginScreen(
 
         TextButton(
             onClick = {
-                navController.navigate(
-                    Routes.verification(VerificationType.PASSWORDLESS_LOGIN)
-                )
+                viewModel.onForgotPasswordClick()
             },
             modifier = Modifier.align(Alignment.End),
             contentPadding = PaddingValues(0.dp)

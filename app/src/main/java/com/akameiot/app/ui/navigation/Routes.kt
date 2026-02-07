@@ -9,10 +9,10 @@ object Routes {
 
     const val QR_AUTH = "qr_auth"
 
-    // Ruta base SIN argumentos
+    // Ruta base
     const val VERIFICATION = "verification"
 
-    // Builder seguro
+    // Builder
     fun verification(type: VerificationType) =
         "$VERIFICATION/${type.name}"
 }

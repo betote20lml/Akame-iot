@@ -12,12 +12,14 @@ import kotlinx.coroutines.launch
 
 class VerificationViewModel : ViewModel() {
 
-    // STATE (igual que Register ✅)
+    // STATE (igual que Register)
     private val _uiState = MutableStateFlow(VerificationUiState())
     val uiState = _uiState.asStateFlow()
 
-    // EVENTS (mejor que Channel ✅)
-    private val _events = MutableSharedFlow<VerificationEvent>()
+    // EVENTS
+    private val _events = MutableSharedFlow<VerificationEvent>(
+        extraBufferCapacity = 1
+    )
     val events = _events.asSharedFlow()
 
 
@@ -50,7 +52,7 @@ class VerificationViewModel : ViewModel() {
 
             try {
 
-                // 🔥 simulación Cognito
+                //  simulación Cognito
                 delay(1500)
 
                 _events.emit(VerificationEvent.Success)
