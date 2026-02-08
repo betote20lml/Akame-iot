@@ -1,5 +1,6 @@
 package com.akameiot.app.ui.login
 
+import com.akameiot.core.utils.isValidEmail
 data class LoginUiState(
 
     val email: String = "",
@@ -9,5 +10,5 @@ data class LoginUiState(
 ) {
 
     val isFormValid: Boolean
-        get() = email.isNotBlank() && password.isNotBlank()
+        get() = email.isValidEmail() && password.isNotBlank()
 }

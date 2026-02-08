@@ -11,10 +11,10 @@ class LoginViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState = _uiState.asStateFlow()
-
-    private val _events = MutableSharedFlow<LoginEvent>()
+    private val _events = MutableSharedFlow<LoginEvent>(
+        replay = 0
+    )
     val events = _events.asSharedFlow()
-
 
     fun onEmailChange(value: String) {
         _uiState.update { it.copy(email = value) }
@@ -24,24 +24,22 @@ class LoginViewModel : ViewModel() {
         _uiState.update { it.copy(password = value) }
     }
 
+    private fun sendEvent(event: LoginEvent) {
+        viewModelScope.launch {
+            _events.emit(event)
+        }
+    }
+
     fun onForgotPasswordClick() {
 
         val email = _uiState.value.email
 
         if (!email.isValidEmail()) {
-
-            viewModelScope.launch {
-                _events.emit(
-                    LoginEvent.Error("Ingresa tu correo primero")
-                )
-            }
-
+            sendEvent(LoginEvent.Error("Ingresa un correo válido"))
             return
         }
 
-        viewModelScope.launch {
-            _events.emit(LoginEvent.NavigateToPasswordRecovery)
-        }
+        sendEvent(LoginEvent.NavigateToPasswordRecovery)
     }
 
     fun login() {
@@ -49,13 +47,7 @@ class LoginViewModel : ViewModel() {
         val state = _uiState.value
 
         if (!state.isFormValid) {
-
-            viewModelScope.launch {
-                _events.emit(
-                    LoginEvent.Error("Completa correo y contraseña")
-                )
-            }
-
+            sendEvent(LoginEvent.Error("Completa correo y contraseña"))
             return
         }
 
