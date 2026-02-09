@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akameiot.app.ui.navigation.VerificationType
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.flow.collectLatest
 
 
@@ -72,6 +73,7 @@ fun RegisterScreen(
             value = state.email,
             onValueChange = viewModel::onEmailChange,
             placeholder = "Correo electrónico",
+            keyboardType = KeyboardType.Email,
             modifier = Modifier.fillMaxWidth()
         )
 

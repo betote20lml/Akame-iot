@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akameiot.coreui.components.*
@@ -70,6 +71,7 @@ fun LoginScreen(
             value = state.email,
             onValueChange = viewModel::onEmailChange,
             placeholder = "Correo electrónico",
+            keyboardType = KeyboardType.Email,
             modifier = Modifier.fillMaxWidth()
         )
 
