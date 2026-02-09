@@ -37,6 +37,7 @@ fun LoginScreen(
                 LoginEvent.Success -> {
 
                     navController.navigate(Routes.LANDING) {
+                        launchSingleTop = true
                         popUpTo(Routes.LOGIN) {
                             inclusive = true
                         }
@@ -86,6 +87,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(spacing.xs))
 
         TextButton(
+            enabled = !state.isLoading,
             onClick = {
                 viewModel.onForgotPasswordClick()
             },

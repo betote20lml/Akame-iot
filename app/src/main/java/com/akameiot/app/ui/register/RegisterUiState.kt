@@ -1,5 +1,6 @@
 package com.akameiot.app.ui.register
 
+import com.akameiot.core.utils.isValidEmail
 data class RegisterUiState(
 
     val email: String = "",
@@ -8,15 +9,14 @@ data class RegisterUiState(
     val acceptedTerms: Boolean = false,
 
     val isLoading: Boolean = false,
-    val error: String? = null
 ) {
 
     val passwordsMatch: Boolean
-        get() = confirmPassword.isEmpty() || password == confirmPassword
+        get() = confirmPassword.isNotBlank() && password == confirmPassword
 
     val isFormValid: Boolean
         get() =
-            email.isNotBlank() &&
+               email.isValidEmail() &&
                     password.isNotBlank() &&
                     passwordsMatch &&
                     acceptedTerms

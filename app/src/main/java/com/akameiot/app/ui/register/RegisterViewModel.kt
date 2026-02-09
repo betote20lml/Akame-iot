@@ -15,9 +15,14 @@ class RegisterViewModel : ViewModel() {
     val uiState = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<RegisterEvent>(
+        replay = 0,
         extraBufferCapacity = 1
     )
     val events = _events.asSharedFlow()
+
+    private suspend fun sendEvent(event: RegisterEvent) {
+        _events.emit(event)
+    }
 
     fun onEmailChange(value: String) {
         _uiState.update { it.copy(email = value) }
@@ -39,9 +44,11 @@ class RegisterViewModel : ViewModel() {
 
         val state = _uiState.value
 
+        if (state.isLoading) return
+
         if (!state.isFormValid) {
             viewModelScope.launch {
-                _events.emit(RegisterEvent.Error("Completa todos los campos correctamente"))
+                sendEvent(RegisterEvent.Error("Completa todos los campos correctamente"))
             }
             return
         }
@@ -56,13 +63,11 @@ class RegisterViewModel : ViewModel() {
 
                 kotlinx.coroutines.delay(1500) // simulación
 
-                _events.emit(RegisterEvent.Success)
+                sendEvent(RegisterEvent.Success)
 
             } catch (e: Exception) {
 
-                _events.emit(
-                    RegisterEvent.Error("No se pudo crear la cuenta")
-                )
+                sendEvent(RegisterEvent.Error("No se pudo crear la cuenta"))
 
             } finally {
 

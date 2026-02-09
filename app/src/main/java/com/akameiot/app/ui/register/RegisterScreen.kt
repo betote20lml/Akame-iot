@@ -17,7 +17,7 @@ import com.akameiot.coreui.theme.LocalSpacing
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akameiot.app.ui.navigation.VerificationType
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.flow.collectLatest
@@ -33,7 +33,7 @@ fun RegisterScreen(
     val viewModel: RegisterViewModel = viewModel()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel) {
 
@@ -46,6 +46,7 @@ fun RegisterScreen(
                     navController.navigate(
                         Routes.verification(VerificationType.REGISTER)
                     ) {
+                        launchSingleTop = true
                         popUpTo(Routes.REGISTER) {
                             inclusive = true
                         }
@@ -91,10 +92,10 @@ fun RegisterScreen(
             value = state.confirmPassword,
             onValueChange = viewModel::onConfirmPasswordChange,
             placeholder = "Confirmar contraseña",
-            isError = !state.passwordsMatch
+            isError = state.confirmPassword.isNotBlank() && !state.passwordsMatch
         )
 
-        if (!state.passwordsMatch) {
+        if (state.confirmPassword.isNotBlank() && !state.passwordsMatch) {
             Spacer(modifier = Modifier.height(spacing.xs))
 
             Text(
@@ -109,7 +110,7 @@ fun RegisterScreen(
 
         TermsRow(
             acceptedTerms = state.acceptedTerms,
-            onCheckedChange = viewModel::onTermsAccepted,
+            onCheckedChange = { if(!state.isLoading) viewModel.onTermsAccepted(it) },
             onTermsClick = {
                 navController.navigate(Routes.TERMS)
             }

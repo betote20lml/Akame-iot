@@ -12,7 +12,8 @@ class LoginViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState = _uiState.asStateFlow()
     private val _events = MutableSharedFlow<LoginEvent>(
-        replay = 0
+        replay = 0,
+        extraBufferCapacity = 1
     )
     val events = _events.asSharedFlow()
 
@@ -46,6 +47,9 @@ class LoginViewModel : ViewModel() {
 
         val state = _uiState.value
 
+        if (state.isLoading) return
+
+
         if (!state.isFormValid) {
             sendEvent(LoginEvent.Error("Completa correo y contraseña"))
             return
@@ -60,13 +64,11 @@ class LoginViewModel : ViewModel() {
                 //  Simulación Cognito
                 delay(1500)
 
-                _events.emit(LoginEvent.Success)
+                sendEvent(LoginEvent.Success)
 
             } catch (e: Exception) {
 
-                _events.emit(
-                    LoginEvent.Error("No se pudo iniciar sesión")
-                )
+                sendEvent(LoginEvent.Error("No se pudo iniciar sesión"))
 
             } finally {
 
