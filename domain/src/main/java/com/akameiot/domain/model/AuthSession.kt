@@ -1,4 +1,4 @@
-package com.akameiot.core.domain.model
+package com.akameiot.domain.model
 
 data class AuthSession(
     val idToken: String,

@@ -24,3 +24,6 @@ include(":app")
 include(":coreui")
 
 include(":core")
+include(":domain")
+include(":data")
+include(":coredi")
