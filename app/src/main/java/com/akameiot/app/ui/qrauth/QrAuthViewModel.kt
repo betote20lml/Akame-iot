@@ -2,20 +2,27 @@ package com.akameiot.app.ui.qrauth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.channels.Channel
+
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+
 
 class QrAuthViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(QrAuthUiState())
     val uiState = _uiState.asStateFlow()
 
-    private val _events = Channel<QrAuthEvent>()
-    val events = _events.receiveAsFlow()
+    private val _events = MutableSharedFlow<QrAuthEvent>(
+        replay = 0,
+        extraBufferCapacity = 1
+    )
+    val events = _events.asSharedFlow()
 
 
     fun pasteToken() {
+        val state = _uiState.value
+        if (state.isLoading) return
 
         viewModelScope.launch {
 
@@ -24,13 +31,13 @@ class QrAuthViewModel : ViewModel() {
             try {
 
                 // Luego leeremos clipboard
-                kotlinx.coroutines.delay(1200)
+                delay(1200)
 
-                _events.send(QrAuthEvent.Success)
+                _events.emit(QrAuthEvent.Success)
 
             } catch (e: Exception) {
 
-                _events.send(
+                _events.emit(
                     QrAuthEvent.Error("No se pudo leer el token")
                 )
 
@@ -44,6 +51,8 @@ class QrAuthViewModel : ViewModel() {
 
 
     fun onQrScanned(token: String) {
+        val state = _uiState.value
+        if (state.isLoading) return
 
         viewModelScope.launch {
 
@@ -52,13 +61,13 @@ class QrAuthViewModel : ViewModel() {
             try {
 
                 // Validar token
-                kotlinx.coroutines.delay(1200)
+                delay(1200)
 
-                _events.send(QrAuthEvent.Success)
+                _events.emit(QrAuthEvent.Success)
 
             } catch (e: Exception) {
 
-                _events.send(
+                _events.emit(
                     QrAuthEvent.Error("QR inválido")
                 )
 

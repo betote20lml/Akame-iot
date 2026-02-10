@@ -19,6 +19,7 @@ import com.akameiot.coreui.components.PrimaryButton
 import com.akameiot.coreui.theme.LocalSpacing
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.getValue
+import com.akameiot.app.ui.navigation.Routes
 
 
 @Composable
@@ -32,7 +33,7 @@ fun QrAuthScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(Unit) {
 
         viewModel.events.collectLatest { event ->
 
@@ -40,7 +41,7 @@ fun QrAuthScreen(
 
                 QrAuthEvent.Success -> {
 
-                    navController.navigate("landing") {
+                    navController.navigate(Routes.LANDING) {
                         popUpTo(navController.graph.id) {
                             inclusive = true
                         }

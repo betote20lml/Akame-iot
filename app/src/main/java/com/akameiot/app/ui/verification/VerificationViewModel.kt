@@ -26,21 +26,25 @@ class VerificationViewModel : ViewModel() {
     fun onCodeChange(code: String) {
         _uiState.update {
             it.copy(
-                code = code,
-                error = null
+                code = code
             )
         }
+    }
+
+    private suspend fun sendEvent(event: VerificationEvent) {
+        _events.emit(event)
     }
 
 
     fun verify() {
 
         val state = _uiState.value
+        if (state.isLoading) return
 
-        if (state.code.length < 6) {
+        if (!state.isCodeValid) {
 
-            _uiState.update {
-                it.copy(error = "Código incompleto")
+            viewModelScope.launch {
+                sendEvent(VerificationEvent.Error("Código incompleto"))
             }
 
             return
@@ -55,11 +59,11 @@ class VerificationViewModel : ViewModel() {
                 //  simulación Cognito
                 delay(1500)
 
-                _events.emit(VerificationEvent.Success)
+                sendEvent(VerificationEvent.Success)
 
             } catch (e: Exception) {
 
-                _events.emit(
+                sendEvent(
                     VerificationEvent.Error("Código inválido")
                 )
 
@@ -81,13 +85,13 @@ class VerificationViewModel : ViewModel() {
 
                 // llamar cognito resend
 
-                _events.emit(
+                sendEvent(
                     VerificationEvent.Error("Código reenviado")
                 )
 
             } catch (e: Exception) {
 
-                _events.emit(
+                sendEvent(
                     VerificationEvent.Error("No se pudo reenviar")
                 )
             }

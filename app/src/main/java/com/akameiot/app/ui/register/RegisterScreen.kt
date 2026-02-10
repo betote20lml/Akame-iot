@@ -83,8 +83,20 @@ fun RegisterScreen(
         PasswordTextField(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            placeholder = "Contraseña"
+            placeholder = "Contraseña",
+            isError = state.password.isNotBlank() && !state.isPasswordValid
         )
+
+        if (state.password.isNotBlank() && !state.isPasswordValid) {
+            Spacer(modifier = Modifier.height(spacing.xs))
+
+            Text(
+                text = "La contraseña debe tener al menos 8 caracteres",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.align(Alignment.Start)
+            )
+        }
 
         Spacer(modifier = Modifier.height(spacing.md))
 

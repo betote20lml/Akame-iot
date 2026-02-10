@@ -8,6 +8,7 @@ import com.akameiot.coreui.components.*
 import com.akameiot.coreui.theme.LocalSpacing
 import androidx.compose.runtime.Composable
 import com.akameiot.app.ui.navigation.VerificationType
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import com.akameiot.app.ui.navigation.Routes
 import androidx.compose.runtime.*
@@ -21,7 +22,7 @@ fun VerificationScreen(
 ) {
 
     val spacing = LocalSpacing.current
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Escuchar eventos UNA sola vez

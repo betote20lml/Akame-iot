@@ -10,6 +10,8 @@ data class RegisterUiState(
 
     val isLoading: Boolean = false,
 ) {
+    val isPasswordValid: Boolean
+        get() = password.length >= 8
 
     val passwordsMatch: Boolean
         get() = confirmPassword.isNotBlank() && password == confirmPassword
