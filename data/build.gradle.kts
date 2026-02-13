@@ -36,6 +36,8 @@ android {
 
 dependencies {
     implementation(project(":domain"))
+    implementation(libs.amplify.core)
+    implementation(libs.amplify.auth.cognito)
 
 
     // Retrofit
