@@ -1,5 +1,6 @@
 package com.akameiot.domain.usecase
 
+import com.akameiot.domain.model.RegisterResult
 import com.akameiot.domain.repository.AuthRepository
 
 class RegisterUseCase(
@@ -9,7 +10,7 @@ class RegisterUseCase(
     suspend operator fun invoke(
         email: String,
         password: String
-    ) {
-        repository.register(email, password)
+    ): RegisterResult {
+        return repository.register(email, password)
     }
 }

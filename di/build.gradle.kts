@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.akameiot.coredi"
+    namespace = "com.akameiot.di"
     compileSdk {
         version = release(36)
     }

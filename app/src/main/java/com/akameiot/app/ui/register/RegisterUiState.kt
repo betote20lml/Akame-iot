@@ -18,8 +18,7 @@ data class RegisterUiState(
 
     val isFormValid: Boolean
         get() =
-               email.isValidEmail() &&
-                    password.isNotBlank() &&
+               email.isValidEmail() && isPasswordValid &&
                     passwordsMatch &&
                     acceptedTerms
 }

@@ -1,10 +1,10 @@
 package com.akameiot.data.remote
 
-import kotlinx.coroutines.suspendCancellableCoroutine
+import com.akameiot.domain.model.RegisterResult
 import com.amplifyframework.auth.AuthUserAttributeKey
 import com.amplifyframework.auth.options.AuthSignUpOptions
-import com.amplifyframework.auth.result.AuthSignUpResult
 import com.amplifyframework.core.Amplify
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -13,7 +13,7 @@ class CognitoAuthRemoteDataSource {
     suspend fun register(
         email: String,
         password: String
-    ): AuthSignUpResult = suspendCancellableCoroutine { cont ->
+    ): RegisterResult = suspendCancellableCoroutine { cont ->
 
         val options = AuthSignUpOptions.builder()
             .userAttribute(AuthUserAttributeKey.email(), email)
@@ -23,8 +23,20 @@ class CognitoAuthRemoteDataSource {
             email,
             password,
             options,
-            { cont.resume(it) },
-            { cont.resumeWithException(it) }
+            { result ->
+                if (cont.isActive) {
+                    cont.resume(
+                        RegisterResult(
+                            requiresConfirmation = !result.isSignUpComplete
+                        )
+                    )
+                }
+            },
+            { error ->
+                if (cont.isActive) {
+                    cont.resumeWithException(error)
+                }
+            }
         )
     }
 }

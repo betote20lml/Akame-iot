@@ -20,6 +20,7 @@ import com.akameiot.app.ui.navigation.VerificationType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.KeyboardType
+import com.akameiot.di.AppModule
 import kotlinx.coroutines.flow.collectLatest
 
 
@@ -30,8 +31,12 @@ fun RegisterScreen(
 ) {
 
     val spacing = LocalSpacing.current
-    val viewModel: RegisterViewModel = viewModel()
-
+    val factory = remember {
+        RegisterViewModelFactory(AppModule.registerUseCase)
+    }
+    val viewModel: RegisterViewModel = viewModel(
+        factory = factory
+    )
     val snackbarHostState = remember { SnackbarHostState() }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -39,9 +44,9 @@ fun RegisterScreen(
 
         viewModel.events.collectLatest { event ->
 
-            when(event) {
+            when (event) {
 
-                RegisterEvent.Success -> {
+                is RegisterEvent.Success -> {
 
                     navController.navigate(
                         Routes.verification(VerificationType.REGISTER)

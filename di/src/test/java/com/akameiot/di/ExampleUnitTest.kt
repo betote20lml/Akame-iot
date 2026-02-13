@@ -1,4 +1,4 @@
-package com.akameiot.coredi
+package com.akameiot.di
 
 import org.junit.Test
 

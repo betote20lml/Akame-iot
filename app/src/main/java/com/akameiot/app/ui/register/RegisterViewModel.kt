@@ -2,6 +2,7 @@ package com.akameiot.app.ui.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.akameiot.domain.usecase.RegisterUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -9,7 +10,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class RegisterViewModel : ViewModel() {
+class RegisterViewModel (
+    private val registerUseCase: RegisterUseCase
+    ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState = _uiState.asStateFlow()
@@ -59,16 +62,30 @@ class RegisterViewModel : ViewModel() {
 
             try {
 
-                // Aquí irá Cognito luego
+                val result = registerUseCase(
+                    state.email,
+                    state.password
+                )
 
-                kotlinx.coroutines.delay(1500) // simulación
-
-                sendEvent(RegisterEvent.Success)
+                sendEvent(
+                    RegisterEvent.Success(
+                        requiresConfirmation = result.requiresConfirmation
+                    )
+                )
 
             } catch (e: Exception) {
 
-                sendEvent(RegisterEvent.Error("No se pudo crear la cuenta"))
+                val message = when {
+                    e.message?.contains("exists", true) == true ->
+                        "El correo ya está registrado"
 
+                    e.message?.contains("password", true) == true ->
+                        "La contraseña no cumple los requisitos"
+
+                    else ->
+                        "No se pudo crear la cuenta"
+                }
+                sendEvent(RegisterEvent.Error(message))
             } finally {
 
                 _uiState.update { it.copy(isLoading = false) }

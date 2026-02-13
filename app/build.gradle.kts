@@ -46,7 +46,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":domain"))
     implementation(project(":data"))
-    implementation(project(":coredi"))
+    implementation(project(":di"))
     implementation(libs.amplify.core)
     implementation(libs.amplify.auth.cognito)
     implementation(libs.androidx.core.ktx)
