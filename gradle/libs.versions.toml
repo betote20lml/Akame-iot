@@ -10,11 +10,11 @@ activityCompose = "1.12.3"
 composeBom = "2026.01.01"
 appcompat = "1.7.1"
 material = "1.13.0"
-awsSdk = "1.1.8"
-
+amplify = "2.16.0"
 
 [libraries]
-aws-cognito = { module = "aws.sdk.kotlin:cognitoidentityprovider", version.ref = "awsSdk" }
+amplify-core = { module = "com.amplifyframework:core", version.ref = "amplify" }
+amplify-auth-cognito = { module = "com.amplifyframework:aws-auth-cognito", version.ref = "amplify" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

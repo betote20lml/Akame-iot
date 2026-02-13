@@ -36,7 +36,8 @@ android {
 
 dependencies {
     implementation(project(":domain"))
-    implementation(libs.aws.cognito)
+
+
     // Retrofit
     // Room
     // OkHttp
