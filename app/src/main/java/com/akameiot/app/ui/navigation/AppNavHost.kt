@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.akameiot.app.ui.home.HomeScreen
 import com.akameiot.app.ui.landing.LandingScreen
 import com.akameiot.app.ui.login.LoginScreen
 import com.akameiot.app.ui.register.RegisterScreen
@@ -24,6 +25,10 @@ fun AppNavHost(
         startDestination = Routes.LANDING,
         modifier = modifier
     ) {
+
+        composable(Routes.HOME) {
+            HomeScreen(navController)
+        }
 
         composable(Routes.LANDING) {
             LandingScreen(navController)
