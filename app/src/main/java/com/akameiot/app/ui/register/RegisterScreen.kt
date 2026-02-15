@@ -96,6 +96,7 @@ fun RegisterScreen(
             placeholder = "Contraseña",
             isError = state.password.isNotBlank() && !state.passwordValidation.isValid
         )
+
         val validation = state.passwordValidation
 
                 if (state.password.isNotBlank() && !state.passwordValidation.isValid) {

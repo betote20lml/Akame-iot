@@ -22,7 +22,8 @@ fun VerificationScreen(
 ) { val factory = remember {
         VerificationViewModelFactory(
             AppModule.confirmSignUpUseCase,
-            AppModule.autoLoginUseCase
+            AppModule.autoLoginUseCase,
+            AppModule.resendConfirmationCodeUseCase
         )
     }
 
@@ -52,6 +53,10 @@ fun VerificationScreen(
 
                 is VerificationEvent.Error -> {
                     snackbarHostState.showSnackbar(event.message)
+                }
+
+                VerificationEvent.CodeResent -> {
+                    snackbarHostState.showSnackbar("Código reenviado")
                 }
             }
         }
@@ -106,13 +111,15 @@ fun VerificationScreen(
 
         Spacer(modifier = Modifier.height(spacing.lg))
 
-        TextButton(
-            enabled = !state.isLoading,
-            onClick = {
-                viewModel.resend()
+            TextButton(
+                enabled = state.canResend,
+                onClick = { viewModel.resend() }
+            ) {
+                if (state.resendCooldown > 0) {
+                    Text("Reenviar en ${state.resendCooldown}s")
+                } else {
+                    Text("Enviar de nuevo")
+                }
             }
-        ) {
-            Text("Enviar de nuevo")
-        }
     }
 }

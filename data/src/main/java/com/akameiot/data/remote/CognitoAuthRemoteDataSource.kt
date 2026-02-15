@@ -115,5 +115,14 @@ class CognitoAuthRemoteDataSource {
             )
         }
 
+    suspend fun resendConfirmationCode(email: String) {
+        return kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+            Amplify.Auth.resendSignUpCode(
+                email,
+                { continuation.resume(Unit) {} },
+                { error -> continuation.resumeWithException(error) }
+            )
+        }
+    }
 
 }

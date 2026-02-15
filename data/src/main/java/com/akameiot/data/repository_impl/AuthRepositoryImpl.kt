@@ -33,4 +33,8 @@ class AuthRepositoryImpl(
         return remote.isUserLoggedIn()
     }
 
+    override suspend fun resendConfirmationCode(email: String) {
+        remote.resendConfirmationCode(email)
+    }
+
 }

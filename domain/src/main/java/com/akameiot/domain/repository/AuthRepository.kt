@@ -20,4 +20,6 @@ interface AuthRepository {
     )
 
     suspend fun isUserLoggedIn(): Boolean
+
+    suspend fun resendConfirmationCode(email: String)
 }

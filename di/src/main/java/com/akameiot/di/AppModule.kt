@@ -9,6 +9,7 @@ import com.akameiot.domain.validation.PasswordValidator
 import com.akameiot.domain.usecase.ConfirmSignUpUseCase
 import com.akameiot.domain.usecase.AutoLoginUseCase
 import com.akameiot.domain.usecase.CheckAuthSessionUseCase
+import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
 
 
 object AppModule {
@@ -43,6 +44,10 @@ object AppModule {
 
     val checkAuthSessionUseCase by lazy {
         CheckAuthSessionUseCase(authRepository)
+    }
+
+    val resendConfirmationCodeUseCase by lazy {
+        ResendConfirmationCodeUseCase(authRepository)
     }
 
 
