@@ -2,17 +2,26 @@ package com.akameiot.app.ui.verification
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.akameiot.app.session.AuthTempStorage
+import com.akameiot.domain.usecase.AutoLoginUseCase
+import com.akameiot.domain.usecase.ConfirmSignUpUseCase
 
-class VerificationViewModel : ViewModel() {
 
-    // STATE (igual que Register)
+class VerificationViewModel (
+    private val confirmSignUpUseCase: ConfirmSignUpUseCase,
+    private val autoLoginUseCase: AutoLoginUseCase
+    ): ViewModel() {
+
+
+    private val email = AuthTempStorage.email.orEmpty()
+    private val password = AuthTempStorage.password.orEmpty()
+
     private val _uiState = MutableStateFlow(VerificationUiState())
     val uiState = _uiState.asStateFlow()
 
@@ -56,15 +65,24 @@ class VerificationViewModel : ViewModel() {
 
             try {
 
-                //  simulación Cognito
-                delay(1500)
-
+                // Confirmar Registro y autologin
+                confirmSignUpUseCase(
+                    email = email,
+                    code = state.code
+                )
+                 autoLoginUseCase(
+                    email = email,
+                    password = password
+                )
+                AuthTempStorage.clear()
                 sendEvent(VerificationEvent.Success)
 
             } catch (e: Exception) {
 
                 sendEvent(
-                    VerificationEvent.Error("Código inválido")
+                    VerificationEvent.Error(
+                        e.message ?: "Código inválido"
+                    )
                 )
 
             } finally {
@@ -82,8 +100,6 @@ class VerificationViewModel : ViewModel() {
         viewModelScope.launch {
 
             try {
-
-                // llamar cognito resend
 
                 sendEvent(
                     VerificationEvent.Error("Código reenviado")

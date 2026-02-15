@@ -14,4 +14,18 @@ class AuthRepositoryImpl(
     ): RegisterResult {
         return remote.register(email, password)
     }
+
+    override suspend fun confirmSignUp(
+        email: String,
+        code: String
+    ) {
+        remote.confirmSignUp(email, code)
+    }
+
+    override suspend fun login(
+        email: String,
+        password: String
+    ) {
+        remote.login(email, password)
+    }
 }

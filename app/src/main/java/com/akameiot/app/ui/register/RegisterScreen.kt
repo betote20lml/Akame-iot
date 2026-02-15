@@ -22,7 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.KeyboardType
 import com.akameiot.di.AppModule
 import kotlinx.coroutines.flow.collectLatest
-
+import com.akameiot.app.session.AuthTempStorage
 
 
 @Composable
@@ -32,7 +32,10 @@ fun RegisterScreen(
 
     val spacing = LocalSpacing.current
     val factory = remember {
-        RegisterViewModelFactory(AppModule.registerUseCase)
+        RegisterViewModelFactory(
+            AppModule.registerUseCase,
+            AppModule.passwordValidator
+        )
     }
     val viewModel: RegisterViewModel = viewModel(
         factory = factory
@@ -47,7 +50,8 @@ fun RegisterScreen(
             when (event) {
 
                 is RegisterEvent.Success -> {
-
+                    AuthTempStorage.email = state.email
+                    AuthTempStorage.password = state.password
                     navController.navigate(
                         Routes.verification(VerificationType.REGISTER)
                     ) {
@@ -59,6 +63,7 @@ fun RegisterScreen(
                 }
 
                 is RegisterEvent.Error -> {
+                    AuthTempStorage.clear()
                     snackbarHostState.showSnackbar(event.message)
                 }
             }
@@ -89,19 +94,31 @@ fun RegisterScreen(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
             placeholder = "Contraseña",
-            isError = state.password.isNotBlank() && !state.isPasswordValid
+            isError = state.password.isNotBlank() && !state.passwordValidation.isValid
         )
+        val validation = state.passwordValidation
 
-        if (state.password.isNotBlank() && !state.isPasswordValid) {
-            Spacer(modifier = Modifier.height(spacing.xs))
+                if (state.password.isNotBlank() && !state.passwordValidation.isValid) {
 
-            Text(
-                text = "La contraseña debe tener al menos 8 caracteres",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.align(Alignment.Start)
-            )
-        }
+                    Spacer(modifier = Modifier.height(spacing.xs))
+
+                    val errorMessage = when {
+                        !validation.hasMinLength ->
+                            "Debe tener al menos 8 caracteres"
+                        !validation.hasLowercase ->
+                            "Debe contener al menos una letra minúscula"
+                        !validation.hasNumber ->
+                            "Debe contener al menos un número"
+                        else -> ""
+                    }
+
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                }
 
         Spacer(modifier = Modifier.height(spacing.md))
 

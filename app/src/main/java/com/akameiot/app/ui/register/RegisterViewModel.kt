@@ -9,9 +9,11 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.akameiot.domain.validation.PasswordValidator
 
 class RegisterViewModel (
-    private val registerUseCase: RegisterUseCase
+    private val registerUseCase: RegisterUseCase,
+    private val passwordValidator: PasswordValidator
     ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RegisterUiState())
@@ -32,7 +34,15 @@ class RegisterViewModel (
     }
 
     fun onPasswordChange(value: String) {
-        _uiState.update { it.copy(password = value) }
+
+        val validation = passwordValidator.validate(value)
+
+        _uiState.update {
+            it.copy(
+                password = value,
+                passwordValidation = validation
+            )
+        }
     }
 
     fun onConfirmPasswordChange(value: String) {

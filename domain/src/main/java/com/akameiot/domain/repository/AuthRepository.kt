@@ -8,4 +8,14 @@ interface AuthRepository {
         email: String,
         password: String
     ): RegisterResult
+
+    suspend fun confirmSignUp(
+        email: String,
+        code: String
+    )
+
+    suspend fun login(
+        email: String,
+        password: String
+    )
 }

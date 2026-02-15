@@ -13,13 +13,22 @@ import androidx.compose.runtime.LaunchedEffect
 import com.akameiot.app.ui.navigation.Routes
 import androidx.compose.runtime.*
 import kotlinx.coroutines.flow.collectLatest
+import com.akameiot.di.AppModule
 
 @Composable
 fun VerificationScreen(
     navController: NavController,
     type: VerificationType,
-    viewModel: VerificationViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-) {
+) { val factory = remember {
+        VerificationViewModelFactory(
+            AppModule.confirmSignUpUseCase,
+            AppModule.autoLoginUseCase
+        )
+    }
+
+    val viewModel: VerificationViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = factory
+    )
 
     val spacing = LocalSpacing.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
