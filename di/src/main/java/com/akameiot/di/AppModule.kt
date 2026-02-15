@@ -8,6 +8,7 @@ import com.akameiot.domain.usecase.RegisterUseCase
 import com.akameiot.domain.validation.PasswordValidator
 import com.akameiot.domain.usecase.ConfirmSignUpUseCase
 import com.akameiot.domain.usecase.AutoLoginUseCase
+import com.akameiot.domain.usecase.CheckAuthSessionUseCase
 
 
 object AppModule {
@@ -16,7 +17,7 @@ object AppModule {
         CognitoAuthRemoteDataSource()
     }
 
-    private val authRepository by lazy {
+    val authRepository by lazy {
         AuthRepositoryImpl(cognitoRemote)
     }
 
@@ -38,6 +39,10 @@ object AppModule {
 
     val autoLoginUseCase by lazy {
         AutoLoginUseCase(authRepository)
+    }
+
+    val checkAuthSessionUseCase by lazy {
+        CheckAuthSessionUseCase(authRepository)
     }
 
 

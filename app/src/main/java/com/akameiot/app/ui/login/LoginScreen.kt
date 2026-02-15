@@ -15,7 +15,7 @@ import com.akameiot.app.ui.navigation.Routes
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
+import com.akameiot.di.AppModule
 
 @Composable
 fun LoginScreen(
@@ -23,7 +23,9 @@ fun LoginScreen(
 ) {
 
     val spacing = LocalSpacing.current
-    val viewModel: LoginViewModel = viewModel()
+    val viewModel: LoginViewModel = viewModel(
+        factory = LoginViewModelFactory(AppModule.authRepository)
+    )
 
     val snackbarHostState = remember { SnackbarHostState() }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -36,7 +38,7 @@ fun LoginScreen(
 
                 LoginEvent.Success -> {
 
-                    navController.navigate(Routes.LANDING) {
+                    navController.navigate(Routes.HOME) {
                         launchSingleTop = true
                         popUpTo(Routes.LOGIN) {
                             inclusive = true

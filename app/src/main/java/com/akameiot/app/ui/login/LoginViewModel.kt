@@ -2,12 +2,14 @@ package com.akameiot.app.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.akameiot.core.utils.isValidEmail
+import com.akameiot.domain.repository.AuthRepository
 
-class LoginViewModel : ViewModel() {
+class LoginViewModel(
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState = _uiState.asStateFlow()
@@ -49,7 +51,6 @@ class LoginViewModel : ViewModel() {
 
         if (state.isLoading) return
 
-
         if (!state.isFormValid) {
             sendEvent(LoginEvent.Error("Completa correo y contraseña"))
             return
@@ -61,20 +62,24 @@ class LoginViewModel : ViewModel() {
 
             try {
 
-                //  Simulación Cognito
-                delay(1500)
+                authRepository.login(
+                    email = state.email,
+                    password = state.password
+                )
 
                 sendEvent(LoginEvent.Success)
 
             } catch (e: Exception) {
 
-                sendEvent(LoginEvent.Error("No se pudo iniciar sesión"))
+                sendEvent(
+                    LoginEvent.Error(
+                        e.message ?: "Credenciales inválidas"
+                    )
+                )
 
             } finally {
 
-                _uiState.update {
-                    it.copy(isLoading = false)
-                }
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }

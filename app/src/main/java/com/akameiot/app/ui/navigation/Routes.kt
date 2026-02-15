@@ -1,6 +1,7 @@
 package com.akameiot.app.ui.navigation
 
 object Routes {
+    const val SPLASH = "splash"
 
     const val HOME = "home"
 

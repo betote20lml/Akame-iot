@@ -101,4 +101,19 @@ class CognitoAuthRemoteDataSource {
             }
         )
     }
+
+    suspend fun isUserLoggedIn(): Boolean =
+        suspendCancellableCoroutine { continuation ->
+
+            Amplify.Auth.fetchAuthSession(
+                { session ->
+                    continuation.resume(session.isSignedIn, null)
+                },
+                { error ->
+                    continuation.resume(false, null)
+                }
+            )
+        }
+
+
 }

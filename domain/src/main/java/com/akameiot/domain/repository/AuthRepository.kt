@@ -18,4 +18,6 @@ interface AuthRepository {
         email: String,
         password: String
     )
+
+    suspend fun isUserLoggedIn(): Boolean
 }

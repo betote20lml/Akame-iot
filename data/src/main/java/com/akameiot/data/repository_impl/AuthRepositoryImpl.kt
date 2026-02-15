@@ -28,4 +28,9 @@ class AuthRepositoryImpl(
     ) {
         remote.login(email, password)
     }
+
+    override suspend fun isUserLoggedIn(): Boolean {
+        return remote.isUserLoggedIn()
+    }
+
 }

@@ -12,6 +12,7 @@ import com.akameiot.app.ui.register.RegisterScreen
 import com.akameiot.app.ui.terms.TermsScreen
 import com.akameiot.app.ui.verification.VerificationScreen
 import com.akameiot.app.ui.qrauth.QrAuthScreen
+import com.akameiot.app.ui.splash.SplashScreen
 
 @Composable
 fun AppNavHost(
@@ -22,9 +23,13 @@ fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LANDING,
+        startDestination = Routes.SPLASH,
         modifier = modifier
     ) {
+
+        composable(Routes.SPLASH) {
+            SplashScreen(navController)
+        }
 
         composable(Routes.HOME) {
             HomeScreen(navController)
