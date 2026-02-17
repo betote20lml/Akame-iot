@@ -95,12 +95,26 @@ class LoginViewModel(
 
             } catch (e: Exception) {
 
-                sendEvent(
-                    LoginEvent.Error(
-                        e.message ?: "Credenciales inválidas"
-                    )
-                )
+                val message = when {
 
+                    e.message?.contains("Failed", true) == true ||
+                            e.message?.contains("Incorrect username or password", true) == true ->
+
+                        "Correo o contraseña incorrectos"
+
+                    e.message?.contains("UserNotFound", true) == true ->
+
+                        "El usuario no existe"
+
+                    e.message?.contains("UserNotConfirmed", true) == true ->
+
+                        "Debes verificar tu correo antes de iniciar sesión"
+
+                    else ->
+                        "No se pudo iniciar sesión"
+                }
+
+                sendEvent(LoginEvent.Error(message))
             } finally {
 
                 _uiState.update { it.copy(isLoading = false) }
