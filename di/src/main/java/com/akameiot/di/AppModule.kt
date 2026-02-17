@@ -9,7 +9,9 @@ import com.akameiot.domain.validation.PasswordValidator
 import com.akameiot.domain.usecase.ConfirmSignUpUseCase
 import com.akameiot.domain.usecase.AutoLoginUseCase
 import com.akameiot.domain.usecase.CheckAuthSessionUseCase
+import com.akameiot.domain.usecase.ConfirmResetPasswordUseCase
 import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
+import com.akameiot.domain.usecase.StartResetPasswordUseCase
 
 
 object AppModule {
@@ -50,5 +52,12 @@ object AppModule {
         ResendConfirmationCodeUseCase(authRepository)
     }
 
+    val startResetPasswordUseCase by lazy {
+        StartResetPasswordUseCase(authRepository)
+    }
+
+    val confirmResetPasswordUseCase by lazy {
+        ConfirmResetPasswordUseCase(authRepository)
+    }
 
 }

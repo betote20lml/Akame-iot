@@ -13,6 +13,8 @@ import com.akameiot.app.ui.terms.TermsScreen
 import com.akameiot.app.ui.verification.VerificationScreen
 import com.akameiot.app.ui.qrauth.QrAuthScreen
 import com.akameiot.app.ui.splash.SplashScreen
+import com.akameiot.app.ui.resetpassword.ResetPasswordScreen
+
 
 @Composable
 fun AppNavHost(
@@ -54,6 +56,26 @@ fun AppNavHost(
         composable(Routes.TERMS) {
             TermsScreen(navController)
         }
+
+        composable(
+            route = Routes.RESET_PASSWORD_WITH_ARG,
+            arguments = listOf(
+                navArgument("email") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val email =
+                backStackEntry.arguments?.getString("email")
+                    ?: return@composable
+
+            ResetPasswordScreen(
+                navController = navController,
+                email = email
+            )
+        }
+
 
         //  Ruta con argumento REAL
         composable(

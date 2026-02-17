@@ -22,4 +22,12 @@ interface AuthRepository {
     suspend fun isUserLoggedIn(): Boolean
 
     suspend fun resendConfirmationCode(email: String)
+
+    suspend fun startResetPassword(email: String)
+
+    suspend fun confirmResetPassword(
+        email: String,
+        code: String,
+        newPassword: String
+    )
 }

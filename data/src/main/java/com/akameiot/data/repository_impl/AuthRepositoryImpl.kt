@@ -37,4 +37,20 @@ class AuthRepositoryImpl(
         remote.resendConfirmationCode(email)
     }
 
+    override suspend fun startResetPassword(email: String) {
+        remote.startResetPassword(email)
+    }
+
+    override suspend fun confirmResetPassword(
+        email: String,
+        code: String,
+        newPassword: String
+    ) {
+        remote.confirmResetPassword(
+            email,
+            code,
+            newPassword
+        )
+    }
+
 }

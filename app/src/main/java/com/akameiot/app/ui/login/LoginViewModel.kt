@@ -6,9 +6,11 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.akameiot.core.utils.isValidEmail
 import com.akameiot.domain.repository.AuthRepository
+import com.akameiot.domain.usecase.StartResetPasswordUseCase
 
 class LoginViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val startResetPasswordUseCase: StartResetPasswordUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -42,7 +44,29 @@ class LoginViewModel(
             return
         }
 
-        sendEvent(LoginEvent.NavigateToPasswordRecovery)
+        viewModelScope.launch {
+
+            _uiState.update { it.copy(isLoading = true) }
+
+            try {
+
+                startResetPasswordUseCase(email)
+
+                sendEvent(LoginEvent.NavigateToPasswordRecovery)
+
+            } catch (e: Exception) {
+
+                sendEvent(
+                    LoginEvent.Error(
+                        e.message ?: "No se pudo iniciar la recuperación"
+                    )
+                )
+
+            } finally {
+
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
     }
 
     fun login() {

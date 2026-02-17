@@ -6,6 +6,13 @@ object Routes {
     const val HOME = "home"
 
     const val LOGIN = "login"
+
+     const val RESET_PASSWORD_WITH_ARG =
+        "reset_password/{email}"
+
+    fun resetPassword(email: String) =
+        "reset_password/$email"
+
     const val REGISTER = "register"
     const val TERMS = "terms"
     const val LANDING = "landing"

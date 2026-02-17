@@ -45,7 +45,7 @@ class CognitoAuthRemoteDataSource {
     suspend fun confirmSignUp(
         email: String,
         code: String
-    ) = suspendCancellableCoroutine<Unit> { cont ->
+    ) = suspendCancellableCoroutine { cont ->
 
         Amplify.Auth.confirmSignUp(
             email,
@@ -72,7 +72,7 @@ class CognitoAuthRemoteDataSource {
     suspend fun login(
         email: String,
         password: String
-    ) = suspendCancellableCoroutine<Unit> { cont ->
+    ) = suspendCancellableCoroutine { cont ->
 
         Amplify.Auth.signIn(
             email,
@@ -103,26 +103,81 @@ class CognitoAuthRemoteDataSource {
     }
 
     suspend fun isUserLoggedIn(): Boolean =
-        suspendCancellableCoroutine { continuation ->
+        suspendCancellableCoroutine { cont ->
 
             Amplify.Auth.fetchAuthSession(
                 { session ->
-                    continuation.resume(session.isSignedIn, null)
+                    if (cont.isActive) {
+                        cont.resume(session.isSignedIn)
+                    }
                 },
-                { error ->
-                    continuation.resume(false, null)
+                {
+                    if (cont.isActive) {
+                        cont.resume(false)
+                    }
                 }
             )
         }
 
-    suspend fun resendConfirmationCode(email: String) {
-        return kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+    suspend fun resendConfirmationCode(email: String) =
+        suspendCancellableCoroutine { cont ->
+
             Amplify.Auth.resendSignUpCode(
                 email,
-                { continuation.resume(Unit) {} },
-                { error -> continuation.resumeWithException(error) }
+                {
+                    if (cont.isActive) {
+                        cont.resume(Unit)
+                    }
+                },
+                { error ->
+                    if (cont.isActive) {
+                        cont.resumeWithException(error)
+                    }
+                }
             )
         }
+
+    suspend fun startResetPassword(
+        email: String
+    ) = suspendCancellableCoroutine { cont ->
+
+        Amplify.Auth.resetPassword(
+            email,
+            { result ->
+                if (cont.isActive) {
+                    cont.resume(Unit)
+                }
+            },
+            { error ->
+                if (cont.isActive) {
+                    cont.resumeWithException(error)
+                }
+            }
+        )
     }
+
+    suspend fun confirmResetPassword(
+        email: String,
+        code: String,
+        newPassword: String
+    ) = suspendCancellableCoroutine { cont ->
+
+        Amplify.Auth.confirmResetPassword(
+            email,
+            newPassword,
+            code,
+            {
+                if (cont.isActive) {
+                    cont.resume(Unit)
+                }
+            },
+            { error ->
+                if (cont.isActive) {
+                    cont.resumeWithException(error)
+                }
+            }
+        )
+    }
+
 
 }

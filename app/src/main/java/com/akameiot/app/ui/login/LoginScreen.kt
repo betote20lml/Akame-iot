@@ -1,5 +1,6 @@
 package com.akameiot.app.ui.login
 
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -10,7 +11,6 @@ import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akameiot.coreui.components.*
 import com.akameiot.coreui.theme.LocalSpacing
-import com.akameiot.app.ui.navigation.VerificationType
 import com.akameiot.app.ui.navigation.Routes
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.unit.dp
@@ -22,9 +22,13 @@ fun LoginScreen(
     navController: NavController,
 ) {
 
+
     val spacing = LocalSpacing.current
     val viewModel: LoginViewModel = viewModel(
-        factory = LoginViewModelFactory(AppModule.authRepository)
+        factory = LoginViewModelFactory(
+            AppModule.authRepository,
+            AppModule.startResetPasswordUseCase
+        )
     )
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -48,8 +52,9 @@ fun LoginScreen(
 
                 LoginEvent.NavigateToPasswordRecovery -> {
 
+                    val encodedEmail = Uri.encode(state.email)
                     navController.navigate(
-                        Routes.verification(VerificationType.PASSWORDLESS_LOGIN)
+                        Routes.resetPassword(encodedEmail)
                     )
                 }
 
