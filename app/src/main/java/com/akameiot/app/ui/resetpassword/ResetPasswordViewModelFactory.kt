@@ -2,12 +2,16 @@ package com.akameiot.app.ui.resetpassword
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.akameiot.domain.usecase.AutoLoginUseCase
 import com.akameiot.domain.usecase.ConfirmResetPasswordUseCase
+import com.akameiot.domain.usecase.StartResetPasswordUseCase
 import com.akameiot.domain.validation.PasswordValidator
 
 class ResetPasswordViewModelFactory(
     private val passwordValidator: PasswordValidator,
     private val confirmResetPasswordUseCase: ConfirmResetPasswordUseCase,
+    private val startResetPasswordUseCase: StartResetPasswordUseCase,
+    private val autoLoginUseCase: AutoLoginUseCase,
     private val email: String
 ) : ViewModelProvider.Factory {
 
@@ -19,6 +23,8 @@ class ResetPasswordViewModelFactory(
             return ResetPasswordViewModel(
                 passwordValidator,
                 confirmResetPasswordUseCase,
+                startResetPasswordUseCase,
+                autoLoginUseCase,
                 email
             ) as T
         }

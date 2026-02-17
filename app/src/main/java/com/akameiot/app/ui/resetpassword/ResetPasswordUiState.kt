@@ -15,7 +15,8 @@ data class ResetPasswordUiState(
             hasLowercase = false
         ),
 
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val resendCooldown: Int = 0
 ) {
 
     val passwordsMatch: Boolean
@@ -26,4 +27,8 @@ data class ResetPasswordUiState(
             code.length == 6 &&
                     passwordValidation.isValid &&
                     passwordsMatch
+
+
+    val canResend: Boolean
+        get() = resendCooldown == 0
 }

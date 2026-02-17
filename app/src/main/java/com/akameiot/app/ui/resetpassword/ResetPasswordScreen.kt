@@ -27,6 +27,8 @@ fun ResetPasswordScreen(
         ResetPasswordViewModelFactory(
             AppModule.passwordValidator,
             AppModule.confirmResetPasswordUseCase,
+            AppModule.startResetPasswordUseCase,
+            AppModule.autoLoginUseCase,
             email
         )
     }
@@ -39,7 +41,7 @@ fun ResetPasswordScreen(
 
         viewModel.events.collectLatest { event ->
 
-            when(event) {
+            when (event) {
 
                 ResetPasswordEvent.Success -> {
 
@@ -48,6 +50,10 @@ fun ResetPasswordScreen(
                             inclusive = true
                         }
                     }
+                }
+
+                ResetPasswordEvent.CodeResent -> {
+                    snackbarHostState.showSnackbar("Código reenviado")
                 }
 
                 is ResetPasswordEvent.Error -> {
@@ -128,5 +134,17 @@ fun ResetPasswordScreen(
             onClick = { viewModel.submit() },
             modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(spacing.lg))
+
+        TextButton(
+            enabled = state.canResend,
+            onClick = { viewModel.resend() }
+        ) {
+            if (state.resendCooldown > 0) {
+                Text("Reenviar en ${state.resendCooldown}s")
+            } else {
+                Text("Enviar de nuevo")
+            }
+        }
     }
 }
