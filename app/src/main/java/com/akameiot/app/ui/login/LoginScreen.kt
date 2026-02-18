@@ -67,7 +67,7 @@ fun LoginScreen(
                         Routes.verification(
                             type = VerificationType.REGISTER,
                             email = encodedEmail,
-                            password = state.password
+                            password = encodedPassword
                         )
                     )
                 }
