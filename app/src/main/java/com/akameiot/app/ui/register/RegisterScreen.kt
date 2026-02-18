@@ -22,8 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.KeyboardType
 import com.akameiot.di.AppModule
 import kotlinx.coroutines.flow.collectLatest
-import com.akameiot.app.session.AuthTempStorage
-
 
 @Composable
 fun RegisterScreen(
@@ -48,12 +46,17 @@ fun RegisterScreen(
         viewModel.events.collectLatest { event ->
 
             when (event) {
-
                 is RegisterEvent.Success -> {
-                    AuthTempStorage.email = state.email
-                    AuthTempStorage.password = state.password
+
+                    val encodedEmail = android.net.Uri.encode(state.email)
+                    val encodedPassword = android.net.Uri.encode(state.password)
+
                     navController.navigate(
-                        Routes.verification(VerificationType.REGISTER)
+                        Routes.verification(
+                            type = VerificationType.REGISTER,
+                            email = encodedEmail,
+                            password = encodedPassword
+                        )
                     ) {
                         launchSingleTop = true
                         popUpTo(Routes.REGISTER) {
@@ -63,7 +66,6 @@ fun RegisterScreen(
                 }
 
                 is RegisterEvent.Error -> {
-                    AuthTempStorage.clear()
                     snackbarHostState.showSnackbar(event.message)
                 }
             }
@@ -99,7 +101,8 @@ fun RegisterScreen(
 
         val validation = state.passwordValidation
 
-                if (state.password.isNotBlank() && !state.passwordValidation.isValid) {
+
+        if (state.password.isNotBlank() && !state.passwordValidation.isValid) {
 
                     Spacer(modifier = Modifier.height(spacing.xs))
 

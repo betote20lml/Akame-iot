@@ -19,11 +19,15 @@ import com.akameiot.di.AppModule
 fun VerificationScreen(
     navController: NavController,
     type: VerificationType,
-) { val factory = remember {
+    email: String,
+    password: String
+) { val factory = remember (email) {
         VerificationViewModelFactory(
-            AppModule.confirmSignUpUseCase,
-            AppModule.autoLoginUseCase,
-            AppModule.resendConfirmationCodeUseCase
+            email = email,
+            password = password,
+            confirmSignUpUseCase = AppModule.confirmSignUpUseCase,
+            autoLoginUseCase = AppModule.autoLoginUseCase,
+            resendConfirmationCodeUseCase = AppModule.resendConfirmationCodeUseCase
         )
     }
 

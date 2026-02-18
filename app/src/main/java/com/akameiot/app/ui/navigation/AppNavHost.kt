@@ -14,7 +14,7 @@ import com.akameiot.app.ui.verification.VerificationScreen
 import com.akameiot.app.ui.qrauth.QrAuthScreen
 import com.akameiot.app.ui.splash.SplashScreen
 import com.akameiot.app.ui.resetpassword.ResetPasswordScreen
-
+import android.net.Uri
 
 @Composable
 fun AppNavHost(
@@ -79,27 +79,31 @@ fun AppNavHost(
 
         //  Ruta con argumento REAL
         composable(
-            route = "${Routes.VERIFICATION}/{type}",
+            route = Routes.VERIFICATION_WITH_ARGS,
             arguments = listOf(
-                navArgument("type") {
-                    type = NavType.StringType
-                }
+                navArgument("type") { type = NavType.StringType },
+                navArgument("email") { type = NavType.StringType },
+                navArgument("password") { type = NavType.StringType }
             )
         ) { backStackEntry ->
 
-            val typeString =
-                backStackEntry.arguments?.getString("type")
-                    ?: VerificationType.REGISTER.name
+            val type = VerificationType.valueOf(
+                backStackEntry.arguments?.getString("type")!!
+            )
 
-            val type = try {
-                VerificationType.valueOf(typeString)
-            } catch (e: Exception) {
-                VerificationType.REGISTER
-            }
+            val email = Uri.decode(
+                backStackEntry.arguments?.getString("email")!!
+            )
+
+            val password = Uri.decode(
+                backStackEntry.arguments?.getString("password")!!
+            )
 
             VerificationScreen(
                 navController = navController,
-                type = type
+                type = type,
+                email = email,
+                password = password
             )
         }
     }

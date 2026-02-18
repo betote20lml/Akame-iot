@@ -8,6 +8,8 @@ import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
 
 
 class VerificationViewModelFactory(
+    private val email: String,
+    private val password: String,
     private val confirmSignUpUseCase: ConfirmSignUpUseCase,
     private val autoLoginUseCase: AutoLoginUseCase,
     private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase
@@ -19,6 +21,8 @@ class VerificationViewModelFactory(
         if (modelClass.isAssignableFrom(VerificationViewModel::class.java)) {
 
             return VerificationViewModel(
+                email = email,
+                password = password,
                 confirmSignUpUseCase = confirmSignUpUseCase,
                 autoLoginUseCase = autoLoginUseCase,
                 resendConfirmationCodeUseCase = resendConfirmationCodeUseCase

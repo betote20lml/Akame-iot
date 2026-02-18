@@ -8,13 +8,14 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.akameiot.app.session.AuthTempStorage
 import com.akameiot.domain.usecase.AutoLoginUseCase
 import com.akameiot.domain.usecase.ConfirmSignUpUseCase
 import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
 
 
 class VerificationViewModel (
+    private val email: String,
+    private val password: String,
     private val confirmSignUpUseCase: ConfirmSignUpUseCase,
     private val autoLoginUseCase: AutoLoginUseCase,
     private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase
@@ -23,9 +24,6 @@ class VerificationViewModel (
     private companion object {
         const val RESEND_COOLDOWN_SECONDS = 60
     }
-
-    private val email = AuthTempStorage.email.orEmpty()
-    private val password = AuthTempStorage.password.orEmpty()
 
     private val _uiState = MutableStateFlow(VerificationUiState())
     val uiState = _uiState.asStateFlow()
@@ -97,7 +95,6 @@ class VerificationViewModel (
                     email = email,
                     password = password
                 )
-                AuthTempStorage.clear()
                 sendEvent(VerificationEvent.Success)
 
             } catch (e: Exception) {

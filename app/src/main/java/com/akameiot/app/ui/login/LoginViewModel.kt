@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import com.akameiot.core.utils.isValidEmail
 import com.akameiot.domain.repository.AuthRepository
 import com.akameiot.domain.usecase.StartResetPasswordUseCase
+import com.amplifyframework.auth.cognito.exceptions.service.UserNotConfirmedException
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
@@ -95,27 +96,33 @@ class LoginViewModel(
 
             } catch (e: Exception) {
 
-                val message = when {
+                when {
+
+                    e is UserNotConfirmedException -> {
+
+                        sendEvent(
+                            LoginEvent.NavigateToVerification(state.email)
+                        )
+                    }
 
                     e.message?.contains("Failed", true) == true ||
-                            e.message?.contains("Incorrect username or password", true) == true ->
+                            e.message?.contains("Incorrect username or password", true) == true -> {
 
-                        "Correo o contraseña incorrectos"
+                        sendEvent(LoginEvent.Error("Correo o contraseña incorrectos"))
+                    }
 
-                    e.message?.contains("UserNotFound", true) == true ->
+                    e.message?.contains("UserNotFound", true) == true -> {
 
-                        "El usuario no existe"
+                        sendEvent(LoginEvent.Error("El usuario no existe"))
+                    }
 
-                    e.message?.contains("UserNotConfirmed", true) == true ->
+                    else -> {
 
-                        "Debes verificar tu correo antes de iniciar sesión"
-
-                    else ->
-                        "No se pudo iniciar sesión"
+                        sendEvent(LoginEvent.Error("No se pudo iniciar sesión"))
+                    }
                 }
-
-                sendEvent(LoginEvent.Error(message))
-            } finally {
+            }
+             finally {
 
                 _uiState.update { it.copy(isLoading = false) }
             }

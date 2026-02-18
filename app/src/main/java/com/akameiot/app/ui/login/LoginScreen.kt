@@ -15,6 +15,7 @@ import com.akameiot.app.ui.navigation.Routes
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.akameiot.app.ui.navigation.VerificationType
 import com.akameiot.di.AppModule
 
 @Composable
@@ -55,6 +56,19 @@ fun LoginScreen(
                     val encodedEmail = Uri.encode(state.email)
                     navController.navigate(
                         Routes.resetPassword(encodedEmail)
+                    )
+                }
+                is LoginEvent.NavigateToVerification -> {
+
+                    val encodedEmail = Uri.encode(event.email)
+                    val encodedPassword = Uri.encode(state.password)
+
+                    navController.navigate(
+                        Routes.verification(
+                            type = VerificationType.REGISTER,
+                            email = encodedEmail,
+                            password = state.password
+                        )
                     )
                 }
 
