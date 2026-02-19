@@ -20,15 +20,11 @@ object Routes {
     const val QR_AUTH = "qr_auth"
 
     // Ruta base
-    const val VERIFICATION_WITH_ARGS =
-        "verification/{type}/{email}/{password}"
+    const val VERIFICATION_WITH_ARG =
+        "verification/{type}"
 
-    fun verification(
-        type: VerificationType,
-        email: String,
-        password: String
-    ) =
-        "verification/${type.name}/$email/$password"
+    fun verification(type: VerificationType) =
+        "verification/${type.name}"
 
 
 }

@@ -6,9 +6,7 @@ sealed class LoginEvent {
 
     object NavigateToPasswordRecovery : LoginEvent()
 
-    data class NavigateToVerification(
-        val email: String
-    ) : LoginEvent()
+    object NavigateToVerification : LoginEvent()
 
     data class Error(
         val message: String

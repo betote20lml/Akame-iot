@@ -99,26 +99,14 @@ class LoginViewModel(
                 when {
 
                     e is UserNotConfirmedException -> {
-
                         sendEvent(
-                            LoginEvent.NavigateToVerification(state.email)
+                            LoginEvent.NavigateToVerification
                         )
-                    }
-
-                    e.message?.contains("Failed", true) == true ||
-                            e.message?.contains("Incorrect username or password", true) == true -> {
-
-                        sendEvent(LoginEvent.Error("Correo o contraseña incorrectos"))
-                    }
-
-                    e.message?.contains("UserNotFound", true) == true -> {
-
-                        sendEvent(LoginEvent.Error("El usuario no existe"))
                     }
 
                     else -> {
 
-                        sendEvent(LoginEvent.Error("No se pudo iniciar sesión"))
+                        sendEvent(LoginEvent.Error("Correo o contraseña incorrectos"))
                     }
                 }
             }

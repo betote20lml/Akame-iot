@@ -15,7 +15,7 @@ import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
 
 class VerificationViewModel (
     private val email: String,
-    private val password: String,
+    private val password: String?,
     private val confirmSignUpUseCase: ConfirmSignUpUseCase,
     private val autoLoginUseCase: AutoLoginUseCase,
     private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase
@@ -91,10 +91,12 @@ class VerificationViewModel (
                     email = email,
                     code = state.code
                 )
-                 autoLoginUseCase(
-                    email = email,
-                    password = password
-                )
+                if (!password.isNullOrBlank()) {
+                    autoLoginUseCase(
+                        email = email,
+                        password = password
+                    )
+                }
                 sendEvent(VerificationEvent.Success)
 
             } catch (e: Exception) {

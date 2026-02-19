@@ -14,16 +14,24 @@ import com.akameiot.app.ui.navigation.Routes
 import androidx.compose.runtime.*
 import kotlinx.coroutines.flow.collectLatest
 import com.akameiot.di.AppModule
+import com.akameiot.app.ui.auth.AuthSharedViewModel
 
 @Composable
 fun VerificationScreen(
     navController: NavController,
     type: VerificationType,
-    email: String,
-    password: String
-) { val factory = remember (email) {
+    sharedViewModel: AuthSharedViewModel
+) {
+    val email by sharedViewModel.email.collectAsStateWithLifecycle()
+    val password by sharedViewModel.password.collectAsStateWithLifecycle()
+
+    require(!email.isNullOrBlank()) {
+        "Email missing in sharedViewModel"
+    }
+
+    val factory = remember {
         VerificationViewModelFactory(
-            email = email,
+            email = email!!,
             password = password,
             confirmSignUpUseCase = AppModule.confirmSignUpUseCase,
             autoLoginUseCase = AppModule.autoLoginUseCase,

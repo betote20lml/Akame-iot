@@ -20,12 +20,14 @@ import com.akameiot.app.ui.navigation.VerificationType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.KeyboardType
+import com.akameiot.app.ui.auth.AuthSharedViewModel
 import com.akameiot.di.AppModule
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun RegisterScreen(
     navController: NavController,
+    sharedViewModel: AuthSharedViewModel
 ) {
 
     val spacing = LocalSpacing.current
@@ -48,15 +50,13 @@ fun RegisterScreen(
             when (event) {
                 is RegisterEvent.Success -> {
 
-                    val encodedEmail = android.net.Uri.encode(state.email)
-                    val encodedPassword = android.net.Uri.encode(state.password)
+                    sharedViewModel.setCredentials(
+                        email = state.email,
+                        password = state.password
+                    )
 
                     navController.navigate(
-                        Routes.verification(
-                            type = VerificationType.REGISTER,
-                            email = encodedEmail,
-                            password = encodedPassword
-                        )
+                        Routes.verification(VerificationType.REGISTER)
                     ) {
                         launchSingleTop = true
                         popUpTo(Routes.REGISTER) {

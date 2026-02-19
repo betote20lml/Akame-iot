@@ -14,7 +14,7 @@ import com.akameiot.app.ui.verification.VerificationScreen
 import com.akameiot.app.ui.qrauth.QrAuthScreen
 import com.akameiot.app.ui.splash.SplashScreen
 import com.akameiot.app.ui.resetpassword.ResetPasswordScreen
-import android.net.Uri
+import com.akameiot.app.ui.auth.AuthSharedViewModel
 
 @Composable
 fun AppNavHost(
@@ -22,6 +22,10 @@ fun AppNavHost(
 ) {
 
     val navController = rememberNavController()
+
+    val authSharedViewModel: AuthSharedViewModel =
+        androidx.lifecycle.viewmodel.compose.viewModel()
+
 
     NavHost(
         navController = navController,
@@ -46,11 +50,17 @@ fun AppNavHost(
         }
 
         composable(Routes.LOGIN) {
-            LoginScreen(navController)
+            LoginScreen(
+                navController = navController,
+                sharedViewModel = authSharedViewModel
+            )
         }
 
         composable(Routes.REGISTER) {
-            RegisterScreen(navController)
+            RegisterScreen(
+                navController = navController,
+                sharedViewModel = authSharedViewModel
+            )
         }
 
         composable(Routes.TERMS) {
@@ -79,11 +89,11 @@ fun AppNavHost(
 
         //  Ruta con argumento REAL
         composable(
-            route = Routes.VERIFICATION_WITH_ARGS,
+            route = Routes.VERIFICATION_WITH_ARG,
             arguments = listOf(
-                navArgument("type") { type = NavType.StringType },
-                navArgument("email") { type = NavType.StringType },
-                navArgument("password") { type = NavType.StringType }
+                navArgument("type") {
+                    type = NavType.StringType
+                }
             )
         ) { backStackEntry ->
 
@@ -91,19 +101,10 @@ fun AppNavHost(
                 backStackEntry.arguments?.getString("type")!!
             )
 
-            val email = Uri.decode(
-                backStackEntry.arguments?.getString("email")!!
-            )
-
-            val password = Uri.decode(
-                backStackEntry.arguments?.getString("password")!!
-            )
-
             VerificationScreen(
                 navController = navController,
                 type = type,
-                email = email,
-                password = password
+                sharedViewModel = authSharedViewModel
             )
         }
     }
