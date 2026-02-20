@@ -64,7 +64,7 @@ class LoginViewModel(
 
                     is InvalidParameterException -> {
                         _uiState.update { it.copy(password = "") }
-
+                        // Se reenvia el codigo de verificacion de la cuenta y se redirige a verificationScreen
                         try {
                             resendConfirmationCodeUseCase(email)
                         } catch (_: Exception) { }

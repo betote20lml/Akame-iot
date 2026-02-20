@@ -33,7 +33,8 @@ fun VerificationScreen(
             password = password,
             confirmSignUpUseCase = AppModule.confirmSignUpUseCase,
             autoLoginUseCase = AppModule.autoLoginUseCase,
-            resendConfirmationCodeUseCase = AppModule.resendConfirmationCodeUseCase
+            resendConfirmationCodeUseCase = AppModule.resendConfirmationCodeUseCase,
+            startResetPasswordUseCase = AppModule.startResetPasswordUseCase
         )
     }
 
@@ -45,19 +46,25 @@ fun VerificationScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Escuchar eventos UNA sola vez
+    // Eventos
     LaunchedEffect(viewModel) {
-
         viewModel.events.collectLatest { event ->
-
             when(event) {
 
-                VerificationEvent.Success -> {
 
+                VerificationEvent.Success -> {
                     navController.navigate(Routes.HOME) {
                         popUpTo(navController.graph.id) {
                             inclusive = true
                         }
+                    }
+                }
+
+                is VerificationEvent.NavigateToResetPassword -> {
+                    val route = Routes.RESET_PASSWORD_WITH_ARG
+                        .replace("{email}", event.email)
+                    navController.navigate(route) {
+                        popUpTo(Routes.VERIFICATION) { inclusive = true }
                     }
                 }
 

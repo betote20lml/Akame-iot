@@ -43,7 +43,6 @@ fun LandingScreen(
     ) {
 
         //  BLOQUE SUPERIOR — LOGO
-
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -75,7 +74,6 @@ fun LandingScreen(
                 onClick = {
                     navController.navigate(Routes.REGISTER) {
                         launchSingleTop = true
-                        popUpTo(Routes.LANDING) { inclusive = true }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -86,7 +84,6 @@ fun LandingScreen(
                 onClick = {
                     navController.navigate(Routes.LOGIN) {
                         launchSingleTop = true
-                        popUpTo(Routes.LANDING) { inclusive = true }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()

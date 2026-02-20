@@ -5,6 +5,10 @@ sealed interface VerificationEvent {
     object Success : VerificationEvent
     object CodeResent : VerificationEvent
 
+    data class NavigateToResetPassword(
+        val email: String
+    ) : VerificationEvent
+
     data class Error(
         val message: String
     ) : VerificationEvent

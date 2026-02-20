@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.akameiot.domain.usecase.AutoLoginUseCase
 import com.akameiot.domain.usecase.ConfirmSignUpUseCase
 import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
+import com.akameiot.domain.usecase.StartResetPasswordUseCase
 
 
 class VerificationViewModelFactory(
@@ -12,7 +13,8 @@ class VerificationViewModelFactory(
     private val password: String?,
     private val confirmSignUpUseCase: ConfirmSignUpUseCase,
     private val autoLoginUseCase: AutoLoginUseCase,
-    private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase
+    private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase,
+    private val startResetPasswordUseCase: StartResetPasswordUseCase
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -25,7 +27,8 @@ class VerificationViewModelFactory(
                 password = password,
                 confirmSignUpUseCase = confirmSignUpUseCase,
                 autoLoginUseCase = autoLoginUseCase,
-                resendConfirmationCodeUseCase = resendConfirmationCodeUseCase
+                resendConfirmationCodeUseCase = resendConfirmationCodeUseCase,
+                startResetPasswordUseCase = startResetPasswordUseCase
             ) as T
         }
 

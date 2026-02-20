@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import com.akameiot.domain.usecase.AutoLoginUseCase
 import com.akameiot.domain.usecase.ConfirmSignUpUseCase
 import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
+import com.akameiot.domain.usecase.StartResetPasswordUseCase
 
 
 class VerificationViewModel (
@@ -18,7 +19,8 @@ class VerificationViewModel (
     private val password: String?,
     private val confirmSignUpUseCase: ConfirmSignUpUseCase,
     private val autoLoginUseCase: AutoLoginUseCase,
-    private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase
+    private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase,
+    private val startResetPasswordUseCase: StartResetPasswordUseCase
     ): ViewModel() {
 
     private companion object {
@@ -72,11 +74,9 @@ class VerificationViewModel (
         if (state.isLoading) return
 
         if (!state.isCodeValid) {
-
             viewModelScope.launch {
                 sendEvent(VerificationEvent.Error("Código incompleto"))
             }
-
             return
         }
 
@@ -84,37 +84,28 @@ class VerificationViewModel (
 
             _uiState.update { it.copy(isLoading = true) }
 
-            try {
-
-                // Confirmar Registro y autologin
+            // Confirmar registro
+            val confirmResult = runCatching {
                 confirmSignUpUseCase(
                     email = email,
                     code = state.code
                 )
-                if (!password.isNullOrBlank()) {
-                    autoLoginUseCase(
-                        email = email,
-                        password = password
-                    )
-                }
-                sendEvent(VerificationEvent.Success)
+            }
 
-            } catch (e: Exception) {
-
+            if (confirmResult.isFailure) {
+                val e = confirmResult.exceptionOrNull()
                 val message = when {
-
-                    e.message?.contains("correct", true) == true ||
-                            e.message?.contains("not correct", true) == true -> {
+                    e?.message?.contains("correct", true) == true ||
+                            e?.message?.contains("not correct", true) == true -> {
 
                         _uiState.update { it.copy(code = "") }
-
                         "El código ingresado es incorrecto"
                     }
 
-                    e.message?.contains("expired", true) == true ->
+                    e?.message?.contains("expired", true) == true ->
                         "El código ha expirado. Solicita uno nuevo."
 
-                    e.message?.contains("exceeded", true) == true ->
+                    e?.message?.contains("exceeded", true) == true ->
                         "Demasiados intentos fallidos. Intenta más tarde."
 
                     else ->
@@ -123,12 +114,48 @@ class VerificationViewModel (
 
                 sendEvent(VerificationEvent.Error(message))
 
-            } finally {
-
-                _uiState.update {
-                    it.copy(isLoading = false)
-                }
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
             }
+
+            // Si no hay password → ResetPassword
+            if (password.isNullOrBlank()) {
+                val resetResult = runCatching {
+                    startResetPasswordUseCase(email)
+                }
+                if (resetResult.isFailure) {
+                    sendEvent(
+                        VerificationEvent.Error("Cuenta verificada, pero no se pudo iniciar recuperación de contraseña")
+                    )
+                    _uiState.update { it.copy(isLoading = false) }
+                    return@launch
+                }
+                sendEvent(
+                    VerificationEvent.NavigateToResetPassword(email)
+                )
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
+            }
+
+            // AutoLogin
+            val loginResult = runCatching {
+                autoLoginUseCase(
+                    email = email,
+                    password = password
+                )
+            }
+
+            if (loginResult.isFailure) {
+                sendEvent(
+                    VerificationEvent.Error("Cuenta verificada, pero no se pudo iniciar sesión")
+                )
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
+            }
+
+            // Éxito
+            sendEvent(VerificationEvent.Success)
+            _uiState.update { it.copy(isLoading = false) }
         }
     }
 
