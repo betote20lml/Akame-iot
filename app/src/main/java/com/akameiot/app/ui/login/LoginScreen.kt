@@ -29,7 +29,8 @@ fun LoginScreen(
     val viewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(
             AppModule.authRepository,
-            AppModule.startResetPasswordUseCase
+            AppModule.startResetPasswordUseCase,
+            AppModule.resendConfirmationCodeUseCase
         )
     )
 

@@ -9,10 +9,12 @@ import com.akameiot.domain.repository.AuthRepository
 import com.akameiot.domain.usecase.StartResetPasswordUseCase
 import com.amplifyframework.auth.cognito.exceptions.service.UserNotConfirmedException
 import com.amplifyframework.auth.cognito.exceptions.service.InvalidParameterException
+import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
-    private val startResetPasswordUseCase: StartResetPasswordUseCase
+    private val startResetPasswordUseCase: StartResetPasswordUseCase,
+    private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -41,6 +43,7 @@ class LoginViewModel(
 
         val email = _uiState.value.email
 
+
         if (!email.isValidEmail()) {
             sendEvent(LoginEvent.Error("Ingresa un correo válido"))
             return
@@ -53,7 +56,6 @@ class LoginViewModel(
             try {
 
                 startResetPasswordUseCase(email)
-
                 sendEvent(LoginEvent.NavigateToPasswordRecovery)
 
             } catch (e: Exception) {
@@ -62,6 +64,11 @@ class LoginViewModel(
 
                     is InvalidParameterException -> {
                         _uiState.update { it.copy(password = "") }
+
+                        try {
+                            resendConfirmationCodeUseCase(email)
+                        } catch (_: Exception) { }
+
                         sendEvent(
                             LoginEvent.NavigateToVerification
                         )
@@ -111,6 +118,12 @@ class LoginViewModel(
                 when {
 
                     e is UserNotConfirmedException -> {
+
+                        try {
+                            resendConfirmationCodeUseCase(state.email)
+                        } catch (_: Exception) {
+
+                        }
                         sendEvent(
                             LoginEvent.NavigateToVerification
                         )
