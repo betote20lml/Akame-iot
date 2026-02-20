@@ -117,7 +117,6 @@ class LoginViewModel(
                     }
 
                     else -> {
-
                         sendEvent(LoginEvent.Error("Correo o contraseña incorrectos"))
                     }
                 }

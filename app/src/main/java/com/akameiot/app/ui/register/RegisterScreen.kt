@@ -42,14 +42,12 @@ fun RegisterScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(Unit) {
 
         viewModel.events.collectLatest { event ->
 
             when (event) {
                 is RegisterEvent.Success -> {
-
-                    sharedViewModel.clear()
 
                     sharedViewModel.setCredentials(
                         email = state.email,

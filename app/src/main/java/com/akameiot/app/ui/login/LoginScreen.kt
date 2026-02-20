@@ -68,7 +68,12 @@ fun LoginScreen(
                         password = state.password
                     )
 
-                    navController.navigate(Routes.VERIFICATION)
+                    navController.navigate(Routes.VERIFICATION) {
+                        launchSingleTop = true
+                        popUpTo(Routes.LOGIN) {
+                            inclusive = true
+                        }
+                    }
                 }
 
                 is LoginEvent.Error -> {
