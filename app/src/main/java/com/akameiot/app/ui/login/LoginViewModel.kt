@@ -8,6 +8,7 @@ import com.akameiot.core.utils.isValidEmail
 import com.akameiot.domain.repository.AuthRepository
 import com.akameiot.domain.usecase.StartResetPasswordUseCase
 import com.amplifyframework.auth.cognito.exceptions.service.UserNotConfirmedException
+import com.amplifyframework.auth.cognito.exceptions.service.InvalidParameterException
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
@@ -57,12 +58,23 @@ class LoginViewModel(
 
             } catch (e: Exception) {
 
-                sendEvent(
-                    LoginEvent.Error(
-                        e.message ?: "No se pudo iniciar la recuperación"
-                    )
-                )
+                when (e) {
 
+                    is InvalidParameterException -> {
+                        _uiState.update { it.copy(password = "") }
+                        sendEvent(
+                            LoginEvent.NavigateToVerification
+                        )
+                    }
+
+                    else -> {
+                        sendEvent(
+                            LoginEvent.Error(
+                                e.message ?: "No se pudo iniciar la recuperación"
+                            )
+                        )
+                    }
+                }
             } finally {
 
                 _uiState.update { it.copy(isLoading = false) }

@@ -16,7 +16,6 @@ import com.akameiot.coreui.components.AuthHeader
 import com.akameiot.coreui.theme.LocalSpacing
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.akameiot.app.ui.navigation.VerificationType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.KeyboardType
@@ -50,14 +49,14 @@ fun RegisterScreen(
             when (event) {
                 is RegisterEvent.Success -> {
 
+                    sharedViewModel.clear()
+
                     sharedViewModel.setCredentials(
                         email = state.email,
                         password = state.password
                     )
 
-                    navController.navigate(
-                        Routes.verification(VerificationType.REGISTER)
-                    ) {
+                    navController.navigate(Routes.VERIFICATION) {
                         launchSingleTop = true
                         popUpTo(Routes.REGISTER) {
                             inclusive = true

@@ -87,23 +87,9 @@ fun AppNavHost(
         }
 
 
-        //  Ruta con argumento REAL
-        composable(
-            route = Routes.VERIFICATION_WITH_ARG,
-            arguments = listOf(
-                navArgument("type") {
-                    type = NavType.StringType
-                }
-            )
-        ) { backStackEntry ->
-
-            val type = VerificationType.valueOf(
-                backStackEntry.arguments?.getString("type")!!
-            )
-
+        composable(Routes.VERIFICATION) {
             VerificationScreen(
                 navController = navController,
-                type = type,
                 sharedViewModel = authSharedViewModel
             )
         }

@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akameiot.app.ui.auth.AuthSharedViewModel
-import com.akameiot.app.ui.navigation.VerificationType
 import com.akameiot.di.AppModule
 
 @Composable
@@ -45,6 +44,8 @@ fun LoginScreen(
 
                 LoginEvent.Success -> {
 
+                    sharedViewModel.clear()
+
                     navController.navigate(Routes.HOME) {
                         launchSingleTop = true
                         popUpTo(Routes.LOGIN) {
@@ -67,11 +68,7 @@ fun LoginScreen(
                         password = state.password
                     )
 
-                    navController.navigate(
-                        Routes.verification(
-                            type = VerificationType.REGISTER
-                        )
-                    )
+                    navController.navigate(Routes.VERIFICATION)
                 }
 
                 is LoginEvent.Error -> {
