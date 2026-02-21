@@ -1,8 +1,5 @@
 package com.akameiot.app.ui.home
 
-
-import androidx.compose.material3.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import com.akameiot.coreui.components.AppSheetContainer
 import com.akameiot.coreui.components.AppTextField
@@ -16,15 +13,7 @@ fun ActivateDeviceSheet(
     var code by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
 
-    AppSheetContainer {
-
-        Text(
-            text = "Conectar dispositivos",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-
-        )
-
+    AppSheetContainer(title = "Conectar dispositivos") {
 
         AppTextField(
             value = code,
@@ -35,7 +24,7 @@ fun ActivateDeviceSheet(
         AppTextField(
             value = displayName,
             onValueChange = { displayName = it },
-            placeholder = "Nombre de la red"
+            placeholder = "Asignar nombre a la red"
         )
 
         PrimaryButton(
