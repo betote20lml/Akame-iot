@@ -11,6 +11,7 @@ composeBom = "2026.01.01"
 appcompat = "1.7.1"
 material = "1.13.0"
 amplify = "2.16.0"
+material3 = "1.4.0"
 
 [libraries]
 amplify-core = { module = "com.amplifyframework:core", version.ref = "amplify" }
@@ -31,6 +32,7 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
