@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import com.akameiot.coreui.components.*
 import com.akameiot.app.ui.navigation.DrawerDestinations
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
@@ -22,6 +23,8 @@ fun HomeScreen(
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState()
+    var showSheet by remember { mutableStateOf(false) }
 
     MainScaffold(
         title = "Telemetría",
@@ -74,10 +77,23 @@ fun HomeScreen(
             EmptyStateComponent(
                 title = "Conecta tu red IoT",
                 description = "Vincula tus dispositivos para comenzar a visualizar datos en tiempo real.",
-                actionText = "Conectar",
+                actionText = "Iniciar",
                 onActionClick = {
-                    navController.navigate("link_device")
+                    showSheet = true
                 }
+            )
+        }
+    }
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = sheetState
+        ) {
+            ActivateDeviceSheet(
+                onActivate = { code, displayName ->
+                    showSheet = false
+                },
+
             )
         }
     }
