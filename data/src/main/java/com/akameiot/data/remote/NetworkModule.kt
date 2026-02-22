@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object NetworkModule {
 
     private const val BASE_URL =
-        "https://bs3wv7q6ac.execute-api.us-east-2.amazonaws.com/"
+        "https://xrhenj15l6.execute-api.us-east-2.amazonaws.com/"
 
     private val logging by lazy {
         HttpLoggingInterceptor().apply {
