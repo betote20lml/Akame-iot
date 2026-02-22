@@ -12,6 +12,8 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.components.*
 import com.akameiot.app.ui.navigation.DrawerDestinations
+import com.akameiot.app.ui.navigation.Routes.LOGIN
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,21 +28,40 @@ fun HomeScreen(
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
 
+
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is HomeEvent.ShowError -> {
                     snackbarHostState.showSnackbar(
-                        message = "❌ ${event.message}",
+                        message = " ${event.message}",
                         duration = SnackbarDuration.Long
                     )
                 }
                 is HomeEvent.NavigateToDetails -> {
                     showSheet = false
                     snackbarHostState.showSnackbar(
-                        message = "✅ meshId: ${event.thingName}",
+                        message = " meshId: ${event.thingName}",
                         duration = SnackbarDuration.Long
                     )
+                }
+                is HomeEvent.NavigateToLogin -> {
+                    navController.navigate(LOGIN) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            inclusive = true
+                        }
+                    }
+                }
+                is HomeEvent.ActivationCodeInvalid -> {
+
+                    showSheet = false
+                    scope.launch {
+                        sheetState.hide()
+                        snackbarHostState.showSnackbar(
+                            message = event.message,
+                            duration = SnackbarDuration.Long
+                        )
+                    }
                 }
             }
         }
@@ -49,6 +70,7 @@ fun HomeScreen(
     MainScaffold(
         title = "Telemetría",
         drawerState = drawerState,
+        snackbarHostState = snackbarHostState,
         drawerContent = {
 
             AppDrawerHeader(
@@ -102,19 +124,22 @@ fun HomeScreen(
                     showSheet = true
                 }
             )
-        }
-    }
-    if (showSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
-            sheetState = sheetState
-        ) {
-            ActivateDeviceSheet(
-                isLoading = uiState.isLoading,
-                onActivate = { code, displayName ->
-                    viewModel.activateDevice(code, displayName)
+
+            if (showSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showSheet = false },
+                    sheetState = sheetState
+                ) {
+                    ActivateDeviceSheet(
+                        isLoading = uiState.isLoading,
+                        onActivate = { code, displayName ->
+                            viewModel.activateDevice(code, displayName)
+                        }
+                    )
                 }
-            )
+            }
         }
+
     }
+
 }

@@ -8,11 +8,17 @@ import com.akameiot.coreui.components.PrimaryButton
 @Composable
 fun ActivateDeviceSheet(
     isLoading: Boolean,
-    onActivate: (String, String?) -> Unit,
+    onActivate: (String, String) -> Unit,
 ) {
 
     var code by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
+
+
+    val isFormValid =
+        code.trim().isNotBlank() &&
+                displayName.trim().isNotBlank() &&
+                !isLoading
 
     AppSheetContainer(title = "Conectar dispositivos") {
 
@@ -30,9 +36,12 @@ fun ActivateDeviceSheet(
 
         PrimaryButton(
             text = if (isLoading) "Conectando..." else "Conectar",
-            enabled = code.isNotBlank() && !isLoading,
+            enabled = isFormValid,
             onClick = {
-                onActivate(code.trim(), displayName.trim())
+                onActivate(
+                    code.trim(),
+                    displayName.trim()
+                )
             }
         )
     }

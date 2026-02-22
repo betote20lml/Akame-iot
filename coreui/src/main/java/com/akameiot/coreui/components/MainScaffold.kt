@@ -7,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -15,6 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 fun MainScaffold(
     title: String,
     drawerState: DrawerState,
+    snackbarHostState: SnackbarHostState,
     drawerContent: @Composable ColumnScope.() -> Unit,
     onNavigationClick: () -> Unit,
     navigationIcon: ImageVector = Icons.Default.Menu,
@@ -22,8 +22,6 @@ fun MainScaffold(
     floatingActionButton: (@Composable () -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
-
-    val snackbarHostState = remember { SnackbarHostState() }
 
 
     ModalNavigationDrawer(
@@ -35,7 +33,9 @@ fun MainScaffold(
         }
     ) {
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
+            snackbarHost = {
+                SnackbarHost(snackbarHostState)
+            },
             topBar = {
                 TopAppBar(
                     title = {

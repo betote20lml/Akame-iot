@@ -5,11 +5,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
+import com.akameiot.domain.exceptions.ActivationCodeInvalidException
 import com.akameiot.domain.model.DeviceActivationRequest
 import com.akameiot.domain.usecase.ActivateDeviceUseCase
 import com.akameiot.domain.session.AuthSessionManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import com.akameiot.domain.exceptions.SessionExpiredException
 
 class HomeViewModel(
     private val activateDeviceUseCase: ActivateDeviceUseCase,
@@ -22,7 +24,7 @@ class HomeViewModel(
     private val _events = MutableSharedFlow<HomeEvent>()
     val events = _events.asSharedFlow()
 
-    fun activateDevice(code: String, displayName: String?) {
+    fun activateDevice(code: String, displayName: String) {
 
         viewModelScope.launch {
 
@@ -35,21 +37,28 @@ class HomeViewModel(
                     token,
                     DeviceActivationRequest(
                         activationCode = code,
-                        displayName = displayName?.takeIf { it.isNotBlank() }
+                        displayName = displayName
                     )
                 )
 
                 _events.emit(HomeEvent.NavigateToDetails(response.thingName))
 
-            } catch (e: Exception) {
+            } catch (e: ActivationCodeInvalidException) {
+                _events.emit(
+                    HomeEvent.ActivationCodeInvalid("Código de activación inválido")
+                )
 
+            }catch (e: SessionExpiredException) {
+                authSessionManager.logout()
+                _events.emit(HomeEvent.NavigateToLogin)
+
+            } catch (e: Exception) {
                 _events.emit(
                     HomeEvent.ShowError(
                         e.message ?: "Error activando dispositivo"
                     )
                 )
-
-            } finally {
+            }finally {
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
