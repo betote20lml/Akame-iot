@@ -5,7 +5,8 @@ import com.amplifyframework.core.Amplify
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import com.amplifyframework.auth.options.AuthSignOutOptions
-
+import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
+import kotlin.coroutines.resumeWithException
 
 class CognitoAuthSessionManager : AuthSessionManager {
 
@@ -39,4 +40,26 @@ class CognitoAuthSessionManager : AuthSessionManager {
             }
         }
     }
+
+    override suspend fun fetchIdToken(): String =
+        suspendCancellableCoroutine { cont ->
+            Amplify.Auth.fetchAuthSession(
+                { session ->
+                    val cognitoSession = session as? AWSCognitoAuthSession
+                    val idToken = cognitoSession
+                        ?.userPoolTokensResult   // ← nombre correcto
+                        ?.value
+                        ?.idToken
+
+                    if (idToken != null) {
+                        cont.resume(idToken)
+                    } else {
+                        cont.resumeWithException(
+                            Exception("No se pudo obtener el ID Token — sesión no activa")
+                        )
+                    }
+                },
+                { error -> cont.resumeWithException(error) }
+            )
+        }
 }

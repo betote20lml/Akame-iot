@@ -7,7 +7,8 @@ import com.akameiot.coreui.components.PrimaryButton
 
 @Composable
 fun ActivateDeviceSheet(
-    onActivate: (String, String) -> Unit,
+    isLoading: Boolean,
+    onActivate: (String, String?) -> Unit,
 ) {
 
     var code by remember { mutableStateOf("") }
@@ -28,12 +29,11 @@ fun ActivateDeviceSheet(
         )
 
         PrimaryButton(
-            text = "Conectar",
-            enabled = code.isNotBlank(),
+            text = if (isLoading) "Conectando..." else "Conectar",
+            enabled = code.isNotBlank() && !isLoading,
             onClick = {
                 onActivate(code.trim(), displayName.trim())
             }
         )
-
     }
 }

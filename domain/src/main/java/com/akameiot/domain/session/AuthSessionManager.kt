@@ -7,4 +7,6 @@ interface AuthSessionManager {
     suspend fun getCurrentUserId(): String?
 
     suspend fun logout()
+
+    suspend fun fetchIdToken(): String
 }

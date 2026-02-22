@@ -12,6 +12,11 @@ import com.akameiot.domain.usecase.CheckAuthSessionUseCase
 import com.akameiot.domain.usecase.ConfirmResetPasswordUseCase
 import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
 import com.akameiot.domain.usecase.StartResetPasswordUseCase
+import com.akameiot.data.repository_impl.DeviceRepositoryImpl
+import com.akameiot.domain.repository.DeviceRepository
+import com.akameiot.domain.usecase.ActivateDeviceUseCase
+import com.akameiot.data.remote.NetworkModule
+
 
 
 object AppModule {
@@ -59,5 +64,15 @@ object AppModule {
     val confirmResetPasswordUseCase by lazy {
         ConfirmResetPasswordUseCase(authRepository)
     }
+
+    private val deviceRepository: DeviceRepository by lazy {
+        DeviceRepositoryImpl(NetworkModule.deviceApi)
+    }
+
+    val activateDeviceUseCase by lazy {
+        ActivateDeviceUseCase(deviceRepository)
+    }
+
+
 
 }

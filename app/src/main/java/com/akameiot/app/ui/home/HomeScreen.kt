@@ -17,13 +17,34 @@ import com.akameiot.app.ui.navigation.DrawerDestinations
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: HomeViewModel = viewModel()
 ) {
-
+    val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory())
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is HomeEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(
+                        message = "❌ ${event.message}",
+                        duration = SnackbarDuration.Long
+                    )
+                }
+                is HomeEvent.NavigateToDetails -> {
+                    showSheet = false
+                    snackbarHostState.showSnackbar(
+                        message = "✅ meshId: ${event.thingName}",
+                        duration = SnackbarDuration.Long
+                    )
+                }
+            }
+        }
+    }
 
     MainScaffold(
         title = "Telemetría",
@@ -89,10 +110,10 @@ fun HomeScreen(
             sheetState = sheetState
         ) {
             ActivateDeviceSheet(
+                isLoading = uiState.isLoading,
                 onActivate = { code, displayName ->
-                    showSheet = false
-                },
-
+                    viewModel.activateDevice(code, displayName)
+                }
             )
         }
     }
