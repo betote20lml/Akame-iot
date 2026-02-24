@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.components.*
 import com.akameiot.app.ui.navigation.DrawerDestinations
@@ -81,7 +82,7 @@ fun HomeScreen(
 
             HorizontalDivider()
 
-            val currentRoute = "dashboard"
+            val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
             DrawerDestinations.items.forEach { destination ->
 

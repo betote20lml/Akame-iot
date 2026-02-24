@@ -46,7 +46,7 @@ fun EmptyStateComponent(
 
             Spacer(modifier = Modifier.height(spacing.lg))
 
-            // 🔹 Título igual a AuthHeader
+            //  Título igual a AuthHeader
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
@@ -56,7 +56,7 @@ fun EmptyStateComponent(
 
             Spacer(modifier = Modifier.height(spacing.sm))
 
-            // 🔹 Descripción consistente
+            //  Descripción consistente
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,

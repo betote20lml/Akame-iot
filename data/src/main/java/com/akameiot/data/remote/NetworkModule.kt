@@ -33,4 +33,13 @@ object NetworkModule {
     val deviceApi: DeviceApi by lazy {
         retrofit.create(DeviceApi::class.java)
     }
+
+    val pairingApi: PairingApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://vn59ckcrn6.execute-api.us-east-2.amazonaws.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PairingApiService::class.java)
+    }
+
 }

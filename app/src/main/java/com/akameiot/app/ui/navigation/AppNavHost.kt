@@ -15,6 +15,7 @@ import com.akameiot.app.ui.qrauth.QrAuthScreen
 import com.akameiot.app.ui.splash.SplashScreen
 import com.akameiot.app.ui.resetpassword.ResetPasswordScreen
 import com.akameiot.app.ui.auth.AuthSharedViewModel
+import com.akameiot.app.ui.token.PairingTokenScreen
 
 @Composable
 fun AppNavHost(
@@ -39,6 +40,10 @@ fun AppNavHost(
 
         composable(Routes.HOME) {
             HomeScreen(navController)
+        }
+
+        composable(Routes.TOKEN) {
+            PairingTokenScreen(navController)
         }
 
         composable(Routes.LANDING) {

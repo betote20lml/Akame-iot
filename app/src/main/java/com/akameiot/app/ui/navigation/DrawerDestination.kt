@@ -18,7 +18,7 @@ object DrawerDestinations {
 
     val items = listOf(
         DrawerDestination(
-            route = "dashboard",
+            route = Routes.HOME,
             label = "Dashboard",
             icon = Icons.Default.Dashboard
         ),
@@ -38,7 +38,7 @@ object DrawerDestinations {
             icon = Icons.Default.Settings
         ),
         DrawerDestination(
-            route = "token",
+            route = Routes.TOKEN,
             label = "Token de Acceso",
             icon = Icons.Default.VpnKey
         )

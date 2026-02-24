@@ -19,8 +19,9 @@ object Routes {
 
     const val QR_AUTH = "qr_auth"
 
-    // Ruta base
     const val VERIFICATION = "verification"
+
+    const val TOKEN = "token"
 
 
 }
