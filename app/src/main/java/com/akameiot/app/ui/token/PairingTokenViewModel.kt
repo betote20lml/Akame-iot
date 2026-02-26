@@ -8,7 +8,6 @@ import com.akameiot.domain.usecase.GeneratePairingTokenUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlin.system.*
 
 class PairingTokenViewModel(
     private val generatePairingTokenUseCase: GeneratePairingTokenUseCase,

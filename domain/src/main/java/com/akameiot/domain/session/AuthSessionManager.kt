@@ -9,4 +9,8 @@ interface AuthSessionManager {
     suspend fun logout()
 
     suspend fun fetchIdToken(): String
+
+    suspend fun signInWithCustomAuth(username: String, token: String)
+
+
 }

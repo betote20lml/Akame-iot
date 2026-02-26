@@ -16,7 +16,9 @@ import com.akameiot.data.repository_impl.DeviceRepositoryImpl
 import com.akameiot.domain.repository.DeviceRepository
 import com.akameiot.domain.usecase.ActivateDeviceUseCase
 import com.akameiot.data.remote.NetworkModule
+import com.akameiot.data.repository_impl.ConsumeTokenUseCaseImpl
 import com.akameiot.data.repository_impl.GeneratePairingTokenUseCaseImpl
+import com.akameiot.domain.usecase.ConsumeTokenUseCase
 import com.akameiot.domain.usecase.GeneratePairingTokenUseCase
 
 
@@ -74,9 +76,13 @@ object AppModule {
         ActivateDeviceUseCase(deviceRepository)
     }
 
+    val consumeTokenUseCase: ConsumeTokenUseCase by lazy {
+        ConsumeTokenUseCaseImpl(NetworkModule.pairingPublicApi)
+    }
 
     val generatePairingTokenUseCase: GeneratePairingTokenUseCase by lazy {
-        GeneratePairingTokenUseCaseImpl(NetworkModule.pairingApi)
+        GeneratePairingTokenUseCaseImpl(NetworkModule.pairingPrivateApi)
     }
+
 
 }

@@ -2,13 +2,16 @@ package com.akameiot.app.ui.qrauth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-
+import com.akameiot.domain.session.AuthSessionManager
+import com.akameiot.domain.usecase.ConsumeTokenUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 
+class QrAuthViewModel(
+    private val consumeTokenUseCase: ConsumeTokenUseCase,
+    private val authSessionManager: AuthSessionManager,
 
-class QrAuthViewModel : ViewModel() {
+    ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QrAuthUiState())
     val uiState = _uiState.asStateFlow()
@@ -19,62 +22,35 @@ class QrAuthViewModel : ViewModel() {
     )
     val events = _events.asSharedFlow()
 
-
-    fun pasteToken() {
-        val state = _uiState.value
-        if (state.isLoading) return
-
-        viewModelScope.launch {
-
-            _uiState.update { it.copy(isLoading = true) }
-
-            try {
-
-                // Luego leeremos clipboard
-                delay(1200)
-
-                _events.emit(QrAuthEvent.Success)
-
-            } catch (e: Exception) {
-
-                _events.emit(
-                    QrAuthEvent.Error("No se pudo leer el token")
-                )
-
-            } finally {
-
-                _uiState.update { it.copy(isLoading = false) }
-
-            }
-        }
+    fun pasteToken(token: String) {
+        consumeToken(token)
     }
 
-
     fun onQrScanned(token: String) {
-        val state = _uiState.value
-        if (state.isLoading) return
+        consumeToken(token)
+    }
+
+    private fun consumeToken(token: String) {
+        if (_uiState.value.isLoading) return
 
         viewModelScope.launch {
-
             _uiState.update { it.copy(isLoading = true) }
-
             try {
+                // Paso 1 — obtener owner_email del backend
+                val result = consumeTokenUseCase("", token)
 
-                // Validar token
-                delay(1200)
+                // Paso 2 — iniciar sesión en Cognito con Custom Auth Flow
+                authSessionManager.signInWithCustomAuth(
+                    username = result.ownerEmail,
+                    token = token
+                )
 
                 _events.emit(QrAuthEvent.Success)
 
             } catch (e: Exception) {
-
-                _events.emit(
-                    QrAuthEvent.Error("QR inválido")
-                )
-
+                _events.emit(QrAuthEvent.Error(e.message ?: "Token inválido o expirado"))
             } finally {
-
                 _uiState.update { it.copy(isLoading = false) }
-
             }
         }
     }

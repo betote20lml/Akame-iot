@@ -19,14 +19,21 @@ import com.akameiot.coreui.components.PrimaryButton
 import com.akameiot.coreui.theme.LocalSpacing
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalClipboard
 import com.akameiot.app.ui.navigation.Routes
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun QrAuthScreen(
     navController: NavController,
-    viewModel: QrAuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: QrAuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = QrAuthViewModelFactory()
+    )
 ) {
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
 
     val spacing = LocalSpacing.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -41,7 +48,7 @@ fun QrAuthScreen(
 
                 QrAuthEvent.Success -> {
 
-                    navController.navigate(Routes.LANDING) {
+                    navController.navigate(Routes.HOME) {
                         popUpTo(navController.graph.id) {
                             inclusive = true
                         }
@@ -102,15 +109,19 @@ fun QrAuthScreen(
         Spacer(modifier = Modifier.height(spacing.xl))
 
         PrimaryButton(
-            text = if(state.isLoading)
-                "Procesando..."
-            else
-                "Pegar token de acceso desde el portapapeles",
-
-            onClick = { viewModel.pasteToken() },
-
+            text = if (state.isLoading) "Procesando..." else "Pegar token desde portapapeles",
+            onClick = {
+                scope.launch {
+                    val clip = clipboard.getClipEntry()
+                    val token = clip?.clipData?.getItemAt(0)?.text?.toString()
+                    if (token.isNullOrBlank()) {
+                        // mostrar error
+                    } else {
+                        viewModel.pasteToken(token)
+                    }
+                }
+            },
             enabled = !state.isLoading,
-
             modifier = Modifier.fillMaxWidth()
         )
     }

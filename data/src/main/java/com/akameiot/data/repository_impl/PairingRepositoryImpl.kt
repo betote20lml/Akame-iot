@@ -9,6 +9,7 @@ class GeneratePairingTokenUseCaseImpl(
 ) : GeneratePairingTokenUseCase {
     override suspend fun invoke(idToken: String): PairingToken {
         val dto = api.generateToken("Bearer $idToken")
+
         return PairingToken(
             token = dto.token,
             expiresAt = dto.expiresAt,

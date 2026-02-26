@@ -34,12 +34,22 @@ object NetworkModule {
         retrofit.create(DeviceApi::class.java)
     }
 
-    val pairingApi: PairingApiService by lazy {
+    val pairingPrivateApi: PairingApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://vn59ckcrn6.execute-api.us-east-2.amazonaws.com/")
+            .baseUrl("https://0xtququ98f.execute-api.us-east-2.amazonaws.com/")
+            .client(okHttp)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(PairingApiService::class.java)
+    }
+
+    val pairingPublicApi: PairingPublicApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://nuym1olxx2.execute-api.us-east-2.amazonaws.com/")
+            .client(okHttp)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PairingPublicApiService::class.java)
     }
 
 }
