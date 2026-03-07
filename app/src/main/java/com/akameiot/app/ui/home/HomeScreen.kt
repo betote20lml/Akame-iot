@@ -13,7 +13,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.components.*
 import com.akameiot.app.ui.navigation.DrawerDestinations
+import com.akameiot.app.ui.navigation.Routes
 import com.akameiot.app.ui.navigation.Routes.LOGIN
+import com.akameiot.domain.model.AppUser
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,8 +93,10 @@ fun HomeScreen(
             HorizontalDivider()
 
             val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
-            DrawerDestinations.items.forEach { destination ->
+            val currentUser = uiState.appUser
+            DrawerDestinations.items.filter { destination ->
+                destination.route != Routes.TOKEN || currentUser !is AppUser.Limited
+            }.forEach { destination ->
 
                 AppDrawerItem(
                     label = destination.label,
@@ -149,7 +153,5 @@ fun HomeScreen(
                 }
             }
         }
-
     }
-
 }

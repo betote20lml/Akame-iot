@@ -1,6 +1,9 @@
 package com.akameiot.app.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
@@ -15,7 +18,10 @@ import com.akameiot.app.ui.qrauth.QrAuthScreen
 import com.akameiot.app.ui.splash.SplashScreen
 import com.akameiot.app.ui.resetpassword.ResetPasswordScreen
 import com.akameiot.app.ui.auth.AuthSharedViewModel
+import com.akameiot.app.ui.home.HomeViewModel
+import com.akameiot.app.ui.home.HomeViewModelFactory
 import com.akameiot.app.ui.token.PairingTokenScreen
+import com.akameiot.domain.model.AppUser
 
 @Composable
 fun AppNavHost(
@@ -43,7 +49,17 @@ fun AppNavHost(
         }
 
         composable(Routes.TOKEN) {
-            PairingTokenScreen(navController)
+            val homeViewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = HomeViewModelFactory())
+            val uiState by homeViewModel.uiState.collectAsState()
+            if (uiState.appUser is AppUser.Limited) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                }
+            } else {
+                PairingTokenScreen(navController)
+            }
         }
 
         composable(Routes.LANDING) {
