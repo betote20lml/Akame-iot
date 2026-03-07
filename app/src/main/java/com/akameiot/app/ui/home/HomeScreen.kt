@@ -64,6 +64,20 @@ fun HomeScreen(
                         )
                     }
                 }
+                is HomeEvent.ShowDeviceId -> {
+                    showSheet = false
+                    snackbarHostState.showSnackbar(
+                        message = "Device ID: ${event.deviceId}",
+                        duration = SnackbarDuration.Long
+                    )
+                }
+                //solo para debug
+                is HomeEvent.ShowUserRole -> {
+                    snackbarHostState.showSnackbar(
+                        message = "Rol: ${event.role}",
+                        duration = SnackbarDuration.Long
+                    )
+                }
             }
         }
     }
@@ -133,8 +147,9 @@ fun HomeScreen(
                 ) {
                     ActivateDeviceSheet(
                         isLoading = uiState.isLoading,
+                        appUser = uiState.appUser,
                         onActivate = { code, displayName ->
-                            viewModel.activateDevice(code, displayName)
+                            viewModel.onSheetAction(code, displayName)
                         }
                     )
                 }

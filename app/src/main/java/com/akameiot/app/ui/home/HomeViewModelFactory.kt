@@ -10,7 +10,8 @@ class HomeViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return HomeViewModel(
             activateDeviceUseCase = AppModule.activateDeviceUseCase,
-            authSessionManager = AppModule.authSessionManager
+            authSessionManager = AppModule.authSessionManager,
+            getAppUserUseCase = AppModule.getAppUserUseCase,
         ) as T
     }
 }

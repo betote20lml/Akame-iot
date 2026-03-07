@@ -4,8 +4,8 @@
       "awsCognitoAuthPlugin": {
         "CognitoUserPool": {
           "Default": {
-            "PoolId": "us-east-2_OgGZj889M",
-            "AppClientId": "3lbuep5bk72b3ga0n5maan7879",
+            "PoolId": "us-east-2_XyJKHemwl",
+            "AppClientId": "5602eksenrrtk3hmh74nunhg0m",
             "Region": "us-east-2"
           }
         }

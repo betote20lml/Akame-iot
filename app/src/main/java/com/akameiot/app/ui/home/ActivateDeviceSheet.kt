@@ -4,13 +4,15 @@ import androidx.compose.runtime.*
 import com.akameiot.coreui.components.AppSheetContainer
 import com.akameiot.coreui.components.AppTextField
 import com.akameiot.coreui.components.PrimaryButton
+import com.akameiot.domain.model.AppUser
 
 @Composable
 fun ActivateDeviceSheet(
     isLoading: Boolean,
+    appUser: AppUser?,
     onActivate: (String, String) -> Unit,
 ) {
-
+    val isLimited = appUser is AppUser.Limited
     var code by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
 
@@ -25,7 +27,7 @@ fun ActivateDeviceSheet(
         AppTextField(
             value = code,
             onValueChange = { code = it },
-            placeholder = "Código de activación"
+            placeholder = if (isLimited) "Id del dispositivo" else "Código de activación"
         )
 
         AppTextField(

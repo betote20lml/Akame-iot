@@ -20,12 +20,23 @@ import com.akameiot.data.repository_impl.ConsumeTokenUseCaseImpl
 import com.akameiot.data.repository_impl.GeneratePairingTokenUseCaseImpl
 import com.akameiot.domain.usecase.ConsumeTokenUseCase
 import com.akameiot.domain.usecase.GeneratePairingTokenUseCase
-
+import com.akameiot.domain.usecase.GetAppUserUseCase
+import android.content.Context
+import com.akameiot.data.session.SessionDataStore
 
 object AppModule {
 
+    private lateinit var appContext: Context
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
+
     private val cognitoRemote by lazy {
         CognitoAuthRemoteDataSource()
+    }
+
+    private val sessionDataStore by lazy {
+        SessionDataStore(appContext)
     }
 
     val authRepository by lazy {
@@ -37,7 +48,7 @@ object AppModule {
     }
 
     val authSessionManager: AuthSessionManager by lazy {
-        CognitoAuthSessionManager()
+        CognitoAuthSessionManager(sessionDataStore)
     }
 
     val passwordValidator: PasswordValidator by lazy {
@@ -82,6 +93,10 @@ object AppModule {
 
     val generatePairingTokenUseCase: GeneratePairingTokenUseCase by lazy {
         GeneratePairingTokenUseCaseImpl(NetworkModule.pairingPrivateApi)
+    }
+
+    val getAppUserUseCase by lazy {
+        GetAppUserUseCase(authSessionManager)
     }
 
 

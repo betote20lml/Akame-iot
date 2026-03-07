@@ -13,16 +13,19 @@ import kotlin.coroutines.resumeWithException
 import com.amplifyframework.auth.cognito.options.AuthFlowType
 
 
-class CognitoAuthSessionManager : AuthSessionManager {
+class CognitoAuthSessionManager(
+    private val sessionDataStore: SessionDataStore
+    ) : AuthSessionManager{
+
 
     override suspend fun isUserLoggedIn(): Boolean {
         return suspendCancellableCoroutine { cont ->
             Amplify.Auth.fetchAuthSession(
                 { result ->
-                    cont.resume(result.isSignedIn)
+                    if (cont.isActive) cont.resume(result.isSignedIn)
                 },
                 { error ->
-                    cont.resume(false)
+                    if (cont.isActive) cont.resume(false)
                 }
             )
         }
@@ -31,8 +34,8 @@ class CognitoAuthSessionManager : AuthSessionManager {
     override suspend fun getCurrentUserId(): String? {
         return suspendCancellableCoroutine { cont ->
             Amplify.Auth.getCurrentUser(
-                { user -> cont.resume(user.userId) },
-                { cont.resume(null) }
+                { user -> if (cont.isActive) cont.resume(user.userId) },
+                { if (cont.isActive) cont.resume(null) }
             )
         }
     }
@@ -40,10 +43,11 @@ class CognitoAuthSessionManager : AuthSessionManager {
     override suspend fun logout() {
         suspendCancellableCoroutine { cont ->
             val options = AuthSignOutOptions.builder().globalSignOut(true).build()
-            Amplify.Auth.signOut(options) { result ->
-                cont.resume(Unit)
+            Amplify.Auth.signOut(options) {
+                if (cont.isActive) cont.resume(Unit)
             }
         }
+        sessionDataStore.setLimitedSession(false)
     }
 
     override suspend fun fetchIdToken(): String =
@@ -52,21 +56,29 @@ class CognitoAuthSessionManager : AuthSessionManager {
                 { session ->
                     val cognitoSession = session as? AWSCognitoAuthSession
                     val idToken = cognitoSession
-                        ?.userPoolTokensResult   // ← nombre correcto
+                        ?.userPoolTokensResult
                         ?.value
                         ?.idToken
 
                     if (idToken != null) {
-                        cont.resume(idToken)
+                        if (cont.isActive) cont.resume(idToken)
                     } else {
-                        cont.resumeWithException(
+                        if (cont.isActive) cont.resumeWithException(
                             Exception("No se pudo obtener el ID Token — sesión no activa")
                         )
                     }
                 },
-                { error -> cont.resumeWithException(error) }
+                { error -> if (cont.isActive) cont.resumeWithException(error) }
             )
         }
+
+    override suspend fun isLimitedSession(): Boolean {
+        return sessionDataStore.isLimitedSession()
+    }
+
+    override suspend fun setLimitedSession(isLimited: Boolean) {
+        sessionDataStore.setLimitedSession(isLimited)
+    }
 
     override suspend fun signInWithCustomAuth(username: String, token: String) {
         suspendCancellableCoroutine { cont ->
@@ -78,24 +90,24 @@ class CognitoAuthSessionManager : AuthSessionManager {
                     .build(),
                 { result ->
                     if (result.isSignedIn) {
-                        cont.resume(Unit)
-                    } else if (result.nextStep.signInStep == AuthSignInStep.CONFIRM_SIGN_IN_WITH_CUSTOM_CHALLENGE) {
+                        if (cont.isActive) cont.resume(Unit)
+                    }else if (result.nextStep.signInStep == AuthSignInStep.CONFIRM_SIGN_IN_WITH_CUSTOM_CHALLENGE) {
                         Amplify.Auth.confirmSignIn(
                             token,
                             { confirmResult ->
                                 if (confirmResult.isSignedIn) {
-                                    cont.resume(Unit)
+                                    if (cont.isActive) cont.resume(Unit)
                                 } else {
-                                    cont.resumeWithException(Exception("Custom auth falló"))
+                                    if (cont.isActive) cont.resumeWithException(Exception("Custom auth falló"))
                                 }
                             },
-                            { error -> cont.resumeWithException(error) }
+                            { error -> if (cont.isActive) cont.resumeWithException(error) }
                         )
                     } else {
-                        cont.resumeWithException(Exception("Paso inesperado: ${result.nextStep.signInStep}"))
+                        if (cont.isActive) cont.resumeWithException(Exception("Paso inesperado: ${result.nextStep.signInStep}"))
                     }
                 },
-                { error -> cont.resumeWithException(error) }
+                { error -> if (cont.isActive) cont.resumeWithException(error) }
             )
         }
     }

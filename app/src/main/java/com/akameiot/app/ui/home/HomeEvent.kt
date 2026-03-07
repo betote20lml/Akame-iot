@@ -6,5 +6,9 @@ sealed interface HomeEvent {
 
     data class ActivationCodeInvalid(val message: String) : HomeEvent
 
+    data class ShowDeviceId(val deviceId: String) : HomeEvent
+
+    data class ShowUserRole(val role: String) : HomeEvent //solo para debug
+
     object NavigateToLogin : HomeEvent
 }

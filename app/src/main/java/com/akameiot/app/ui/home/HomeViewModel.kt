@@ -12,10 +12,13 @@ import com.akameiot.domain.session.AuthSessionManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.akameiot.domain.exceptions.SessionExpiredException
+import com.akameiot.domain.model.AppUser
+import com.akameiot.domain.usecase.GetAppUserUseCase
 
 class HomeViewModel(
     private val activateDeviceUseCase: ActivateDeviceUseCase,
-    private val authSessionManager: AuthSessionManager
+    private val authSessionManager: AuthSessionManager,
+    private val getAppUserUseCase: GetAppUserUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -23,6 +26,41 @@ class HomeViewModel(
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events = _events.asSharedFlow()
+
+    init {
+        loadUser()
+    }
+
+    private fun loadUser() {
+        viewModelScope.launch {
+            try {
+                val user = getAppUserUseCase()
+                _uiState.update { it.copy(appUser = user) }
+
+                //solo para debug
+                val role = when (user) {
+                    is AppUser.Owner -> "OWNER"
+                    is AppUser.Limited -> "LIMITED"
+                }
+                _events.emit(HomeEvent.ShowUserRole(role))
+
+
+
+            } catch (e: Exception) {
+                // Si falla, dejamos appUser null — UI mostrará estado por defecto
+            }
+        }
+    }
+
+    fun onSheetAction(input: String, displayName: String) {
+        viewModelScope.launch {
+            when (_uiState.value.appUser) {
+                is AppUser.Owner -> activateDevice(input, displayName)
+                is AppUser.Limited -> _events.emit(HomeEvent.ShowDeviceId(input))
+                null -> _events.emit(HomeEvent.ShowError("Usuario no identificado"))
+            }
+        }
+    }
 
     fun activateDevice(code: String, displayName: String) {
 

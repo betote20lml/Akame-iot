@@ -44,6 +44,7 @@ class QrAuthViewModel(
                     username = result.ownerEmail,
                     token = token
                 )
+                authSessionManager.setLimitedSession(true)
 
                 _events.emit(QrAuthEvent.Success)
 

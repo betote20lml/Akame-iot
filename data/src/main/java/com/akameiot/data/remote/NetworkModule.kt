@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object NetworkModule {
 
     private const val BASE_URL =
-        "https://xrhenj15l6.execute-api.us-east-2.amazonaws.com/"
+        "https://f8n6uwy14a.execute-api.us-east-2.amazonaws.com/"
 
     private val logging by lazy {
         HttpLoggingInterceptor().apply {
@@ -36,7 +36,7 @@ object NetworkModule {
 
     val pairingPrivateApi: PairingApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://0xtququ98f.execute-api.us-east-2.amazonaws.com/")
+            .baseUrl("https://tj432fnx0d.execute-api.us-east-2.amazonaws.com/")
             .client(okHttp)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -45,7 +45,7 @@ object NetworkModule {
 
     val pairingPublicApi: PairingPublicApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://nuym1olxx2.execute-api.us-east-2.amazonaws.com/")
+            .baseUrl("https://lfwmau52v3.execute-api.us-east-2.amazonaws.com/")
             .client(okHttp)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

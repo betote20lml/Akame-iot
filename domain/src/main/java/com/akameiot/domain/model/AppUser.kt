@@ -10,6 +10,5 @@ sealed class AppUser {
 
     data class Limited(
         override val userId: String,
-        val deviceId: String
     ) : AppUser()
 }

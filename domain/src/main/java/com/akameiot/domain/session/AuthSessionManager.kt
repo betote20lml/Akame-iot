@@ -12,5 +12,9 @@ interface AuthSessionManager {
 
     suspend fun signInWithCustomAuth(username: String, token: String)
 
+    suspend fun isLimitedSession(): Boolean
+
+    suspend fun setLimitedSession(isLimited: Boolean)
+
 
 }
