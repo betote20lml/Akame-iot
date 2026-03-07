@@ -1,6 +1,5 @@
 package com.akameiot.app.ui.qrauth
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -8,9 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.akameiot.coreui.components.AuthHeader
@@ -23,6 +20,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalClipboard
 import com.akameiot.app.ui.navigation.Routes
 import kotlinx.coroutines.launch
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalConfiguration
 
 
 @Composable
@@ -80,30 +80,30 @@ fun QrAuthScreen(
 
         Spacer(modifier = Modifier.height(spacing.xl))
 
+        val configuration = LocalConfiguration.current
+
+        val scannerHeight =
+            if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+                220.dp
+            else
+                320.dp
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f)
-                .border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.outline,
-                    shape = RoundedCornerShape(24.dp)
-                ),
-            contentAlignment = Alignment.Center
+                .height(scannerHeight)
+                .clip(RoundedCornerShape(24.dp))
+                .clipToBounds(),
         ) {
 
-            if(state.isLoading) {
+            QrScannerComposable(
+                modifier = Modifier.fillMaxSize(),
+                onQrDetected = { token ->
+                    viewModel.onQrScanned(token)
+                }
+            )
 
-                CircularProgressIndicator()
-
-            } else {
-
-                Text(
-                    text = "Área de escaneo QR",
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            QrScannerOverlay()
         }
 
         Spacer(modifier = Modifier.height(spacing.xl))
@@ -115,7 +115,9 @@ fun QrAuthScreen(
                     val clip = clipboard.getClipEntry()
                     val token = clip?.clipData?.getItemAt(0)?.text?.toString()
                     if (token.isNullOrBlank()) {
-                        // mostrar error
+                        snackbarHostState.showSnackbar(
+                            message = "No se encontró ningún código en el portapapeles"
+                        )
                     } else {
                         viewModel.pasteToken(token)
                     }

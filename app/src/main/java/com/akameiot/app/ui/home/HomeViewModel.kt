@@ -37,17 +37,8 @@ class HomeViewModel(
                 val user = getAppUserUseCase()
                 _uiState.update { it.copy(appUser = user) }
 
-                //solo para debug
-                val role = when (user) {
-                    is AppUser.Owner -> "OWNER"
-                    is AppUser.Limited -> "LIMITED"
-                }
-                _events.emit(HomeEvent.ShowUserRole(role))
-
-
-
             } catch (e: Exception) {
-                // Si falla, dejamos appUser null — UI mostrará estado por defecto
+
             }
         }
     }

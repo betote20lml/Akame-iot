@@ -71,13 +71,7 @@ fun HomeScreen(
                         duration = SnackbarDuration.Long
                     )
                 }
-                //solo para debug
-                is HomeEvent.ShowUserRole -> {
-                    snackbarHostState.showSnackbar(
-                        message = "Rol: ${event.role}",
-                        duration = SnackbarDuration.Long
-                    )
-                }
+
             }
         }
     }
