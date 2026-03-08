@@ -23,6 +23,10 @@ import com.akameiot.domain.usecase.GeneratePairingTokenUseCase
 import com.akameiot.domain.usecase.GetAppUserUseCase
 import android.content.Context
 import com.akameiot.data.session.SessionDataStore
+import com.akameiot.data.fcm.FcmTokenProvider
+import com.akameiot.data.repository_impl.SnsRepositoryImpl
+import com.akameiot.domain.repository.SnsRepository
+import com.akameiot.domain.usecase.SubscribeToDeviceTopicUseCase
 
 object AppModule {
 
@@ -97,6 +101,18 @@ object AppModule {
 
     val getAppUserUseCase by lazy {
         GetAppUserUseCase(authSessionManager)
+    }
+
+    val fcmTokenProvider by lazy {
+        FcmTokenProvider()
+    }
+
+    private val snsRepository: SnsRepository by lazy {
+        SnsRepositoryImpl(NetworkModule.snsApi)
+    }
+
+    val subscribeToDeviceTopicUseCase by lazy {
+        SubscribeToDeviceTopicUseCase(snsRepository)
     }
 
 

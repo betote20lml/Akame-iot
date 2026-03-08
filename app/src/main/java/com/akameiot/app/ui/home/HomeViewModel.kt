@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
+import com.akameiot.data.fcm.FcmTokenProvider
 import com.akameiot.domain.exceptions.ActivationCodeInvalidException
 import com.akameiot.domain.model.DeviceActivationRequest
 import com.akameiot.domain.usecase.ActivateDeviceUseCase
@@ -14,11 +15,14 @@ import kotlinx.coroutines.launch
 import com.akameiot.domain.exceptions.SessionExpiredException
 import com.akameiot.domain.model.AppUser
 import com.akameiot.domain.usecase.GetAppUserUseCase
+import com.akameiot.domain.usecase.SubscribeToDeviceTopicUseCase
 
 class HomeViewModel(
     private val activateDeviceUseCase: ActivateDeviceUseCase,
     private val authSessionManager: AuthSessionManager,
     private val getAppUserUseCase: GetAppUserUseCase,
+    private val subscribeToDeviceTopicUseCase: SubscribeToDeviceTopicUseCase, // NUEVO
+    private val fcmTokenProvider: FcmTokenProvider,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -47,9 +51,24 @@ class HomeViewModel(
         viewModelScope.launch {
             when (_uiState.value.appUser) {
                 is AppUser.Owner -> activateDevice(input, displayName)
-                is AppUser.Limited -> _events.emit(HomeEvent.ShowDeviceId(input))
+
+                is AppUser.Limited -> subscribeToDevice(input)
                 null -> _events.emit(HomeEvent.ShowError("Usuario no identificado"))
             }
+        }
+    }
+
+    private suspend fun subscribeToDevice(thingName: String) {
+        try {
+            val token = authSessionManager.fetchIdToken()
+            val fcmToken = fcmTokenProvider.getToken()
+            subscribeToDeviceTopicUseCase(token, thingName, fcmToken)
+            _events.emit(HomeEvent.SubscribedToDevice(thingName))
+        } catch (e: SessionExpiredException) {
+            authSessionManager.logout()
+            _events.emit(HomeEvent.NavigateToLogin)
+        } catch (e: Exception) {
+            _events.emit(HomeEvent.ShowError(e.message ?: "Error suscribiendo dispositivo"))
         }
     }
 
@@ -69,8 +88,10 @@ class HomeViewModel(
                         displayName = displayName
                     )
                 )
+                val fcmToken = fcmTokenProvider.getToken()
+                subscribeToDeviceTopicUseCase(token, response.thingName, fcmToken)
+                _events.emit(HomeEvent.SubscribedToDevice(response.thingName))
 
-                _events.emit(HomeEvent.NavigateToDetails(response.thingName))
 
             } catch (e: ActivationCodeInvalidException) {
                 _events.emit(

@@ -1,5 +1,6 @@
 package com.akameiot.data.remote
 
+import com.akameiot.data.remote.api.SnsApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -15,6 +16,7 @@ object NetworkModule {
             level = HttpLoggingInterceptor.Level.BODY
         }
     }
+
 
     private val okHttp by lazy {
         OkHttpClient.Builder()
@@ -50,6 +52,10 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(PairingPublicApiService::class.java)
+    }
+
+    val snsApi: SnsApi by lazy {
+        retrofit.create(SnsApi::class.java)
     }
 
 }

@@ -10,4 +10,6 @@ sealed interface HomeEvent {
 
 
     object NavigateToLogin : HomeEvent
+
+    data class SubscribedToDevice(val thingName: String) : HomeEvent
 }

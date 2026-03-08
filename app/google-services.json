@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "365130219802",
+    "project_id": "akame-iot",
+    "storage_bucket": "akame-iot.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:365130219802:android:b7c01401fc9c0a720a6ca3",
+        "android_client_info": {
+          "package_name": "com.akameiot.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFkemEwcbuEhRpAC7FzwKgVGkiAEKpkfs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
