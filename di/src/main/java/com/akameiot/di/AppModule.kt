@@ -25,8 +25,11 @@ import android.content.Context
 import com.akameiot.data.session.SessionDataStore
 import com.akameiot.data.fcm.FcmTokenProvider
 import com.akameiot.data.repository_impl.SnsRepositoryImpl
+import com.akameiot.data.session.DeviceNetworkStore
 import com.akameiot.domain.repository.SnsRepository
 import com.akameiot.domain.usecase.SubscribeToDeviceTopicUseCase
+import com.akameiot.data.network.NetworkManager
+import com.akameiot.data.session.FcmTokenStore
 
 object AppModule {
 
@@ -41,6 +44,22 @@ object AppModule {
 
     private val sessionDataStore by lazy {
         SessionDataStore(appContext)
+    }
+
+    private val deviceNetworkStore by lazy {
+        DeviceNetworkStore(appContext)
+    }
+
+    private val fcmTokenStore by lazy {
+        FcmTokenStore(appContext)
+    }
+
+    val tokenStore by lazy {
+        fcmTokenStore
+    }
+
+    val networkStore by lazy {
+        deviceNetworkStore
     }
 
     val authRepository by lazy {
@@ -113,6 +132,14 @@ object AppModule {
 
     val subscribeToDeviceTopicUseCase by lazy {
         SubscribeToDeviceTopicUseCase(snsRepository)
+    }
+
+    val networkManager by lazy {
+        NetworkManager(
+            networkStore = deviceNetworkStore,
+            subscribeToDeviceTopicUseCase = subscribeToDeviceTopicUseCase,
+            fcmTokenProvider = fcmTokenProvider
+        )
     }
 
 

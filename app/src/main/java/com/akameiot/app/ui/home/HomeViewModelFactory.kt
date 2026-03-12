@@ -12,8 +12,8 @@ class HomeViewModelFactory : ViewModelProvider.Factory {
             activateDeviceUseCase = AppModule.activateDeviceUseCase,
             authSessionManager = AppModule.authSessionManager,
             getAppUserUseCase = AppModule.getAppUserUseCase,
-            subscribeToDeviceTopicUseCase = AppModule.subscribeToDeviceTopicUseCase, // NUEVO
-            fcmTokenProvider = AppModule.fcmTokenProvider,
+            networkManager = AppModule.networkManager,
+            tokenStore = AppModule.tokenStore
         ) as T
     }
 }

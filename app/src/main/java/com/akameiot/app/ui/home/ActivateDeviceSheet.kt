@@ -5,6 +5,8 @@ import com.akameiot.coreui.components.AppSheetContainer
 import com.akameiot.coreui.components.AppTextField
 import com.akameiot.coreui.components.PrimaryButton
 import com.akameiot.domain.model.AppUser
+import com.akameiot.domain.validation.DeviceInput
+import com.akameiot.domain.validation.DeviceInputParser
 
 @Composable
 fun ActivateDeviceSheet(
@@ -17,17 +19,26 @@ fun ActivateDeviceSheet(
     var displayName by remember { mutableStateOf("") }
 
 
-    val isFormValid =
-        code.trim().isNotBlank() &&
+    val parsedInput = remember(code) {
+        DeviceInputParser.parse(code)
+    }
+
+    val isFormValid = remember(parsedInput, displayName, isLoading) {
+        parsedInput !is DeviceInput.Invalid &&
                 displayName.trim().isNotBlank() &&
                 !isLoading
+    }
 
     AppSheetContainer(title = "Conectar dispositivos") {
 
         AppTextField(
             value = code,
             onValueChange = { code = it },
-            placeholder = if (isLimited) "Id del dispositivo" else "Código de activación"
+            placeholder =
+                if (isLimited)
+                    "ID de red (gw_...)"
+                else
+                    "Código de activación"
         )
 
         AppTextField(
