@@ -1,5 +1,6 @@
 package com.akameiot.app.ui.login
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
@@ -10,11 +11,17 @@ import com.akameiot.domain.usecase.StartResetPasswordUseCase
 import com.amplifyframework.auth.cognito.exceptions.service.UserNotConfirmedException
 import com.amplifyframework.auth.cognito.exceptions.service.InvalidParameterException
 import com.akameiot.domain.usecase.ResendConfirmationCodeUseCase
+import com.akameiot.domain.usecase.SyncUserDevicesUseCase
+import com.akameiot.domain.session.AuthSessionManager
+import com.akameiot.data.session.FcmTokenStore
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
     private val startResetPasswordUseCase: StartResetPasswordUseCase,
-    private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase
+    private val resendConfirmationCodeUseCase: ResendConfirmationCodeUseCase,
+    private val syncUserDevicesUseCase: SyncUserDevicesUseCase,
+    private val authSessionManager: AuthSessionManager,
+    private val fcmTokenStore: FcmTokenStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -110,6 +117,11 @@ class LoginViewModel(
                     email = state.email,
                     password = state.password
                 )
+                try {
+                    val token = authSessionManager.fetchIdToken()
+                    syncUserDevicesUseCase(token)
+                    fcmTokenStore.markNeedsResubscribe()
+                } catch (_: Exception) { }
 
                 sendEvent(LoginEvent.Success)
 

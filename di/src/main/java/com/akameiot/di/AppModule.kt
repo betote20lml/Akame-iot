@@ -30,6 +30,9 @@ import com.akameiot.domain.repository.SnsRepository
 import com.akameiot.domain.usecase.SubscribeToDeviceTopicUseCase
 import com.akameiot.data.network.NetworkManager
 import com.akameiot.data.session.FcmTokenStore
+import com.akameiot.data.repository_impl.SessionRepositoryImpl
+import com.akameiot.domain.repository.SessionRepository
+import com.akameiot.domain.usecase.SyncUserDevicesUseCase
 
 object AppModule {
 
@@ -139,6 +142,17 @@ object AppModule {
             networkStore = deviceNetworkStore,
             subscribeToDeviceTopicUseCase = subscribeToDeviceTopicUseCase,
             fcmTokenProvider = fcmTokenProvider
+        )
+    }
+
+    private val sessionRepository: SessionRepository by lazy {
+        SessionRepositoryImpl(NetworkModule.sessionApi)
+    }
+
+    val syncUserDevicesUseCase by lazy {
+        SyncUserDevicesUseCase(
+            sessionRepository = sessionRepository,
+            networkStore      = deviceNetworkStore,
         )
     }
 

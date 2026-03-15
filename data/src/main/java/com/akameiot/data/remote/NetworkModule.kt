@@ -5,11 +5,12 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.akameiot.data.remote.api.SessionApi
 
 object NetworkModule {
 
     private const val BASE_URL =
-        "https://f8n6uwy14a.execute-api.us-east-2.amazonaws.com/"
+        "https://k1erdfmr11.execute-api.us-east-2.amazonaws.com/"
 
     private val logging by lazy {
         HttpLoggingInterceptor().apply {
@@ -38,7 +39,7 @@ object NetworkModule {
 
     val pairingPrivateApi: PairingApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://tj432fnx0d.execute-api.us-east-2.amazonaws.com/")
+            .baseUrl("https://g1xb8zgddi.execute-api.us-east-2.amazonaws.com/")
             .client(okHttp)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -47,7 +48,7 @@ object NetworkModule {
 
     val pairingPublicApi: PairingPublicApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://lfwmau52v3.execute-api.us-east-2.amazonaws.com/")
+            .baseUrl("https://y4r8gxvkkb.execute-api.us-east-2.amazonaws.com/")
             .client(okHttp)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -56,6 +57,15 @@ object NetworkModule {
 
     val snsApi: SnsApi by lazy {
         retrofit.create(SnsApi::class.java)
+    }
+
+    val sessionApi: SessionApi by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://ikgq0r2yhl.execute-api.us-east-2.amazonaws.com/")
+            .client(okHttp)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(SessionApi::class.java)
     }
 
 }

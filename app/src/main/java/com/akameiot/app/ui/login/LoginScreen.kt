@@ -30,7 +30,10 @@ fun LoginScreen(
         factory = LoginViewModelFactory(
             AppModule.authRepository,
             AppModule.startResetPasswordUseCase,
-            AppModule.resendConfirmationCodeUseCase
+            AppModule.resendConfirmationCodeUseCase,
+            AppModule.syncUserDevicesUseCase,
+            AppModule.authSessionManager,
+            AppModule.tokenStore
         )
     )
 

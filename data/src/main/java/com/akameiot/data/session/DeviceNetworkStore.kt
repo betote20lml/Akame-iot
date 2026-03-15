@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.akameiot.domain.model.Network
+import com.akameiot.domain.repository.NetworkStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
@@ -14,11 +15,11 @@ private val Context.networkDataStore by preferencesDataStore(name = "network_pre
 
 class DeviceNetworkStore(
     private val context: Context
-) {
+) : NetworkStore {
 
-    private val NETWORKS_KEY = stringPreferencesKey("device_networks")
+    private val networksKey = stringPreferencesKey("device_networks")
 
-    suspend fun addNetwork(network: Network) {
+    override suspend fun addNetwork(network: Network) {
 
         val current = getNetworks().toMutableList()
 
@@ -32,7 +33,7 @@ class DeviceNetworkStore(
     suspend fun getNetworks(): List<Network> {
 
         val json = context.networkDataStore.data
-            .map { prefs -> prefs[NETWORKS_KEY] ?: "[]" }
+            .map { prefs -> prefs[networksKey] ?: "[]" }
             .first()
 
         val array = JSONArray(json)
@@ -78,7 +79,7 @@ class DeviceNetworkStore(
         }
 
         context.networkDataStore.edit { prefs ->
-            prefs[NETWORKS_KEY] = array.toString()
+            prefs[networksKey] = array.toString()
         }
     }
 }
