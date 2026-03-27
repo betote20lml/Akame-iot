@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -45,9 +46,9 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
-
-    // Room
-
+    api(libs.androidx.room.runtime)
+    api(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

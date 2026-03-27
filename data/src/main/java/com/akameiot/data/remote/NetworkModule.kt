@@ -6,6 +6,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.akameiot.data.remote.api.SessionApi
+import com.akameiot.data.remote.api.TelemetryApiService
 
 object NetworkModule {
 
@@ -66,6 +67,15 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(SessionApi::class.java)
+    }
+
+    val telemetryApi: TelemetryApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://hsfx1d9cja.execute-api.us-east-2.amazonaws.com/prod/")
+            .client(okHttp)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(TelemetryApiService::class.java)
     }
 
 }

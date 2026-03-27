@@ -14,8 +14,13 @@ amplify = "2.16.0"
 material3 = "1.4.0"
 firebase-bom = "33.7.0"
 google-services = "4.4.2"
+room = "2.8.4"
+ksp = "2.0.21-1.0.27"
 
 [libraries]
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
 amplify-core = { module = "com.amplifyframework:core", version.ref = "amplify" }
@@ -39,6 +44,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

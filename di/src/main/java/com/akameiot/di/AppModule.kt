@@ -24,14 +24,18 @@ import com.akameiot.domain.usecase.GetAppUserUseCase
 import android.content.Context
 import com.akameiot.data.session.SessionDataStore
 import com.akameiot.data.fcm.FcmTokenProvider
+import com.akameiot.data.local.db.DatabaseProvider
 import com.akameiot.data.repository_impl.SnsRepositoryImpl
 import com.akameiot.data.session.DeviceNetworkStore
 import com.akameiot.domain.repository.SnsRepository
 import com.akameiot.domain.usecase.SubscribeToDeviceTopicUseCase
 import com.akameiot.data.network.NetworkManager
+import com.akameiot.data.repository.TelemetryRepository
 import com.akameiot.data.session.FcmTokenStore
 import com.akameiot.data.repository_impl.SessionRepositoryImpl
+import com.akameiot.data.repository_impl.SyncRecentTelemetryUseCaseImpl
 import com.akameiot.domain.repository.SessionRepository
+import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
 
 object AppModule {
@@ -153,6 +157,24 @@ object AppModule {
         SyncUserDevicesUseCase(
             sessionRepository = sessionRepository,
             networkStore      = deviceNetworkStore,
+        )
+    }
+
+    val telemetryDao by lazy {
+        DatabaseProvider.getDatabase(appContext).telemetryDao()
+    }
+
+    val telemetryRepository by lazy {
+        TelemetryRepository(
+            dao = telemetryDao,
+            api = NetworkModule.telemetryApi
+        )
+    }
+
+    val syncRecentTelemetryUseCase: SyncRecentTelemetryUseCase by lazy {
+        SyncRecentTelemetryUseCaseImpl(
+            repository = telemetryRepository,
+            authSessionManager = authSessionManager
         )
     }
 
