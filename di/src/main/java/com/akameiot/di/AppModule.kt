@@ -174,7 +174,8 @@ object AppModule {
     val syncRecentTelemetryUseCase: SyncRecentTelemetryUseCase by lazy {
         SyncRecentTelemetryUseCaseImpl(
             repository = telemetryRepository,
-            authSessionManager = authSessionManager
+            authSessionManager = authSessionManager,
+            networkStore = deviceNetworkStore
         )
     }
 

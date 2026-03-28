@@ -12,26 +12,22 @@ class TelemetryRepository(
     private val api: TelemetryApiService
 ) {
 
-    /**
-     * Devuelve el último timestamp guardado para este mesh, o 0 si no hay registros.
-     */
+    //Devuelve el último timestamp guardado para este mesh, o 0 si no hay registros.
     suspend fun getLatestTimestamp(meshId: String): Long =
         dao.getLatestTimestamp(meshId) ?: 0L
 
-    /**
-     * Decide si hace una hot query o una cold query según la ventana temporal.
-     * Solo se llama cuando ya se verificó que notifTs > lastTs.
-     */
+    //Decide si hace una hot query o una cold query según la ventana temporal.
     suspend fun fetchAndSaveWindow(
         bearerToken: String,
         meshId: String,
-        fromTs: Long       // = lastTs guardado en Room (segundos)
+        meshIds: List<String>,
+        fromTs: Long
     ) {
-        val nowSec = System.currentTimeMillis() / 1000
+        val nowSec = System.currentTimeMillis() / 1000L
         val windowSec = nowSec - fromTs
 
         if (windowSec < 24 * 3600) {
-            // HOT path: ventana < 24 h
+            // HOT → SOLO UN MESH
             val response = api.getRecentTelemetry(
                 bearerToken = "Bearer $bearerToken",
                 meshId = meshId,
@@ -39,15 +35,21 @@ class TelemetryRepository(
             )
             val entities = response.items.flatMap { it.toEntities() }
             dao.insertAll(entities)
+
         } else {
-            // COLD path: ventana >= 24 h → async Athena
-            coldFetchAndSave(bearerToken, meshId, fromTs, nowSec)
+            // COLD → TODOS LOS MESHES
+            coldFetchAndSave(
+                bearerToken = bearerToken,
+                meshIds = meshIds,
+                fromTs = fromTs,
+                toTs = nowSec
+            )
         }
     }
 
     private suspend fun coldFetchAndSave(
         bearerToken: String,
-        meshId: String,
+        meshIds: List<String>,
         fromTs: Long,
         toTs: Long
     ) {
@@ -56,7 +58,7 @@ class TelemetryRepository(
         // 1. Iniciar query
         val startResp = api.startColdQuery(
             bearerToken = auth,
-            meshes = meshId,
+            meshes = meshIds.joinToString(","),
             fromTs = fromTs,
             toTs = toTs
         )
@@ -106,7 +108,7 @@ class TelemetryRepository(
     }
 
     suspend fun cleanOldData(days: Int) {
-        val threshold = System.currentTimeMillis() / 1000 - (days * 86400L)
+        val threshold = System.currentTimeMillis() / 1000L - (days * 86400L)
         dao.deleteOlderThan(threshold)
     }
 

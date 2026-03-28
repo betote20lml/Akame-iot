@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.akameiot.app.fcm.FcmEventBus
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.components.*
 import com.akameiot.app.ui.navigation.DrawerDestinations
@@ -32,14 +31,7 @@ fun HomeScreen(
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        FcmEventBus.events.collect { message ->
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Long
-            )
-        }
-    }
+
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
