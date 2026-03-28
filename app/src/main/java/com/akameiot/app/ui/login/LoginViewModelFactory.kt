@@ -16,7 +16,7 @@ class LoginViewModelFactory(
     private val syncUserDevicesUseCase: SyncUserDevicesUseCase,
     private val authSessionManager: AuthSessionManager,
     private val fcmTokenStore: FcmTokenStore
-) : ViewModelProvider.Factory {
+    ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

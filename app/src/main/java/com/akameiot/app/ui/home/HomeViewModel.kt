@@ -18,6 +18,7 @@ import com.akameiot.domain.validation.DeviceInput
 import com.akameiot.domain.validation.DeviceInputParser
 import com.akameiot.domain.policy.DevicePermissions
 import com.akameiot.data.session.FcmTokenStore
+import com.akameiot.di.AppModule
 
 class HomeViewModel(
     private val activateDeviceUseCase: ActivateDeviceUseCase,
@@ -120,6 +121,9 @@ class HomeViewModel(
                 displayName.ifBlank { thingName }
             )
 
+            // Sync inicial de 3 días después de suscripción exitosa
+            AppModule.syncRecentTelemetryUseCase.forceSync(thingName)
+
             _events.emit(HomeEvent.SubscribedToDevice(thingName))
 
         } catch (e: SessionExpiredException) {
@@ -164,6 +168,8 @@ class HomeViewModel(
                     displayName
                 )
 
+                AppModule.syncRecentTelemetryUseCase.forceSync(response.thingName)
+
                 _events.emit(HomeEvent.SubscribedToDevice(response.thingName))
 
 
@@ -194,6 +200,13 @@ class HomeViewModel(
                 val authToken = authSessionManager.fetchIdToken()
                 networkManager.resubscribeAll(authToken)
                 tokenStore.clearResubscribeFlag()
+
+                // Sync inicial de 3 días por cada red después de resubscribe exitoso
+                AppModule.networkStore.getNetworks().forEach { network ->
+                    launch {
+                        AppModule.syncRecentTelemetryUseCase.forceSync(network.thingName)
+                    }
+                }
             } catch (_: Exception) {
 
             }

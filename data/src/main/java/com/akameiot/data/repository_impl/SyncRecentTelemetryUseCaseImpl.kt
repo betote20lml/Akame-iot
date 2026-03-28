@@ -28,4 +28,13 @@ class SyncRecentTelemetryUseCaseImpl(
         )
         repository.cleanOldData(days = 730)
     }
+    override suspend fun forceSync(meshId: String, days: Long) {
+        val token = authSessionManager.fetchIdToken()
+        val fromTs = System.currentTimeMillis() / 1000L - (days * 86400L)
+        repository.fetchAndSaveWindow(
+            bearerToken = token,
+            meshId = meshId,
+            fromTs = fromTs
+        )
+    }
 }
