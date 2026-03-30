@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.akameiot.domain.model.Network
 import com.akameiot.domain.repository.NetworkStore
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
@@ -82,4 +83,27 @@ class DeviceNetworkStore(
             prefs[networksKey] = array.toString()
         }
     }
+
+    fun networksFlow(): Flow<List<Network>> {
+        return context.networkDataStore.data.map { prefs ->
+            val json = prefs[networksKey] ?: "[]"
+            val array = JSONArray(json)
+
+            val list = mutableListOf<Network>()
+
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    Network(
+                        thingName = obj.getString("thingName"),
+                        displayName = obj.getString("displayName")
+                    )
+                )
+            }
+
+            list
+        }
+    }
+
+
 }

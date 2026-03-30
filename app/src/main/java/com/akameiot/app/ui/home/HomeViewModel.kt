@@ -5,7 +5,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
+import com.akameiot.app.ui.home.mapper.toUiModel
+import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.network.NetworkManager
+import com.akameiot.data.session.DeviceNetworkStore
 import com.akameiot.domain.exceptions.ActivationCodeInvalidException
 import com.akameiot.domain.model.DeviceActivationRequest
 import com.akameiot.domain.usecase.ActivateDeviceUseCase
@@ -25,18 +28,53 @@ class HomeViewModel(
     private val authSessionManager: AuthSessionManager,
     private val getAppUserUseCase: GetAppUserUseCase,
     private val networkManager: NetworkManager,
-    private val tokenStore: FcmTokenStore
+    private val tokenStore: FcmTokenStore,
+    private val telemetryDao: TelemetryDao,
+    private val networkStore: DeviceNetworkStore
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
+    private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events = _events.asSharedFlow()
 
+
+
     init {
         loadUser()
         checkPendingFcmResubscribe()
+        observeTelemetry()
+    }
+
+    private fun observeTelemetry() {
+        viewModelScope.launch {
+
+            val fromTs = System.currentTimeMillis() / 1000L - (1 * 86400L)
+
+            combine(
+                telemetryDao.observeLatestPerMetric(),
+                networkStore.networksFlow()
+            ) { latestTelemetry, networks ->
+
+                val networkNames = networks.associate {
+                    it.thingName to it.displayName
+                }
+
+                latestTelemetry.toUiModel(networkNames)
+
+            }
+                .distinctUntilChanged()
+                .collect { uiTelemetry ->
+
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        telemetry = uiTelemetry
+                    )
+                }
+            }
+        }
     }
 
     private fun loadUser() {

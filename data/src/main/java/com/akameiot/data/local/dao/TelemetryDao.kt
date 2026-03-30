@@ -30,6 +30,18 @@ interface TelemetryDao {
     @Query("""
     SELECT MAX(timestamp) FROM telemetry
     WHERE meshid = :meshid
-""")
+    """)
     suspend fun getLatestTimestamp(meshid: String): Long?
+
+
+    @Query("""
+    SELECT * FROM telemetry t
+    WHERE timestamp = (
+        SELECT MAX(timestamp) FROM telemetry
+        WHERE meshid = t.meshid
+        AND nodeId = t.nodeId
+        AND metric = t.metric
+    )
+    """)
+    fun observeLatestPerMetric(): Flow<List<TelemetryEntity>>
 }

@@ -13,7 +13,9 @@ class HomeViewModelFactory : ViewModelProvider.Factory {
             authSessionManager = AppModule.authSessionManager,
             getAppUserUseCase = AppModule.getAppUserUseCase,
             networkManager = AppModule.networkManager,
-            tokenStore = AppModule.tokenStore
+            tokenStore = AppModule.tokenStore,
+            telemetryDao = AppModule.telemetryDao,
+            networkStore = AppModule.networkStore
         ) as T
     }
 }

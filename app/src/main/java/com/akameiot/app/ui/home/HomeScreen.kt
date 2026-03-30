@@ -1,15 +1,20 @@
 package com.akameiot.app.ui.home
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.akameiot.app.fcm.FcmEventBus
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.akameiot.app.ui.home.components.TelemetryCard
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.components.*
 import com.akameiot.app.ui.navigation.DrawerDestinations
@@ -30,6 +35,17 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
+
+
+    //aqui si eliminamos el launchedeffect no se procesa el mensaje, podriamos eliminar unicamente la parte de snackbar?
+    LaunchedEffect(Unit) {
+        FcmEventBus.events.collect { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Long
+            )
+        }
+    }
 
 
     LaunchedEffect(Unit) {
@@ -136,14 +152,41 @@ fun HomeScreen(
                 .padding(padding)
         ) {
 
-            EmptyStateComponent(
-                title = "Conecta tu red IoT",
-                description = "Vincula tus dispositivos para comenzar a visualizar datos en tiempo real.",
-                actionText = "Iniciar",
-                onActionClick = {
-                    showSheet = true
+            if (uiState.telemetry.isEmpty()) {
+
+                EmptyStateComponent(
+                    title = "Conecta tu red IoT",
+                    description = "Vincula tus dispositivos para comenzar a visualizar datos en tiempo real.",
+                    actionText = "Iniciar",
+                    onActionClick = {
+                        showSheet = true
+                    }
+                )
+
+            } else {
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    uiState.telemetry.forEach { network ->
+
+                        items(
+                            items = network.nodes,
+                            key = { it.nodeId }
+                        ) { node ->
+
+                            TelemetryCard(
+                                node = node,
+                            )
+                        }
+                    }
                 }
-            )
+            }
 
             if (showSheet) {
                 ModalBottomSheet(

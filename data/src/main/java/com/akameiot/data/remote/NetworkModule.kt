@@ -7,6 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.akameiot.data.remote.api.SessionApi
 import com.akameiot.data.remote.api.TelemetryApiService
+import java.util.concurrent.TimeUnit
 
 object NetworkModule {
 
@@ -23,6 +24,10 @@ object NetworkModule {
     private val okHttp by lazy {
         OkHttpClient.Builder()
             .addInterceptor(logging)
+            .retryOnConnectionFailure(true)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 

@@ -14,6 +14,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 
 
+
 /* ─────────────────────────────
    🎨 PALETA DE COLORES
 ───────────────────────────── */
@@ -21,10 +22,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 private val DarkColorScheme = darkColorScheme(
     primary = Color(0xFF2E7D32), // verde fuerte
     onPrimary = Color.White,
-    background = Color(0xFF101622),
+    background = Color(0xFF161E0E),
     onSurfaceVariant = Color(0xFFB0B8C1),
     onBackground = Color.White,
-    surface = Color(0xFF1A2032),
+    surface = Color(0xFF172614),
     onSurface = Color.White,
     error = Color(0xFFCF6679)
 )
