@@ -36,7 +36,9 @@ fun TelemetryCard(
 
             Text(
                 text = "Sensor ${node.nodeId}",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontFeatureSettings = "liga=0"
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 

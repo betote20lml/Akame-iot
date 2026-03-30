@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
-    title: String,
+    titleContent: @Composable () -> Unit,
     drawerState: DrawerState,
     snackbarHostState: SnackbarHostState,
     drawerContent: @Composable ColumnScope.() -> Unit,
@@ -39,10 +39,7 @@ fun MainScaffold(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleLarge
-                        )
+                        titleContent()
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigationClick) {

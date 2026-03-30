@@ -14,6 +14,7 @@ import com.akameiot.app.fcm.FcmEventBus
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.akameiot.app.ui.home.components.NetworkDropdown
 import com.akameiot.app.ui.home.components.TelemetryCard
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.components.*
@@ -102,7 +103,14 @@ fun HomeScreen(
     }
 
     MainScaffold(
-        title = "Telemetría",
+        titleContent = {
+            NetworkDropdown(
+                networks = uiState.networks,
+                selectedNetwork = uiState.selectedNetwork,
+                selectedNetworkInfo = uiState.selectedNetworkInfo,
+                onNetworkSelected = { viewModel.selectNetwork(it) }
+            )
+        },
         drawerState = drawerState,
         snackbarHostState = snackbarHostState,
         drawerContent = {
@@ -152,6 +160,8 @@ fun HomeScreen(
                 .padding(padding)
         ) {
 
+            val selectedNetwork = uiState.selectedNetwork
+
             if (uiState.telemetry.isEmpty()) {
 
                 EmptyStateComponent(
@@ -165,6 +175,8 @@ fun HomeScreen(
 
             } else {
 
+                val nodes = selectedNetwork?.nodes ?: emptyList()
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -172,18 +184,11 @@ fun HomeScreen(
                     contentPadding = PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-
-                    uiState.telemetry.forEach { network ->
-
-                        items(
-                            items = network.nodes,
-                            key = { it.nodeId }
-                        ) { node ->
-
-                            TelemetryCard(
-                                node = node,
-                            )
-                        }
+                    items(
+                        items = nodes,
+                        key = { it.nodeId }
+                    ) { node ->
+                        TelemetryCard(node = node)
                     }
                 }
             }

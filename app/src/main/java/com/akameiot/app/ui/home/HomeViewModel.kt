@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
 import com.akameiot.app.ui.home.mapper.toUiModel
+import com.akameiot.app.ui.home.model.TelemetryUiModel
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.network.NetworkManager
 import com.akameiot.data.session.DeviceNetworkStore
@@ -22,6 +23,7 @@ import com.akameiot.domain.validation.DeviceInputParser
 import com.akameiot.domain.policy.DevicePermissions
 import com.akameiot.data.session.FcmTokenStore
 import com.akameiot.di.AppModule
+import com.akameiot.domain.model.Network
 
 class HomeViewModel(
     private val activateDeviceUseCase: ActivateDeviceUseCase,
@@ -61,20 +63,35 @@ class HomeViewModel(
                     it.thingName to it.displayName
                 }
 
-                latestTelemetry.toUiModel(networkNames)
+                Pair(latestTelemetry.toUiModel(networkNames), networks)
 
             }
                 .distinctUntilChanged()
-                .collect { uiTelemetry ->
+                .collect { (uiTelemetry, networks) ->
 
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        telemetry = uiTelemetry
-                    )
+                    val currentSelectedInfo = _uiState.value.selectedNetworkInfo
+                    val newSelectedInfo = currentSelectedInfo ?: networks.firstOrNull()
+                    val newSelectedTelemetry = uiTelemetry.find { it.meshId == newSelectedInfo?.thingName }
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            telemetry = uiTelemetry,
+                            networks = networks,
+                            selectedNetwork = newSelectedTelemetry,
+                            selectedNetworkInfo = newSelectedInfo
+                        )
+                    }
                 }
-            }
         }
+    }
+
+    fun selectNetwork(network: Network) {
+        val telemetry = _uiState.value.telemetry.find { it.meshId == network.thingName }
+        _uiState.update { it.copy(
+            selectedNetwork = telemetry,
+            selectedNetworkInfo = network
+        )}
     }
 
     private fun loadUser() {
