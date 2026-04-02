@@ -3,6 +3,12 @@ package com.akameiot.app.fcm
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import android.util.Log
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.akameiot.di.AppModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,17 +34,31 @@ class AkameFirebaseMessagingService : FirebaseMessagingService() {
 
         Log.d("FCM", "Mensaje recibido: meshid=$meshid ts=$notifTs")
 
-        serviceScope.launch {
-            try {
-                // El use case decide internamente si hay que hacer fetch
-                AppModule.syncRecentTelemetryUseCase(meshid, notifTs)
-                Log.d("FCM", "Sync completado para $meshid")
-                // Emitir al bus DESPUÉS de persistir, no antes
-                FcmEventBus.send("Nuevo dato de $meshid ts=$notifTs")
-            } catch (e: Exception) {
-                Log.e("FCM", "Error en sync de telemetría", e)
-            }
-        }
+        enqueueSync(meshid, notifTs)
+    }
+
+    private fun enqueueSync(meshId: String, notifTs: Long) {
+
+        val work = OneTimeWorkRequestBuilder<com.akameiot.app.fcm.worker.SyncTelemetryWorker>()
+            .setInputData(
+                workDataOf(
+                    "meshId" to meshId,
+                    "notifTs" to notifTs
+                )
+            )
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(applicationContext)
+            .enqueueUniqueWork(
+                "sync_$meshId",
+                ExistingWorkPolicy.REPLACE,
+                work
+            )
     }
 
     override fun onNewToken(token: String) {

@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.akameiot.app.fcm.FcmEventBus
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -37,17 +36,6 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
-
-
-    //aqui si eliminamos el launchedeffect no se procesa el mensaje, podriamos eliminar unicamente la parte de snackbar?
-    LaunchedEffect(Unit) {
-        FcmEventBus.events.collect { message ->
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Long
-            )
-        }
-    }
 
 
     LaunchedEffect(Unit) {
