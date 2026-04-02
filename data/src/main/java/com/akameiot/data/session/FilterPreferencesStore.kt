@@ -17,14 +17,14 @@ class FilterPreferencesStore(private val context: Context) {
     private val networksOrderKey  = stringPreferencesKey("networks_order")
     private val filterMetricsKey  = stringPreferencesKey("filter_metrics")
     private val metricsOrderKey   = stringPreferencesKey("metrics_order")
-    private val sortAscendingKey  = booleanPreferencesKey("sort_ascending")
+    private val sortAscendingKey  = stringPreferencesKey("sort_ascending_v2")
 
     data class FilterPrefs(
         val filterNetworks: List<String> = emptyList(),
         val networksOrder: List<String>  = emptyList(),
         val filterMetrics: List<String>  = emptyList(),
         val metricsOrder: List<String>   = emptyList(),
-        val sortAscending: Boolean       = true,
+        val sortAscending: Boolean?      = null,
     )
 
     val prefsFlow: Flow<FilterPrefs> = context.filterDataStore.data.map { prefs ->
@@ -33,7 +33,11 @@ class FilterPreferencesStore(private val context: Context) {
             networksOrder  = prefs[networksOrderKey]?.toList()  ?: emptyList(),
             filterMetrics  = prefs[filterMetricsKey]?.toList()  ?: emptyList(),
             metricsOrder   = prefs[metricsOrderKey]?.toList()   ?: emptyList(),
-            sortAscending  = prefs[sortAscendingKey] ?: true,
+            sortAscending  = when (prefs[sortAscendingKey]) {
+                "true"  -> true
+                "false" -> false
+                else    -> null
+            },
         )
     }
 
@@ -43,7 +47,7 @@ class FilterPreferencesStore(private val context: Context) {
             p[networksOrderKey]  = prefs.networksOrder.toJson()
             p[filterMetricsKey]  = prefs.filterMetrics.toJson()
             p[metricsOrderKey]   = prefs.metricsOrder.toJson()
-            p[sortAscendingKey]  = prefs.sortAscending
+            p[sortAscendingKey]  = prefs.sortAscending?.toString() ?: "null"
         }
     }
 

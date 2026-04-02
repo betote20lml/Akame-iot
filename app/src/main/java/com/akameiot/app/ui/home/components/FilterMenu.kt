@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import com.akameiot.coreui.components.AppSelectableSortableItem
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -14,6 +13,8 @@ import com.akameiot.coreui.components.AppDropdownMenu
 import com.akameiot.coreui.components.AppMenuSectionHeader
 import com.akameiot.coreui.components.AppMenuDivider
 import com.akameiot.coreui.theme.LocalSpacing
+import androidx.compose.ui.platform.LocalConfiguration
+import com.akameiot.app.ui.home.formatter.TelemetryFormatter
 
 @Composable
 fun FilterMenu(
@@ -25,16 +26,17 @@ fun FilterMenu(
     filterMetrics: List<String>,
     metricsOrder: List<String>,
     availableMetrics: List<String>,
-    sortAscending: Boolean,
     onToggleNetwork: (Network, Boolean) -> Unit,
     onMoveNetworkUp: (String) -> Unit,
     onToggleMetric: (String, Boolean) -> Unit,
     onMoveMetricUp: (String) -> Unit,
-    onSortAscending: (Boolean) -> Unit,
+    sortAscending: Boolean?,
+    onSortAscending: (Boolean?) -> Unit,
 ) {
     var showNetworkOptions by remember { mutableStateOf(false) }
     var showMetricOptions by remember { mutableStateOf(false) }
     val spacing = LocalSpacing.current
+    val locale = LocalConfiguration.current.locales[0]
 
     AppDropdownMenu(
         expanded = expanded,
@@ -96,12 +98,12 @@ fun FilterMenu(
         )
 
         if (showMetricOptions) {
-            // Métricas seleccionadas en orden preferido con opción de subir
             metricsOrder.forEach { metric ->
                 val isFirst = metricsOrder.first() == metric
+                val label = TelemetryFormatter.formatName(metric, locale)
 
                 AppSelectableSortableItem(
-                    label = metric,
+                    label = label,
                     selected = true,
                     isFirst = isFirst,
                     onClick = { onToggleMetric(metric, false) },
@@ -109,14 +111,13 @@ fun FilterMenu(
                 )
             }
 
-
-            // Métricas no seleccionadas
             availableMetrics
                 .filter { !filterMetrics.contains(it) }
                 .forEach { metric ->
+                    val label = TelemetryFormatter.formatName(metric, locale)
 
                     AppSelectableSortableItem(
-                        label = metric,
+                        label = label,
                         selected = false,
                         isFirst = false,
                         onClick = { onToggleMetric(metric, true) }
@@ -133,28 +134,37 @@ fun FilterMenu(
             text = {
                 Text(
                     "Orden ascendente",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                   },
+            },
             leadingIcon = {
-                if (sortAscending) Icon(Icons.Default.Check, contentDescription = null)
+                if (sortAscending == true) Icon(Icons.Default.Check, contentDescription = null)
                 else Spacer(Modifier.size(24.dp))
             },
-            onClick = { onSortAscending(true); onDismiss() }
+            onClick = {
+                // Si ya estaba seleccionado, deselecciona (null). Si no, selecciona.
+                onSortAscending(if (sortAscending == true) null else true)
+                onDismiss()
+            }
         )
 
         DropdownMenuItem(
             text = {
                 Text(
                     "Orden descendente",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                   },
+            },
             leadingIcon = {
-                if (!sortAscending) Icon(Icons.Default.Check, contentDescription = null)
+                if (sortAscending == false) Icon(Icons.Default.Check, contentDescription = null)
                 else Spacer(Modifier.size(24.dp))
             },
-            onClick = { onSortAscending(false); onDismiss() }
+            onClick = {
+                onSortAscending(if (sortAscending == false) null else false)
+                onDismiss()
+            }
         )
     }
 }

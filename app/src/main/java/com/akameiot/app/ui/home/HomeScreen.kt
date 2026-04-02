@@ -94,7 +94,7 @@ fun HomeScreen(
                 is HomeEvent.SubscribedToDevice -> {
                     showSheet = false
                     snackbarHostState.showSnackbar(
-                        message = "✅ Suscrito a ${event.thingName}",
+                        message = " Suscrito a ${event.thingName}",
                         duration = SnackbarDuration.Long
                     )
                 }
@@ -236,10 +236,10 @@ fun HomeScreen(
                 }
 
                 // 3. Ordenar por valor de la primera métrica
-                val sortedNodes = if (uiState.sortAscending) {
-                    nodes.sortedBy { it.metrics.first().latestValue }
-                } else {
-                    nodes.sortedByDescending { it.metrics.first().latestValue }
+                val sortedNodes = when (uiState.sortAscending) {
+                    true  -> nodes.sortedBy { it.metrics.first().latestValue }
+                    false -> nodes.sortedByDescending { it.metrics.first().latestValue }
+                    null  -> nodes.sortedWith(compareBy({ it.networkName }, { it.nodeId }))
                 }
 
                 LazyColumn(

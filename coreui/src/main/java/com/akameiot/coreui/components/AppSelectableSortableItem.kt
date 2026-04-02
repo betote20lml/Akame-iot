@@ -27,6 +27,7 @@ fun AppSelectableSortableItem(
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = spacing.sm)
             )
         },

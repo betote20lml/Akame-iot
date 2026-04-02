@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
 import com.akameiot.app.ui.home.mapper.toUiModel
-import com.akameiot.app.ui.home.model.TelemetryUiModel
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.network.NetworkManager
 import com.akameiot.data.session.DeviceNetworkStore
@@ -183,7 +182,7 @@ class HomeViewModel(
     }
 
 
-    fun setSortAscending(ascending: Boolean) {
+    fun setSortAscending(ascending: Boolean?) {
         _uiState.update { it.copy(sortAscending = ascending) }
         persistFilters()
     }
