@@ -15,7 +15,7 @@ fun SplashScreen(
 
     val viewModel: SplashViewModel = viewModel(
         factory = SplashViewModelFactory(
-            AppModule.checkAuthSessionUseCase
+            AppModule.checkLocalSessionUseCase
         )
     )
 

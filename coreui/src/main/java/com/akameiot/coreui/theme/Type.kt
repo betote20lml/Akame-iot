@@ -40,7 +40,7 @@ val Typography = Typography(
         lineHeight = 20.sp
     ),
 
-    // 🔥 NUEVO — Métricas (VALORES)
+    //  Métricas (VALORES)
     headlineSmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Medium, //
@@ -49,11 +49,10 @@ val Typography = Typography(
         letterSpacing = 0.sp //
     ),
 
-    // 🔥 NUEVO — Nombre de métricas
+
     labelLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 20.sp,
+        fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.2.sp
     ),

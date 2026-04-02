@@ -45,10 +45,27 @@ class HomeViewModel(
 
 
     init {
+        validateSession()
         loadUser()
         loadFilterPreferences()
         checkPendingFcmResubscribe()
         observeTelemetry()
+    }
+
+    private suspend fun handleSessionExpired() {
+        authSessionManager.logout()
+        _events.emit(HomeEvent.NavigateToLogin)
+    }
+
+    private fun validateSession() {
+        viewModelScope.launch {
+            try {
+                authSessionManager.fetchIdToken()
+            } catch (e: SessionExpiredException) {
+                handleSessionExpired()
+            } catch (_: Exception) {
+                 }
+        }
     }
 
     private fun loadFilterPreferences() {
@@ -193,7 +210,11 @@ class HomeViewModel(
                 val user = getAppUserUseCase()
                 _uiState.update { it.copy(appUser = user) }
 
+            } catch (e: SessionExpiredException) {
+                handleSessionExpired()
+
             } catch (e: Exception) {
+
             }
         }
     }
@@ -275,9 +296,7 @@ class HomeViewModel(
             _events.emit(HomeEvent.SubscribedToDevice(thingName))
 
         } catch (e: SessionExpiredException) {
-
-            authSessionManager.logout()
-            _events.emit(HomeEvent.NavigateToLogin)
+            handleSessionExpired()
 
         } catch (e: Exception) {
 
@@ -327,8 +346,7 @@ class HomeViewModel(
                 )
 
             }catch (e: SessionExpiredException) {
-                authSessionManager.logout()
-                _events.emit(HomeEvent.NavigateToLogin)
+                handleSessionExpired()
 
             } catch (e: Exception) {
                 _events.emit(
@@ -355,7 +373,10 @@ class HomeViewModel(
                         AppModule.syncRecentTelemetryUseCase.forceSync(network.thingName)
                     }
                 }
-            } catch (_: Exception) {
+            } catch (e: SessionExpiredException) {
+                handleSessionExpired()
+
+            } catch (e: Exception)  {
 
             }
         }

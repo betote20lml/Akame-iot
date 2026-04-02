@@ -16,5 +16,9 @@ interface AuthSessionManager {
 
     suspend fun setLimitedSession(isLimited: Boolean)
 
+    suspend fun hasLocalSession(): Boolean
+
+    suspend fun setLocalSession(active: Boolean)
+
 
 }

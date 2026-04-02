@@ -36,6 +36,7 @@ import com.akameiot.data.repository_impl.SessionRepositoryImpl
 import com.akameiot.data.repository_impl.SyncRecentTelemetryUseCaseImpl
 import com.akameiot.data.session.FilterPreferencesStore
 import com.akameiot.domain.repository.SessionRepository
+import com.akameiot.domain.usecase.CheckLocalSessionUseCase
 import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
 
@@ -71,7 +72,12 @@ object AppModule {
     }
 
     val authRepository by lazy {
-        AuthRepositoryImpl(cognitoRemote)
+        AuthRepositoryImpl(cognitoRemote,
+            authSessionManager)
+    }
+
+    val checkLocalSessionUseCase by lazy {
+        CheckLocalSessionUseCase(authRepository)
     }
 
     val registerUseCase by lazy {

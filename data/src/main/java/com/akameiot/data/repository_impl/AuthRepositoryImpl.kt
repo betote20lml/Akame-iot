@@ -3,9 +3,11 @@ package com.akameiot.data.repository_impl
 import com.akameiot.data.remote.CognitoAuthRemoteDataSource
 import com.akameiot.domain.model.RegisterResult
 import com.akameiot.domain.repository.AuthRepository
+import com.akameiot.domain.session.AuthSessionManager
 
 class AuthRepositoryImpl(
-    private val remote: CognitoAuthRemoteDataSource
+    private val remote: CognitoAuthRemoteDataSource,
+    private val authSessionManager: AuthSessionManager
 ) : AuthRepository {
 
     override suspend fun register(
@@ -13,6 +15,10 @@ class AuthRepositoryImpl(
         password: String
     ): RegisterResult {
         return remote.register(email, password)
+    }
+
+    override suspend fun hasLocalSession(): Boolean {
+        return authSessionManager.hasLocalSession()
     }
 
     override suspend fun confirmSignUp(
@@ -27,6 +33,9 @@ class AuthRepositoryImpl(
         password: String
     ) {
         remote.login(email, password)
+        authSessionManager.setLimitedSession(false)
+        authSessionManager.setLocalSession(true)
+
     }
 
     override suspend fun isUserLoggedIn(): Boolean {

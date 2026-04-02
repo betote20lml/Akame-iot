@@ -30,4 +30,7 @@ interface AuthRepository {
         code: String,
         newPassword: String
     )
+
+    suspend fun hasLocalSession(): Boolean
+
 }

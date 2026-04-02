@@ -40,6 +40,10 @@ class CognitoAuthSessionManager(
         }
     }
 
+    override suspend fun setLocalSession(active: Boolean) {
+        sessionDataStore.setHasSession(active)
+    }
+
     override suspend fun logout() {
         suspendCancellableCoroutine { cont ->
             val options = AuthSignOutOptions.builder().globalSignOut(true).build()
@@ -47,6 +51,7 @@ class CognitoAuthSessionManager(
                 if (cont.isActive) cont.resume(Unit)
             }
         }
+        sessionDataStore.setHasSession(false)
         sessionDataStore.setLimitedSession(false)
     }
 
@@ -80,6 +85,10 @@ class CognitoAuthSessionManager(
         sessionDataStore.setLimitedSession(isLimited)
     }
 
+    override suspend fun hasLocalSession(): Boolean {
+        return sessionDataStore.hasSession()
+    }
+
     override suspend fun signInWithCustomAuth(username: String, token: String) {
         suspendCancellableCoroutine { cont ->
             Amplify.Auth.signIn(
@@ -91,7 +100,7 @@ class CognitoAuthSessionManager(
                 { result ->
                     if (result.isSignedIn) {
                         if (cont.isActive) cont.resume(Unit)
-                    }else if (result.nextStep.signInStep == AuthSignInStep.CONFIRM_SIGN_IN_WITH_CUSTOM_CHALLENGE) {
+                    } else if (result.nextStep.signInStep == AuthSignInStep.CONFIRM_SIGN_IN_WITH_CUSTOM_CHALLENGE) {
                         Amplify.Auth.confirmSignIn(
                             token,
                             { confirmResult ->
@@ -104,12 +113,15 @@ class CognitoAuthSessionManager(
                             { error -> if (cont.isActive) cont.resumeWithException(error) }
                         )
                     } else {
-                        if (cont.isActive) cont.resumeWithException(Exception("Paso inesperado: ${result.nextStep.signInStep}"))
+                        if (cont.isActive) cont.resumeWithException(
+                            Exception("Paso inesperado: ${result.nextStep.signInStep}")
+                        )
                     }
                 },
                 { error -> if (cont.isActive) cont.resumeWithException(error) }
             )
         }
+        sessionDataStore.setHasSession(true)
     }
 }
 
