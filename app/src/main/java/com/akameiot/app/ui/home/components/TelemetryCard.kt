@@ -35,7 +35,7 @@ fun TelemetryCard(
         ) {
 
             Text(
-                text = "Sensor ${node.nodeId}",
+                text = "${node.networkName} ${node.nodeId}",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontFeatureSettings = "liga=0"
                 ),

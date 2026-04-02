@@ -34,6 +34,7 @@ import com.akameiot.data.repository.TelemetryRepository
 import com.akameiot.data.session.FcmTokenStore
 import com.akameiot.data.repository_impl.SessionRepositoryImpl
 import com.akameiot.data.repository_impl.SyncRecentTelemetryUseCaseImpl
+import com.akameiot.data.session.FilterPreferencesStore
 import com.akameiot.domain.repository.SessionRepository
 import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
@@ -179,5 +180,8 @@ object AppModule {
         )
     }
 
+    val filterPreferencesStore by lazy {
+        FilterPreferencesStore(appContext)
+    }
 
 }

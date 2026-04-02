@@ -8,7 +8,7 @@ fun List<TelemetryEntity>.toUiModel(
 ): List<TelemetryUiModel> {
 
     return this
-        .groupBy { it.meshid } // Unresolved reference 'meshId'.
+        .groupBy { it.meshid }
         .mapNotNull { (meshId, meshData) ->
 
             val nodes = meshData
@@ -40,6 +40,7 @@ fun List<TelemetryEntity>.toUiModel(
 
                     NodeTelemetryUiModel(
                         nodeId = nodeId,
+                        networkName = networkNames[meshId] ?: meshId,
                         metrics = metrics
                     )
                 }

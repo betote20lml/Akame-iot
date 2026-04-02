@@ -15,7 +15,8 @@ class HomeViewModelFactory : ViewModelProvider.Factory {
             networkManager = AppModule.networkManager,
             tokenStore = AppModule.tokenStore,
             telemetryDao = AppModule.telemetryDao,
-            networkStore = AppModule.networkStore
+            networkStore = AppModule.networkStore,
+            filterPreferencesStore = AppModule.filterPreferencesStore,
         ) as T
     }
 }

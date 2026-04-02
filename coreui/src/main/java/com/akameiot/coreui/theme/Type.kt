@@ -11,7 +11,7 @@ val Typography = Typography(
 
     // Para headers de auth
     titleLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
+
         fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
         lineHeight = 28.sp
@@ -19,7 +19,7 @@ val Typography = Typography(
 
     // Labels importantes
     titleMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
+
         fontWeight = FontWeight.Medium,
         fontSize = 18.sp,
         lineHeight = 24.sp
@@ -27,14 +27,14 @@ val Typography = Typography(
 
     // Texto normal (inputs, etc)
     bodyLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
+
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp
     ),
 
     bodyMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
+
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp

@@ -14,7 +14,7 @@ import com.akameiot.app.fcm.FcmEventBus
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.akameiot.app.ui.home.components.NetworkDropdown
+import com.akameiot.app.ui.home.components.FilterMenu
 import com.akameiot.app.ui.home.components.TelemetryCard
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.components.*
@@ -22,6 +22,7 @@ import com.akameiot.app.ui.navigation.DrawerDestinations
 import com.akameiot.app.ui.navigation.Routes
 import com.akameiot.app.ui.navigation.Routes.LOGIN
 import com.akameiot.domain.model.AppUser
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,11 +105,16 @@ fun HomeScreen(
 
     MainScaffold(
         titleContent = {
-            NetworkDropdown(
-                networks = uiState.networks,
-                selectedNetwork = uiState.selectedNetwork,
-                selectedNetworkInfo = uiState.selectedNetworkInfo,
-                onNetworkSelected = { viewModel.selectNetwork(it) }
+            val title = when {
+                uiState.filterNetworks.size == 1 -> uiState.filterNetworks.first().displayName
+                uiState.filterNetworks.size > 1 -> "${uiState.filterNetworks.size} Redes Seleccionadas"
+                uiState.networks.size == 1 -> uiState.networks.first().displayName
+                else -> "Telemetría"
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         drawerState = drawerState,
@@ -144,14 +150,38 @@ fun HomeScreen(
             scope.launch { drawerState.open() }
         },
         actions = {
-            IconButton(onClick = { }) {
+            var showFilterMenu by remember { mutableStateOf(false) }
+
+            val availableMetrics = remember(uiState.telemetry) {
+                uiState.telemetry.flatMap { it.nodes }.flatMap { it.metrics }
+                    .map { it.name }.distinct().sorted()
+            }
+
+            IconButton(onClick = { showFilterMenu = true }) {
                 Icon(Icons.Default.FilterList, contentDescription = null)
             }
+
+            FilterMenu(
+                expanded = showFilterMenu,
+                onDismiss = { showFilterMenu = false },
+                networks = uiState.networks,
+                filterNetworks = uiState.filterNetworks,
+                networksOrder = uiState.networksOrder,
+                filterMetrics = uiState.filterMetrics,
+                metricsOrder = uiState.metricsOrder,
+                availableMetrics = availableMetrics,
+                sortAscending = uiState.sortAscending,
+                onToggleNetwork = { network, selected -> viewModel.filterByNetwork(network, selected) },
+                onMoveNetworkUp = { viewModel.moveNetworkUp(it) },
+                onToggleMetric = { metric, selected -> viewModel.filterByMetric(metric, selected) },
+                onMoveMetricUp = { viewModel.moveMetricUp(it) },
+                onSortAscending = { viewModel.setSortAscending(it) }
+            )
 
             IconButton(onClick = { }) {
                 Icon(Icons.Default.MoreVert, contentDescription = null)
             }
-        }
+        },
     ) { padding ->
 
         Box(
@@ -175,7 +205,42 @@ fun HomeScreen(
 
             } else {
 
-                val nodes = selectedNetwork?.nodes ?: emptyList()
+                // 1. Determinar redes a mostrar en orden preferido
+                val networksToShow = if (uiState.filterNetworks.isEmpty()) {
+                    uiState.telemetry
+                } else {
+                    uiState.networksOrder.mapNotNull { thingName ->
+                        uiState.telemetry.find { it.meshId == thingName }
+                    }
+                }
+
+                // 2. Obtener nodos agrupados por red en orden preferido
+                val nodes = networksToShow.flatMap { network ->
+                    network.nodes.map { node ->
+                        val orderedMetrics = if (uiState.metricsOrder.isEmpty()) {
+                            node.metrics
+                        } else {
+                            val selected = uiState.metricsOrder.mapNotNull { name ->
+                                node.metrics.find { it.name == name }
+                            }
+                            val rest = node.metrics.filter { it.name !in uiState.metricsOrder }
+                            selected + rest
+                        }
+                        val filteredMetrics = if (uiState.filterMetrics.isEmpty()) {
+                            orderedMetrics
+                        } else {
+                            orderedMetrics.filter { it.name in uiState.filterMetrics }
+                        }
+                        node.copy(metrics = filteredMetrics)
+                    }.filter { it.metrics.isNotEmpty() }
+                }
+
+                // 3. Ordenar por valor de la primera métrica
+                val sortedNodes = if (uiState.sortAscending) {
+                    nodes.sortedBy { it.metrics.first().latestValue }
+                } else {
+                    nodes.sortedByDescending { it.metrics.first().latestValue }
+                }
 
                 LazyColumn(
                     modifier = Modifier
@@ -185,8 +250,8 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(
-                        items = nodes,
-                        key = { it.nodeId }
+                        items = sortedNodes,
+                        key = { "${it.networkName}_${it.nodeId}" }
                     ) { node ->
                         TelemetryCard(node = node)
                     }
