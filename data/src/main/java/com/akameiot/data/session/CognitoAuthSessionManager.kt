@@ -1,6 +1,7 @@
 package com.akameiot.data.session
 
 
+import com.akameiot.domain.exceptions.SessionExpiredException
 import com.akameiot.domain.session.AuthSessionManager
 import com.amplifyframework.core.Amplify
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -65,15 +66,17 @@ class CognitoAuthSessionManager(
                         ?.value
                         ?.idToken
 
-                    if (idToken != null) {
-                        if (cont.isActive) cont.resume(idToken)
+                    if (!session.isSignedIn || idToken == null) {
+                        if (cont.isActive) {
+                            cont.resumeWithException(SessionExpiredException())
+                        }
                     } else {
-                        if (cont.isActive) cont.resumeWithException(
-                            Exception("No se pudo obtener el ID Token — sesión no activa")
-                        )
+                        if (cont.isActive) cont.resume(idToken)
                     }
                 },
-                { error -> if (cont.isActive) cont.resumeWithException(error) }
+                { error ->
+                    if (cont.isActive) cont.resumeWithException(error)
+                }
             )
         }
 
