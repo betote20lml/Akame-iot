@@ -180,7 +180,7 @@ fun HomeScreen(
 
             val selectedNetwork = uiState.selectedNetwork
 
-            if (uiState.telemetry.isEmpty()) {
+            if (uiState.telemetry.isEmpty() && !uiState.isLoading) {
 
                 EmptyStateComponent(
                     title = "Conecta tu red IoT",

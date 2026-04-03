@@ -134,7 +134,7 @@ fun FilterMenu(
             text = {
                 Text(
                     "Orden ascendente",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -146,14 +146,15 @@ fun FilterMenu(
                 // Si ya estaba seleccionado, deselecciona (null). Si no, selecciona.
                 onSortAscending(if (sortAscending == true) null else true)
                 onDismiss()
-            }
+            },
+            contentPadding = PaddingValues(0.dp)
         )
 
         DropdownMenuItem(
             text = {
                 Text(
                     "Orden descendente",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -164,7 +165,8 @@ fun FilterMenu(
             onClick = {
                 onSortAscending(if (sortAscending == false) null else false)
                 onDismiss()
-            }
+            },
+            contentPadding = PaddingValues(0.dp)
         )
     }
 }
