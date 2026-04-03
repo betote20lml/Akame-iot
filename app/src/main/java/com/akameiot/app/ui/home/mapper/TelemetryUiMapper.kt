@@ -11,6 +11,7 @@ fun List<TelemetryEntity>.toUiModel(
         .groupBy { it.meshid }
         .mapNotNull { (meshId, meshData) ->
 
+            val latestMeshTimestamp = meshData.maxOf { it.timestamp }
             val nodes = meshData
                 .groupBy { it.nodeId }
                 .toSortedMap()
@@ -41,7 +42,8 @@ fun List<TelemetryEntity>.toUiModel(
                     NodeTelemetryUiModel(
                         nodeId = nodeId,
                         networkName = networkNames[meshId] ?: meshId,
-                        metrics = metrics
+                        metrics = metrics,
+                        isStale = metrics.maxOf { it.timestamp } < latestMeshTimestamp
                     )
                 }
 

@@ -26,7 +26,10 @@ fun TelemetryCard(
         shape = MaterialTheme.shapes.large,
 
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (node.isStale)
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f)
+            else
+                MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
 
