@@ -17,7 +17,6 @@ class HomeViewModelFactory : ViewModelProvider.Factory {
             telemetryDao = AppModule.telemetryDao,
             networkStore = AppModule.networkStore,
             filterPreferencesStore = AppModule.filterPreferencesStore,
-            calculateMeshWindowUseCase = AppModule.calculateMeshWindowUseCase
         ) as T
     }
 }

@@ -25,13 +25,7 @@ import com.akameiot.data.session.FilterPreferencesStore
 import com.akameiot.di.AppModule
 import com.akameiot.domain.model.Network
 import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
-import androidx.work.Constraints
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
-import com.akameiot.app.fcm.worker.SyncTelemetryWorker
+
 
 class HomeViewModel(
     private val activateDeviceUseCase: ActivateDeviceUseCase,
@@ -42,7 +36,7 @@ class HomeViewModel(
     private val telemetryDao: TelemetryDao,
     private val networkStore: DeviceNetworkStore,
     private val filterPreferencesStore: FilterPreferencesStore,
-    private val calculateMeshWindowUseCase: CalculateMeshWindowUseCase,
+
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
@@ -60,7 +54,6 @@ class HomeViewModel(
         loadMeshWindows()
         checkPendingFcmResubscribe()
         observeTelemetry()
-        checkAndSyncStaleData()
     }
 
     private suspend fun handleSessionExpired() {
@@ -237,62 +230,6 @@ class HomeViewModel(
             } catch (_: Exception) { }
         }
     }
-
-    private fun checkAndSyncStaleData() {
-        viewModelScope.launch {
-            try {
-                val networks = networkStore.getNetworks()
-                val nowSeconds = System.currentTimeMillis() / 1000L
-
-                networks.forEach { network ->
-                    launch {
-                        try {
-                            val latestTs = telemetryDao.getLatestTimestamp(network.thingName)
-                                ?: return@launch
-                            val ageSeconds = nowSeconds - latestTs
-
-                            val window = calculateMeshWindowUseCase.getOrCalculate(network.thingName)
-
-                            // Refrescar meshWindows en uiState con la ventana recién obtenida/calculada
-                            _uiState.update { state ->
-                                state.copy(meshWindows = state.meshWindows + (network.thingName to window))
-                            }
-
-                            val threshold = (window * 1.2)
-                                .toLong()
-                                .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
-
-                            if (ageSeconds > threshold) {
-                                android.util.Log.d("MeshSync", "Syncing stale mesh: ${network.thingName}, age=${ageSeconds}s, threshold=${threshold}s")
-                                val work = OneTimeWorkRequestBuilder<SyncTelemetryWorker>()
-                                    .setInputData(
-                                        workDataOf(
-                                            "meshId" to network.thingName,
-                                            "notifTs" to 0L
-                                        )
-                                    )
-                                    .setConstraints(
-                                        Constraints.Builder()
-                                            .setRequiredNetworkType(NetworkType.CONNECTED)
-                                            .build()
-                                    )
-                                    .build()
-
-                                WorkManager.getInstance(AppModule.appContext)
-                                    .enqueueUniqueWork(
-                                        "sync_${network.thingName}",
-                                        ExistingWorkPolicy.REPLACE,
-                                        work
-                                    )
-                            }
-                        } catch (_: Exception) { }
-                    }
-                }
-            } catch (_: Exception) { }
-        }
-    }
-
-
 
     fun filterByNetwork(network: Network, selected: Boolean) {
         val current = _uiState.value.filterNetworks.toMutableList()
