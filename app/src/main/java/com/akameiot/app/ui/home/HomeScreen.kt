@@ -102,7 +102,7 @@ fun HomeScreen(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onPrimary
             )
         },
         drawerState = drawerState,
@@ -140,10 +140,7 @@ fun HomeScreen(
         actions = {
             var showFilterMenu by remember { mutableStateOf(false) }
 
-            val availableMetrics = remember(uiState.telemetry) {
-                uiState.telemetry.flatMap { it.nodes }.flatMap { it.metrics }
-                    .map { it.name }.distinct().sorted()
-            }
+            val availableMetrics = uiState.availableMetrics
 
             IconButton(onClick = { showFilterMenu = true }) {
                 Icon(Icons.Default.FilterList, contentDescription = null)
@@ -178,7 +175,6 @@ fun HomeScreen(
                 .padding(padding)
         ) {
 
-            val selectedNetwork = uiState.selectedNetwork
 
             if (uiState.telemetry.isEmpty() && !uiState.isLoading) {
 
@@ -193,43 +189,6 @@ fun HomeScreen(
 
             } else {
 
-                // 1. Determinar redes a mostrar en orden preferido
-                val networksToShow = if (uiState.filterNetworks.isEmpty() ||
-                    uiState.networksOrder.isEmpty()) {
-                    uiState.telemetry
-                } else {
-                    uiState.networksOrder.mapNotNull { thingName ->
-                        uiState.telemetry.find { it.meshId == thingName }
-                    }
-                }
-
-                // 2. Obtener nodos agrupados por red en orden preferido
-                val nodes = networksToShow.flatMap { network ->
-                    network.nodes.map { node ->
-                        val orderedMetrics = if (uiState.metricsOrder.isEmpty()) {
-                            node.metrics
-                        } else {
-                            val selected = uiState.metricsOrder.mapNotNull { name ->
-                                node.metrics.find { it.name == name }
-                            }
-                            val rest = node.metrics.filter { it.name !in uiState.metricsOrder }
-                            selected + rest
-                        }
-                        val filteredMetrics = if (uiState.filterMetrics.isEmpty()) {
-                            orderedMetrics
-                        } else {
-                            orderedMetrics.filter { it.name in uiState.filterMetrics }
-                        }
-                        node.copy(metrics = filteredMetrics)
-                    }.filter { it.metrics.isNotEmpty() }
-                }
-
-                // 3. Ordenar por valor de la primera métrica
-                val sortedNodes = when (uiState.sortAscending) {
-                    true  -> nodes.sortedBy { it.metrics.first().latestValue }
-                    false -> nodes.sortedByDescending { it.metrics.first().latestValue }
-                    null  -> nodes.sortedWith(compareBy({ it.networkName }, { it.nodeId }))
-                }
 
                 LazyColumn(
                     modifier = Modifier
@@ -239,7 +198,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(
-                        items = sortedNodes,
+                        items = uiState.visibleNodes,
                         key = { "${it.networkName}_${it.nodeId}" }
                     ) { node ->
                         TelemetryCard(node = node)
