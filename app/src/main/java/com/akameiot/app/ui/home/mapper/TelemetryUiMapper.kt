@@ -2,6 +2,7 @@ package com.akameiot.app.ui.home.mapper
 
 import com.akameiot.app.ui.home.model.*
 import com.akameiot.data.local.entity.TelemetryEntity
+import com.akameiot.app.ui.home.model.MetricTrend
 
 fun List<TelemetryEntity>.toUiModel(
     networkNames: Map<String, String>
@@ -28,12 +29,19 @@ fun List<TelemetryEntity>.toUiModel(
                             val history = sorted.map {
                                 it.timestamp to it.value
                             }
+                            val trend = when {
+                                sorted.size < 2 -> MetricTrend.FLAT
+                                latest.value > sorted[sorted.size - 2].value -> MetricTrend.UP
+                                latest.value < sorted[sorted.size - 2].value -> MetricTrend.DOWN
+                                else -> MetricTrend.FLAT
+                            }
 
                             MetricUiModel(
                                 name = metricName,
                                 latestValue = latest.value,
                                 timestamp = latest.timestamp,
-                                history = history
+                                history = history,
+                                trend = trend
                             )
                         }
 

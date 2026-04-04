@@ -34,15 +34,19 @@ import com.akameiot.data.repository.TelemetryRepository
 import com.akameiot.data.session.FcmTokenStore
 import com.akameiot.data.repository_impl.SessionRepositoryImpl
 import com.akameiot.data.repository_impl.SyncRecentTelemetryUseCaseImpl
+import com.akameiot.data.repository_impl.TelemetryWindowRepositoryImpl
 import com.akameiot.data.session.FilterPreferencesStore
+import com.akameiot.data.session.MeshUpdateWindowStore
 import com.akameiot.domain.repository.SessionRepository
+import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
 import com.akameiot.domain.usecase.CheckLocalSessionUseCase
 import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
 
 object AppModule {
 
-    private lateinit var appContext: Context
+    lateinit var appContext: Context
+        private set
     fun init(context: Context) {
         appContext = context.applicationContext
     }
@@ -188,6 +192,20 @@ object AppModule {
 
     val filterPreferencesStore by lazy {
         FilterPreferencesStore(appContext)
+    }
+
+    val meshWindowStore by lazy {
+        MeshUpdateWindowStore(appContext) }
+
+    val telemetryWindowRepository by lazy {
+        TelemetryWindowRepositoryImpl(telemetryDao)
+    }
+
+    val calculateMeshWindowUseCase by lazy {
+        CalculateMeshWindowUseCase(
+            telemetryWindowRepository = telemetryWindowRepository,
+            meshWindowRepository = meshWindowStore
+        )
     }
 
 }

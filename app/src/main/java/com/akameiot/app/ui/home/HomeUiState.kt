@@ -20,5 +20,6 @@ data class HomeUiState(
     val savedFilterNetworkNames: List<String> = emptyList(),
     val visibleNodes: List<NodeTelemetryUiModel> = emptyList(),
     val availableMetrics: List<String> = emptyList(),
-    val isEmptyState: Boolean = false
+    val isEmptyState: Boolean = false,
+    val meshWindows: Map<String, Long> = emptyMap()
 )

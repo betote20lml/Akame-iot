@@ -36,12 +36,22 @@ interface TelemetryDao {
 
     @Query("""
     SELECT * FROM telemetry t
-    WHERE timestamp = (
-        SELECT MAX(timestamp) FROM telemetry
+    WHERE timestamp IN (
+        SELECT timestamp FROM telemetry
         WHERE meshid = t.meshid
         AND nodeId = t.nodeId
         AND metric = t.metric
+        ORDER BY timestamp DESC
+        LIMIT 2
     )
     """)
     fun observeLatestPerMetric(): Flow<List<TelemetryEntity>>
+
+    @Query("""
+    SELECT timestamp FROM telemetry
+    WHERE meshid = :meshId
+    ORDER BY timestamp ASC
+    LIMIT 100
+""")
+    suspend fun getOldestTimestamps(meshId: String): List<Long>
 }

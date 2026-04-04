@@ -24,6 +24,14 @@ import com.akameiot.data.session.FcmTokenStore
 import com.akameiot.data.session.FilterPreferencesStore
 import com.akameiot.di.AppModule
 import com.akameiot.domain.model.Network
+import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.akameiot.app.fcm.worker.SyncTelemetryWorker
 
 class HomeViewModel(
     private val activateDeviceUseCase: ActivateDeviceUseCase,
@@ -34,6 +42,7 @@ class HomeViewModel(
     private val telemetryDao: TelemetryDao,
     private val networkStore: DeviceNetworkStore,
     private val filterPreferencesStore: FilterPreferencesStore,
+    private val calculateMeshWindowUseCase: CalculateMeshWindowUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
@@ -48,8 +57,10 @@ class HomeViewModel(
         validateSession()
         loadUser()
         loadFilterPreferences()
+        loadMeshWindows()
         checkPendingFcmResubscribe()
         observeTelemetry()
+        checkAndSyncStaleData()
     }
 
     private suspend fun handleSessionExpired() {
@@ -72,14 +83,11 @@ class HomeViewModel(
         viewModelScope.launch {
             filterPreferencesStore.prefsFlow.first().let { prefs ->
                 _uiState.update { state ->
-                    // Reconstruir filterNetworks desde los thingNames guardados
-                    // (las Network completas las tendremos cuando carguen las redes)
                     state.copy(
                         networksOrder  = prefs.networksOrder,
                         filterMetrics  = prefs.filterMetrics,
                         metricsOrder   = prefs.metricsOrder,
                         sortAscending  = prefs.sortAscending,
-                        // filterNetworks se reconstruye en observeTelemetry una vez que lleguen las redes
                         savedFilterNetworkNames = prefs.filterNetworks,
                     )
                 }
@@ -152,33 +160,40 @@ class HomeViewModel(
                 }
 
                 // nodes
+                val nowSeconds = System.currentTimeMillis() / 1000L
+
                 val nodes = networksToShow
                     .distinctBy { it.meshId }
                     .flatMap { network ->
+                        val windowSeconds = state.meshWindows[network.meshId]
+                            ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
+                        val staleThresholdSeconds = windowSeconds * 2
+
                         network.nodes
                             .distinctBy { it.nodeId }
                             .map { node ->
+                                val latestNodeTs = node.metrics.maxOfOrNull { it.timestamp } ?: 0L
+                                val isStaleByTime = (nowSeconds - latestNodeTs) > staleThresholdSeconds
 
-                        val metricsByName = node.metrics.associateBy { it.name }
-
-                        val orderedMetrics = if (state.metricsOrder.isEmpty()) {
-                            node.metrics
-                        } else {
-                            val selected = state.metricsOrder.mapNotNull { metricsByName[it] }
-                            val rest = node.metrics.filter { it.name !in state.metricsOrder }
-                            selected + rest
-                        }
-
-                        val filteredMetrics = if (state.filterMetrics.isEmpty()) {
-                            orderedMetrics
-                        } else {
-                            orderedMetrics.filter { it.name in state.filterMetrics }
-                        }
-
-                        node.copy(metrics = filteredMetrics)
-                    }.filter { it.metrics.isNotEmpty() }
-
-                }
+                                val metricsByName = node.metrics.associateBy { it.name }
+                                val orderedMetrics = if (state.metricsOrder.isEmpty()) {
+                                    node.metrics
+                                } else {
+                                    val selected = state.metricsOrder.mapNotNull { metricsByName[it] }
+                                    val rest = node.metrics.filter { it.name !in state.metricsOrder }
+                                    selected + rest
+                                }
+                                val filteredMetrics = if (state.filterMetrics.isEmpty()) {
+                                    orderedMetrics
+                                } else {
+                                    orderedMetrics.filter { it.name in state.filterMetrics }
+                                }
+                                node.copy(
+                                    metrics = filteredMetrics,
+                                    isStaleByTime = isStaleByTime
+                                )
+                            }.filter { it.metrics.isNotEmpty() }
+                    }
 
                 // sorting
                 val sortedNodes = when (state.sortAscending) {
@@ -214,6 +229,68 @@ class HomeViewModel(
         }
     }
 
+    private fun loadMeshWindows() {
+        viewModelScope.launch {
+            try {
+                val stored = AppModule.meshWindowStore.getAllWindows()
+                _uiState.update { it.copy(meshWindows = stored) }
+            } catch (_: Exception) { }
+        }
+    }
+
+    private fun checkAndSyncStaleData() {
+        viewModelScope.launch {
+            try {
+                val networks = networkStore.getNetworks()
+                val nowSeconds = System.currentTimeMillis() / 1000L
+
+                networks.forEach { network ->
+                    launch {
+                        try {
+                            val latestTs = telemetryDao.getLatestTimestamp(network.thingName)
+                                ?: return@launch
+                            val ageSeconds = nowSeconds - latestTs
+
+                            val window = calculateMeshWindowUseCase.getOrCalculate(network.thingName)
+
+                            // Refrescar meshWindows en uiState con la ventana recién obtenida/calculada
+                            _uiState.update { state ->
+                                state.copy(meshWindows = state.meshWindows + (network.thingName to window))
+                            }
+
+                            val threshold = (window * 1.2)
+                                .toLong()
+                                .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
+
+                            if (ageSeconds > threshold) {
+                                android.util.Log.d("MeshSync", "Syncing stale mesh: ${network.thingName}, age=${ageSeconds}s, threshold=${threshold}s")
+                                val work = OneTimeWorkRequestBuilder<SyncTelemetryWorker>()
+                                    .setInputData(
+                                        workDataOf(
+                                            "meshId" to network.thingName,
+                                            "notifTs" to 0L
+                                        )
+                                    )
+                                    .setConstraints(
+                                        Constraints.Builder()
+                                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                                            .build()
+                                    )
+                                    .build()
+
+                                WorkManager.getInstance(AppModule.appContext)
+                                    .enqueueUniqueWork(
+                                        "sync_${network.thingName}",
+                                        ExistingWorkPolicy.REPLACE,
+                                        work
+                                    )
+                            }
+                        } catch (_: Exception) { }
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+    }
 
 
 
