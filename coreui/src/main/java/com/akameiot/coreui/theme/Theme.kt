@@ -13,37 +13,74 @@ import androidx.core.view.WindowCompat
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 
+data class AppColors(
+    val cardBackground: Color,
+    val cardBorder: Color,
+    val staleBackground: Color,
+    val staleBorder: Color,
+    val divider: Color,
+    val timestamp: Color,
+    val metricValue: Color
+)
+
+val LocalAppColors = staticCompositionLocalOf<AppColors> {
+    error("No AppColors provided")
+}
 
 
-/* ─────────────────────────────
-   🎨 PALETA DE COLORES
-───────────────────────────── */
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF2E7D32), // verde fuerte
-    onPrimary = Color.White,
-    background = Color(0xFF161E0E),
-    onSurfaceVariant = Color(0xFFB0B8C1),
-    onBackground = Color.White,
-    surface = Color(0xFF172614),
-    onSurface = Color.White,
-    error = Color(0xFFCF6679)
+    primary           = Color(0xFF4A9959),
+    onPrimary         = Color.White,
+    background        = Color(0xFF161E0E),
+    onBackground      = Color.White,
+    surface           = Color(0xFF1E2D1A),
+    onSurface         = Color(0xFFE8EDE2),
+    surfaceVariant    = Color(0xFF243320),
+    onSurfaceVariant  = Color(0xFFB0B8A8),
+    outline           = Color(0xFF3A4F34),
+    outlineVariant    = Color(0xFF2A3D25),
+    error             = Color(0xFFCF6679)
 )
+
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF2E7D32),
-    onPrimary = Color.White,
-    background = Color(0xFFF6F6F8),
-    onSurfaceVariant = Color(0xFF5F6368),
-    onBackground = Color.Black,
-    surface = Color.White,
-    onSurface = Color.Black,
-    error = Color(0xFFB00020)
+    primary           = Color(0xFF4A9959),
+    onPrimary         = Color.White,
+    background        = Color(0xFFF4F6F2),
+    onBackground      = Color(0xFF1A1C19),
+    surface           = Color(0xFFFFFFFF),
+    onSurface         = Color(0xFF1A1C19),
+    surfaceVariant    = Color(0xFFEEF2E8),
+    onSurfaceVariant  = Color(0xFF5C6358),
+    outline           = Color(0xFFC4CAC0),
+    outlineVariant    = Color(0xFFDDE3D5),
+    error             = Color(0xFFB00020)
 )
 
-/* ─────────────────────────────
-   🧠 THEME PRINCIPAL
-───────────────────────────── */
+private val LightAppColors = AppColors(
+    cardBackground = Color.White,
+    cardBorder = Color(0xFFDDE3D5),
+
+    staleBackground = Color(0xFFFFFDE7),
+    staleBorder = Color(0xFFD4BC6A),
+
+    divider = Color(0xFFE8EDE2),
+    timestamp = Color(0xFF9AA09A),
+    metricValue = Color(0xFF2E7D32)
+)
+
+private val DarkAppColors = AppColors(
+    cardBackground = Color(0xFF1E2D1A),
+    cardBorder = Color(0xFF2E4228),
+
+    staleBackground = Color(0xFF2A2510),
+    staleBorder = Color(0xFFC4A84A),
+
+    divider = Color(0xFF2A3D25),
+    timestamp = Color(0xFF6B7B65),
+    metricValue = Color(0xFF66BB6A)
+)
 
 @Composable
 fun AppTheme(
@@ -51,6 +88,7 @@ fun AppTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val appColors   = if (darkTheme) DarkAppColors else LightAppColors
     val view = LocalView.current
 
     // Manejo correcto del sistema de ventanas
@@ -62,7 +100,8 @@ fun AppTheme(
     }
 
     CompositionLocalProvider(
-        LocalSpacing provides Spacing()
+        LocalSpacing provides Spacing(),
+                LocalAppColors provides appColors
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

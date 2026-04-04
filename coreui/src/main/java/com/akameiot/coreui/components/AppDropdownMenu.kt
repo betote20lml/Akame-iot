@@ -22,7 +22,8 @@ fun AppDropdownMenu(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        modifier = modifier.width(260.dp)
+        modifier = modifier.width(260.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         Column(
             modifier = Modifier.padding(vertical = spacing.xs),

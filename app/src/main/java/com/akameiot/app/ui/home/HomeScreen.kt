@@ -194,7 +194,8 @@ fun HomeScreen(
             } else {
 
                 // 1. Determinar redes a mostrar en orden preferido
-                val networksToShow = if (uiState.filterNetworks.isEmpty()) {
+                val networksToShow = if (uiState.filterNetworks.isEmpty() ||
+                    uiState.networksOrder.isEmpty()) {
                     uiState.telemetry
                 } else {
                     uiState.networksOrder.mapNotNull { thingName ->

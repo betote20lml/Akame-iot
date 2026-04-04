@@ -1,5 +1,6 @@
 package com.akameiot.app.ui.home
 
+import com.akameiot.app.ui.home.model.NodeTelemetryUiModel
 import com.akameiot.app.ui.home.model.TelemetryUiModel
 import com.akameiot.domain.model.AppUser
 import com.akameiot.domain.model.Network
@@ -17,4 +18,7 @@ data class HomeUiState(
     val metricsOrder: List<String> = emptyList(),
     val sortAscending: Boolean? = null,
     val savedFilterNetworkNames: List<String> = emptyList(),
+    val visibleNodes: List<NodeTelemetryUiModel> = emptyList(),
+    val availableMetrics: List<String> = emptyList(),
+    val isEmptyState: Boolean = false
 )
