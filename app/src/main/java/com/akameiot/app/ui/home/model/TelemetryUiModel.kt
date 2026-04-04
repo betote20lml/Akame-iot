@@ -9,6 +9,7 @@ data class TelemetryUiModel(
 
 data class NodeTelemetryUiModel(
     val nodeId: Int,
+    val meshId: String,
     val networkName: String,
     val metrics: List<MetricUiModel>,
     val isStale: Boolean = false

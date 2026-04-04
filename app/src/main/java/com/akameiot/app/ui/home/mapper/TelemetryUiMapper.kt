@@ -41,6 +41,7 @@ fun List<TelemetryEntity>.toUiModel(
 
                     NodeTelemetryUiModel(
                         nodeId = nodeId,
+                        meshId = meshId,
                         networkName = networkNames[meshId] ?: meshId,
                         metrics = metrics,
                         isStale = metrics.maxOf { it.timestamp } < latestMeshTimestamp

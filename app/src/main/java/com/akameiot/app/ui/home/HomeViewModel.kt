@@ -92,10 +92,11 @@ class HomeViewModel(
             val s = _uiState.value
             filterPreferencesStore.save(
                 FilterPreferencesStore.FilterPrefs(
-                    filterNetworks = s.filterNetworks.map { it.thingName },
-                    networksOrder  = s.networksOrder,
-                    filterMetrics  = s.filterMetrics,
-                    metricsOrder   = s.metricsOrder,
+                    filterNetworks = s.filterNetworks.map { it.thingName }.distinct(),
+
+                    networksOrder  = s.networksOrder.distinct(),
+                    filterMetrics  = s.filterMetrics.distinct(),
+                    metricsOrder   = s.metricsOrder.distinct(),
                     sortAscending  = s.sortAscending,
                 )
             )
@@ -144,12 +145,16 @@ class HomeViewModel(
                     }
 
                     else -> {
-                        state.networksOrder.mapNotNull { telemetryById[it] }
+                        state.networksOrder
+                            .distinct()
+                            .mapNotNull { telemetryById[it] }
                     }
                 }
 
                 // nodes
-                val nodes = networksToShow.flatMap { network ->
+                val nodes = networksToShow
+                    .distinctBy { it.meshId }
+                    .flatMap { network ->
                     network.nodes.map { node ->
 
                         val metricsByName = node.metrics.associateBy { it.name }
@@ -170,6 +175,7 @@ class HomeViewModel(
 
                         node.copy(metrics = filteredMetrics)
                     }.filter { it.metrics.isNotEmpty() }
+
                 }
 
                 // sorting
@@ -213,10 +219,13 @@ class HomeViewModel(
         val current = _uiState.value.filterNetworks.toMutableList()
         val currentOrder = _uiState.value.networksOrder.toMutableList()
         if (selected) {
-            if (current.none { it.thingName == network.thingName }) {
-                current.add(network)
-                currentOrder.add(network.thingName)
-            }
+
+                if (current.none { it.thingName == network.thingName }) {
+                    current.add(network)
+                }
+                if (!currentOrder.contains(network.thingName)) {
+                    currentOrder.add(network.thingName)
+                }
         } else {
             current.removeAll { it.thingName == network.thingName }
             currentOrder.remove(network.thingName)
