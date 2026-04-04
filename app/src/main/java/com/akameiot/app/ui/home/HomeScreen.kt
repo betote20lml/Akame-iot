@@ -199,7 +199,9 @@ fun HomeScreen(
                 ) {
                     items(
                         items = uiState.visibleNodes,
-                        key = { "${it.meshId}_${it.nodeId}" }
+                        key = { node ->
+                            "${node.networkName}_${node.nodeId}_${node.metrics.hashCode()}"
+                        }
                     ) { node ->
                         TelemetryCard(node = node)
                     }

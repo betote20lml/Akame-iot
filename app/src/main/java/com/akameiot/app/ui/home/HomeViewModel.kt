@@ -155,7 +155,9 @@ class HomeViewModel(
                 val nodes = networksToShow
                     .distinctBy { it.meshId }
                     .flatMap { network ->
-                    network.nodes.map { node ->
+                        network.nodes
+                            .distinctBy { it.nodeId }
+                            .map { node ->
 
                         val metricsByName = node.metrics.associateBy { it.name }
 
