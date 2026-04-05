@@ -25,6 +25,8 @@ import com.akameiot.data.session.FilterPreferencesStore
 import com.akameiot.di.AppModule
 import com.akameiot.domain.model.Network
 import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 class HomeViewModel(
@@ -118,103 +120,133 @@ class HomeViewModel(
                 dataFlow,
                 _uiState
             ) { (latestTelemetry, networks), state ->
-
-                val networkNames = networks.associate { it.thingName to it.displayName }
-                val uiTelemetry = latestTelemetry.toUiModel(networkNames)
-                val telemetryById = uiTelemetry.associateBy { it.meshId }
-
-                val currentSelectedInfo = state.selectedNetworkInfo
-                val newSelectedInfo = currentSelectedInfo ?: networks.firstOrNull()
-                val newSelectedTelemetry = newSelectedInfo?.let { telemetryById[it.thingName] }
-
-                // restaurar filtros
-                val savedNames = state.savedFilterNetworkNames
-                val restoredFilterNetworks = if (savedNames.isNotEmpty()) {
-                    networks.filter { it.thingName in savedNames }
-                } else {
-                    state.filterNetworks
-                }
-
-                // networksToShow
-                val networksToShow = when {
-                    restoredFilterNetworks.isEmpty() -> uiTelemetry
-
-                    state.networksOrder.isEmpty() -> {
-                        uiTelemetry.filter { telemetry ->
-                            restoredFilterNetworks.any { it.thingName == telemetry.meshId }
-                        }
-                    }
-
-                    else -> {
-                        state.networksOrder
-                            .distinct()
-                            .mapNotNull { telemetryById[it] }
-                    }
-                }
-
-                // nodes
-                val nowSeconds = System.currentTimeMillis() / 1000L
-
-                val nodes = networksToShow
-                    .distinctBy { it.meshId }
-                    .flatMap { network ->
-                        val windowSeconds = state.meshWindows[network.meshId]
-                            ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
-                        val staleThresholdSeconds = windowSeconds * 2
-
-                        network.nodes
-                            .distinctBy { it.nodeId }
-                            .map { node ->
-                                val latestNodeTs = node.metrics.maxOfOrNull { it.timestamp } ?: 0L
-                                val isStaleByTime = (nowSeconds - latestNodeTs) > staleThresholdSeconds
-
-                                val metricsByName = node.metrics.associateBy { it.name }
-                                val orderedMetrics = if (state.metricsOrder.isEmpty()) {
-                                    node.metrics
-                                } else {
-                                    val selected = state.metricsOrder.mapNotNull { metricsByName[it] }
-                                    val rest = node.metrics.filter { it.name !in state.metricsOrder }
-                                    selected + rest
-                                }
-                                val filteredMetrics = if (state.filterMetrics.isEmpty()) {
-                                    orderedMetrics
-                                } else {
-                                    orderedMetrics.filter { it.name in state.filterMetrics }
-                                }
-                                node.copy(
-                                    metrics = filteredMetrics,
-                                    isStaleByTime = isStaleByTime
-                                )
-                            }.filter { it.metrics.isNotEmpty() }
-                    }
-
-                // sorting
-                val sortedNodes = when (state.sortAscending) {
-                    true -> nodes.sortedBy { it.metrics.firstOrNull()?.latestValue ?: Double.MIN_VALUE }
-                    false -> nodes.sortedByDescending { it.metrics.firstOrNull()?.latestValue ?: Double.MAX_VALUE }
-                    null -> nodes.sortedWith(compareBy({ it.networkName }, { it.nodeId }))
-                }
-
-                val availableMetrics = uiTelemetry
-                    .flatMap { it.nodes }
-                    .flatMap { it.metrics }
-                    .map { it.name }
-                    .distinct()
-                    .sorted()
-
-                state.copy(
-                    isLoading = false,
-                    telemetry = uiTelemetry,
-                    networks = networks,
-                    selectedNetwork = newSelectedTelemetry,
-                    selectedNetworkInfo = newSelectedInfo,
-                    filterNetworks = restoredFilterNetworks,
-                    savedFilterNetworkNames = emptyList(),
-                    visibleNodes = sortedNodes,
-                    availableMetrics = availableMetrics,
-                    isEmptyState = uiTelemetry.isEmpty()
-                )
+                Triple(latestTelemetry, networks, state)
             }
+                .map { (latestTelemetry, networks, state) ->
+
+                    withContext(Dispatchers.Default) {
+
+                        val networkNames = networks.associate { it.thingName to it.displayName }
+                        val uiTelemetry = latestTelemetry.toUiModel(networkNames)
+                        val telemetryById = uiTelemetry.associateBy { it.meshId }
+
+                        val currentSelectedInfo = state.selectedNetworkInfo
+                        val newSelectedInfo = currentSelectedInfo ?: networks.firstOrNull()
+                        val newSelectedTelemetry = newSelectedInfo?.let {
+                            telemetryById[it.thingName]
+                        }
+
+                        // restaurar filtros
+                        val savedNames = state.savedFilterNetworkNames
+                        val restoredFilterNetworks = if (savedNames.isNotEmpty()) {
+                            networks.filter { it.thingName in savedNames }
+                        } else {
+                            state.filterNetworks
+                        }
+
+                        // networksToShow
+                        val networksToShow = when {
+                            restoredFilterNetworks.isEmpty() -> uiTelemetry
+
+                            state.networksOrder.isEmpty() -> {
+                                uiTelemetry.filter { telemetry ->
+                                    restoredFilterNetworks.any { it.thingName == telemetry.meshId }
+                                }
+                            }
+
+                            else -> {
+                                state.networksOrder
+                                    .distinct()
+                                    .mapNotNull { telemetryById[it] }
+                            }
+                        }
+
+                        // nodes
+                        val nowSeconds = System.currentTimeMillis() / 1000L
+
+                        val nodes = networksToShow
+                            .distinctBy { it.meshId }
+                            .flatMap { network ->
+                                val windowSeconds = state.meshWindows[network.meshId]
+                                    ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
+                                val staleThresholdSeconds = windowSeconds * 2
+
+                                network.nodes
+                                    .distinctBy { it.nodeId }
+                                    .map { node ->
+                                        val latestNodeTs =
+                                            node.metrics.maxOfOrNull { it.timestamp } ?: 0L
+                                        val isStaleByTime =
+                                            (nowSeconds - latestNodeTs) > staleThresholdSeconds
+
+                                        val metricsByName =
+                                            node.metrics.associateBy { it.name }
+
+                                        val orderedMetrics =
+                                            if (state.metricsOrder.isEmpty()) {
+                                                node.metrics
+                                            } else {
+                                                val selected = state.metricsOrder
+                                                    .mapNotNull { metricsByName[it] }
+                                                val rest = node.metrics
+                                                    .filter { it.name !in state.metricsOrder }
+                                                selected + rest
+                                            }
+
+                                        val filteredMetrics =
+                                            if (state.filterMetrics.isEmpty()) {
+                                                orderedMetrics
+                                            } else {
+                                                orderedMetrics.filter {
+                                                    it.name in state.filterMetrics
+                                                }
+                                            }
+
+                                        node.copy(
+                                            metrics = filteredMetrics,
+                                            isStaleByTime = isStaleByTime
+                                        )
+                                    }
+                                    .filter { it.metrics.isNotEmpty() }
+                            }
+                            .distinctBy { "${it.networkName}_${it.nodeId}" }
+
+                        // sorting
+                        val sortedNodes = when (state.sortAscending) {
+                            true -> nodes.sortedBy {
+                                it.metrics.firstOrNull()?.latestValue ?: Double.MIN_VALUE
+                            }
+
+                            false -> nodes.sortedByDescending {
+                                it.metrics.firstOrNull()?.latestValue ?: Double.MAX_VALUE
+                            }
+
+                            null -> nodes.sortedWith(
+                                compareBy({ it.networkName }, { it.nodeId })
+                            )
+                        }
+
+                        val availableMetrics = uiTelemetry
+                            .flatMap { it.nodes }
+                            .flatMap { it.metrics }
+                            .map { it.name }
+                            .distinct()
+                            .sorted()
+
+                        state.copy(
+                            isLoading = false,
+                            telemetry = uiTelemetry,
+                            networks = networks,
+                            selectedNetwork = newSelectedTelemetry,
+                            selectedNetworkInfo = newSelectedInfo,
+                            filterNetworks = restoredFilterNetworks,
+                            savedFilterNetworkNames = emptyList(),
+                            visibleNodes = sortedNodes,
+                            availableMetrics = availableMetrics,
+                            isEmptyState = uiTelemetry.isEmpty()
+                        )
+                    }
+                }
                 .distinctUntilChanged()
                 .collect { newState ->
                     _uiState.value = newState

@@ -17,7 +17,11 @@ import com.google.firebase.FirebaseApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
+
+
 
 class AkameApp : Application() {
 
@@ -44,54 +48,60 @@ class AkameApp : Application() {
                 val networks = AppModule.networkStore.getNetworks()
                 val nowSeconds = System.currentTimeMillis() / 1000L
 
-                networks.forEach { network ->
-                    launch {
-                        try {
-                            val latestTs = AppModule.telemetryDao
-                                .getLatestTimestamp(network.thingName) ?: return@launch
-                            val ageSeconds = nowSeconds - latestTs
+                networks
+                    .map { network ->
+                        async {
+                            try {
+                                val latestTs = AppModule.telemetryDao
+                                    .getLatestTimestamp(network.thingName)
 
-                            val window = AppModule.calculateMeshWindowUseCase
-                                .getOrCalculate(network.thingName)
+                                if (latestTs == null) return@async
 
-                            val threshold = (window * 1.2)
-                                .toLong()
-                                .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
+                                val ageSeconds = nowSeconds - latestTs
 
-                            android.util.Log.d(
-                                "MeshSync",
-                                "mesh=${network.thingName} age=${ageSeconds}s threshold=${threshold}s window=${window}s"
-                            )
+                                val window = AppModule.calculateMeshWindowUseCase
+                                    .getOrCalculate(network.thingName)
 
-                            if (ageSeconds > threshold) {
-                                android.util.Log.d(
+                                val threshold = (window * 1.2)
+                                    .toLong()
+                                    .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
+
+                                Log.d(
                                     "MeshSync",
-                                    "Enqueueing sync for stale mesh: ${network.thingName}"
+                                    "mesh=${network.thingName} age=${ageSeconds}s threshold=${threshold}s"
                                 )
-                                val work = OneTimeWorkRequestBuilder<SyncTelemetryWorker>()
-                                    .setInputData(
-                                        workDataOf(
-                                            "meshId" to network.thingName,
-                                            "notifTs" to 0L
-                                        )
-                                    )
-                                    .setConstraints(
-                                        Constraints.Builder()
-                                            .setRequiredNetworkType(NetworkType.CONNECTED)
-                                            .build()
-                                    )
-                                    .build()
 
-                                WorkManager.getInstance(this@AkameApp)
-                                    .enqueueUniqueWork(
-                                        "sync_${network.thingName}",
-                                        ExistingWorkPolicy.KEEP,
-                                        work
-                                    )
+                                if (ageSeconds > threshold) {
+                                    val work = OneTimeWorkRequestBuilder<SyncTelemetryWorker>()
+                                        .setInputData(
+                                            workDataOf(
+                                                "meshId" to network.thingName,
+                                                "notifTs" to 0L
+                                            )
+                                        )
+                                        .setConstraints(
+                                            Constraints.Builder()
+                                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                                .build()
+                                        )
+                                        .build()
+
+                                    WorkManager.getInstance(this@AkameApp)
+                                        .enqueueUniqueWork(
+                                            "sync_${network.thingName}",
+                                            ExistingWorkPolicy.KEEP,
+                                            work
+                                        )
+                                }
+                            } catch (e: Exception) {
+                                Log.e("MeshSync", "Error ${network.thingName}", e)
                             }
-                        } catch (_: Exception) { }
+                        }
                     }
-                }
+                    .chunked(4)
+                    .forEach { it.awaitAll() }
+
+
             } catch (_: Exception) { }
         }
     }

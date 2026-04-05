@@ -28,18 +28,39 @@ class FilterPreferencesStore(private val context: Context) {
     )
 
     val prefsFlow: Flow<FilterPrefs> = context.filterDataStore.data.map { prefs ->
+
+        val sortAscending: Boolean? = try {
+            when (val value = prefs[sortAscendingKey]) {
+                is String -> when (value) {
+                    "true" -> true
+                    "false" -> false
+                    else -> null
+                }
+                else -> null
+            }
+        } catch (_: Exception) {
+            null
+        }
+
         FilterPrefs(
-            filterNetworks = prefs[filterNetworksKey]?.toList() ?: emptyList(),
-            networksOrder  = prefs[networksOrderKey]?.toList()  ?: emptyList(),
-            filterMetrics  = prefs[filterMetricsKey]?.toList()  ?: emptyList(),
-            metricsOrder   = prefs[metricsOrderKey]?.toList()   ?: emptyList(),
-            sortAscending  = when (prefs[sortAscendingKey]) {
-                "true"  -> true
-                "false" -> false
-                else    -> null
-            },
+            filterNetworks = prefs[filterNetworksKey]?.toListSafe() ?: emptyList(),
+            networksOrder  = prefs[networksOrderKey]?.toListSafe() ?: emptyList(),
+            filterMetrics  = prefs[filterMetricsKey]?.toListSafe() ?: emptyList(),
+            metricsOrder   = prefs[metricsOrderKey]?.toListSafe() ?: emptyList(),
+            sortAscending  = sortAscending
         )
     }
+
+    private fun String.toListSafe(): List<String> {
+        return try {
+            val arr = JSONArray(this)
+            (0 until arr.length()).map { arr.getString(it) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+
 
     suspend fun save(prefs: FilterPrefs) {
         context.filterDataStore.edit { p ->
