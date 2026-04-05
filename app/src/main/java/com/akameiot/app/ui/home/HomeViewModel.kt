@@ -126,9 +126,11 @@ class HomeViewModel(
 
                     withContext(Dispatchers.Default) {
 
+
                         val networkNames = networks.associate { it.thingName to it.displayName }
                         val uiTelemetry = latestTelemetry.toUiModel(networkNames)
                         val telemetryById = uiTelemetry.associateBy { it.meshId }
+
 
                         val currentSelectedInfo = state.selectedNetworkInfo
                         val newSelectedInfo = currentSelectedInfo ?: networks.firstOrNull()
@@ -136,7 +138,7 @@ class HomeViewModel(
                             telemetryById[it.thingName]
                         }
 
-                        // restaurar filtros
+                        // ✅ 3. Restaurar filtros (sin cambios)
                         val savedNames = state.savedFilterNetworkNames
                         val restoredFilterNetworks = if (savedNames.isNotEmpty()) {
                             networks.filter { it.thingName in savedNames }
@@ -144,14 +146,14 @@ class HomeViewModel(
                             state.filterNetworks
                         }
 
-                        // networksToShow
+                        // ✅ 4. networksToShow (optimizado leve: evitar any O(n²))
+                        val filterSet = restoredFilterNetworks.map { it.thingName }.toSet()
+
                         val networksToShow = when {
-                            restoredFilterNetworks.isEmpty() -> uiTelemetry
+                            filterSet.isEmpty() -> uiTelemetry
 
                             state.networksOrder.isEmpty() -> {
-                                uiTelemetry.filter { telemetry ->
-                                    restoredFilterNetworks.any { it.thingName == telemetry.meshId }
-                                }
+                                uiTelemetry.filter { it.meshId in filterSet }
                             }
 
                             else -> {
@@ -161,57 +163,72 @@ class HomeViewModel(
                             }
                         }
 
-                        // nodes
+                        // ✅ 5. Precalculos para evitar recomputar dentro de loops
+                        val metricsOrder = state.metricsOrder
+                        val filterMetricsSet = state.filterMetrics.toSet()
+                        val hasMetricFilter = filterMetricsSet.isNotEmpty()
+
                         val nowSeconds = System.currentTimeMillis() / 1000L
 
+                        // 🔥 6. NODES OPTIMIZADO (CLAVE)
                         val nodes = networksToShow
                             .distinctBy { it.meshId }
                             .flatMap { network ->
+
                                 val windowSeconds = state.meshWindows[network.meshId]
                                     ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
                                 val staleThresholdSeconds = windowSeconds * 2
 
                                 network.nodes
                                     .distinctBy { it.nodeId }
-                                    .map { node ->
+                                    .mapNotNull { node ->
+
+                                        val originalMetrics = node.metrics
+                                        if (originalMetrics.isEmpty()) return@mapNotNull null
+
+                                        // 🔹 calcular stale
                                         val latestNodeTs =
-                                            node.metrics.maxOfOrNull { it.timestamp } ?: 0L
+                                            originalMetrics.maxOfOrNull { it.timestamp } ?: 0L
                                         val isStaleByTime =
                                             (nowSeconds - latestNodeTs) > staleThresholdSeconds
 
-                                        val metricsByName =
-                                            node.metrics.associateBy { it.name }
+                                        // 🔹 ordenar métricas (evita map innecesario si no hay orden)
+                                        val orderedMetrics = if (metricsOrder.isEmpty()) {
+                                            originalMetrics
+                                        } else {
+                                            val metricsByName = originalMetrics.associateBy { it.name }
+                                            val selected = metricsOrder.mapNotNull { metricsByName[it] }
+                                            val rest = originalMetrics.filter { it.name !in metricsOrder }
+                                            selected + rest
+                                        }
 
-                                        val orderedMetrics =
-                                            if (state.metricsOrder.isEmpty()) {
-                                                node.metrics
-                                            } else {
-                                                val selected = state.metricsOrder
-                                                    .mapNotNull { metricsByName[it] }
-                                                val rest = node.metrics
-                                                    .filter { it.name !in state.metricsOrder }
-                                                selected + rest
-                                            }
+                                        // 🔹 filtrar métricas
+                                        val finalMetrics = if (!hasMetricFilter) {
+                                            orderedMetrics
+                                        } else {
+                                            orderedMetrics.filter { it.name in filterMetricsSet }
+                                        }
 
-                                        val filteredMetrics =
-                                            if (state.filterMetrics.isEmpty()) {
-                                                orderedMetrics
-                                            } else {
-                                                orderedMetrics.filter {
-                                                    it.name in state.filterMetrics
-                                                }
-                                            }
+                                        if (finalMetrics.isEmpty()) return@mapNotNull null
 
-                                        node.copy(
-                                            metrics = filteredMetrics,
-                                            isStaleByTime = isStaleByTime
-                                        )
+                                        // 🔥 CLAVE: NO recrear si nada cambió
+                                        val metricsChanged = finalMetrics !== originalMetrics
+                                        val staleChanged = node.isStaleByTime != isStaleByTime
+
+                                        if (!metricsChanged && !staleChanged) {
+                                            node
+                                        } else {
+                                            node.copy(
+                                                metrics = finalMetrics,
+                                                isStaleByTime = isStaleByTime
+                                            )
+                                        }
                                     }
-                                    .filter { it.metrics.isNotEmpty() }
                             }
-                            .distinctBy { "${it.networkName}_${it.nodeId}" }
+                            // 🔥 evita string allocation innecesaria
+                            .distinctBy { it.networkName to it.nodeId }
 
-                        // sorting
+                        // ✅ 7. sorting (sin cambios fuertes)
                         val sortedNodes = when (state.sortAscending) {
                             true -> nodes.sortedBy {
                                 it.metrics.firstOrNull()?.latestValue ?: Double.MIN_VALUE
@@ -226,13 +243,16 @@ class HomeViewModel(
                             )
                         }
 
-                        val availableMetrics = uiTelemetry
-                            .flatMap { it.nodes }
-                            .flatMap { it.metrics }
-                            .map { it.name }
-                            .distinct()
-                            .sorted()
+                        //  availableMetrics optimizado (menos flatMaps encadenados)
+                        val availableMetrics = buildSet {
+                            uiTelemetry.forEach { network ->
+                                network.nodes.forEach { node ->
+                                    node.metrics.forEach { add(it.name) }
+                                }
+                            }
+                        }.sorted()
 
+                        //  estado final
                         state.copy(
                             isLoading = false,
                             telemetry = uiTelemetry,
@@ -247,7 +267,8 @@ class HomeViewModel(
                         )
                     }
                 }
-                .distinctUntilChanged()
+                //  más efectivo que distinctUntilChanged plano
+                .distinctUntilChangedBy { it.visibleNodes }
                 .collect { newState ->
                     _uiState.value = newState
                 }
