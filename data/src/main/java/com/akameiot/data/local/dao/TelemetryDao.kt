@@ -54,4 +54,21 @@ interface TelemetryDao {
     LIMIT 100
 """)
     suspend fun getOldestTimestamps(meshId: String): List<Long>
+
+    @Query("""
+    SELECT * FROM telemetry
+    WHERE meshid = :meshId
+    AND nodeId = :nodeId
+    AND metric = :metric
+    AND timestamp >= :fromTimestamp
+    ORDER BY timestamp ASC
+""")
+    suspend fun getMetricHistory(
+        meshId: String,
+        nodeId: Int,
+        metric: String,
+        fromTimestamp: Long
+    ): List<TelemetryEntity>
+
+
 }

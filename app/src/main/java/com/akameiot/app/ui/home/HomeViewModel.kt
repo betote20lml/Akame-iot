@@ -27,6 +27,9 @@ import com.akameiot.domain.model.Network
 import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.akameiot.app.ui.home.HomeViewMode
+import com.akameiot.app.ui.home.model.ChartTimeRange
+import com.akameiot.app.ui.home.model.ChartUiModel
 
 
 class HomeViewModel(
@@ -56,6 +59,7 @@ class HomeViewModel(
         loadMeshWindows()
         checkPendingFcmResubscribe()
         observeTelemetry()
+        observeCharts()
     }
 
     private suspend fun handleSessionExpired() {
@@ -138,7 +142,7 @@ class HomeViewModel(
                             telemetryById[it.thingName]
                         }
 
-                        // ✅ 3. Restaurar filtros (sin cambios)
+                        // Restaurar filtros (sin cambios)
                         val savedNames = state.savedFilterNetworkNames
                         val restoredFilterNetworks = if (savedNames.isNotEmpty()) {
                             networks.filter { it.thingName in savedNames }
@@ -146,7 +150,7 @@ class HomeViewModel(
                             state.filterNetworks
                         }
 
-                        // ✅ 4. networksToShow (optimizado leve: evitar any O(n²))
+                        // networksToShow (optimizado leve: evitar any O(n²))
                         val filterSet = restoredFilterNetworks.map { it.thingName }.toSet()
 
                         val networksToShow = when {
@@ -163,14 +167,14 @@ class HomeViewModel(
                             }
                         }
 
-                        // ✅ 5. Precalculos para evitar recomputar dentro de loops
+                        // Precalculos para evitar recomputar dentro de loops
                         val metricsOrder = state.metricsOrder
                         val filterMetricsSet = state.filterMetrics.toSet()
                         val hasMetricFilter = filterMetricsSet.isNotEmpty()
 
                         val nowSeconds = System.currentTimeMillis() / 1000L
 
-                        // 🔥 6. NODES OPTIMIZADO (CLAVE)
+                        // NODES OPTIMIZADO
                         val nodes = networksToShow
                             .distinctBy { it.meshId }
                             .flatMap { network ->
@@ -186,13 +190,13 @@ class HomeViewModel(
                                         val originalMetrics = node.metrics
                                         if (originalMetrics.isEmpty()) return@mapNotNull null
 
-                                        // 🔹 calcular stale
+                                        // calcular stale
                                         val latestNodeTs =
                                             originalMetrics.maxOfOrNull { it.timestamp } ?: 0L
                                         val isStaleByTime =
                                             (nowSeconds - latestNodeTs) > staleThresholdSeconds
 
-                                        // 🔹 ordenar métricas (evita map innecesario si no hay orden)
+                                        // ordenar métricas (evita map innecesario si no hay orden)
                                         val orderedMetrics = if (metricsOrder.isEmpty()) {
                                             originalMetrics
                                         } else {
@@ -202,7 +206,7 @@ class HomeViewModel(
                                             selected + rest
                                         }
 
-                                        // 🔹 filtrar métricas
+                                        // filtrar métricas
                                         val finalMetrics = if (!hasMetricFilter) {
                                             orderedMetrics
                                         } else {
@@ -211,7 +215,7 @@ class HomeViewModel(
 
                                         if (finalMetrics.isEmpty()) return@mapNotNull null
 
-                                        // 🔥 CLAVE: NO recrear si nada cambió
+                                        // No recrear si nada cambió
                                         val metricsChanged = finalMetrics !== originalMetrics
                                         val staleChanged = node.isStaleByTime != isStaleByTime
 
@@ -225,10 +229,10 @@ class HomeViewModel(
                                         }
                                     }
                             }
-                            // 🔥 evita string allocation innecesaria
+                            // evita string allocation innecesaria
                             .distinctBy { it.networkName to it.nodeId }
 
-                        // ✅ 7. sorting (sin cambios fuertes)
+                        // sorting
                         val sortedNodes = when (state.sortAscending) {
                             true -> nodes.sortedBy {
                                 it.metrics.firstOrNull()?.latestValue ?: Double.MIN_VALUE
@@ -520,6 +524,49 @@ class HomeViewModel(
             } catch (e: Exception)  {
 
             }
+        }
+    }
+
+
+    fun setViewMode(mode: HomeViewMode) {
+        val fromTs = mode.chartRange?.let {
+            System.currentTimeMillis() / 1000L - it.seconds
+        } ?: 0L
+        _uiState.update { it.copy(viewMode = mode, chartFromTs = fromTs) }
+    }
+
+    // Llamado por ChartCard individualmente cuando cambia su rango local.
+// suspend porque lo llama un LaunchedEffect desde la card.
+    suspend fun loadChartPoints(
+        meshId: String,
+        nodeId: Int,
+        metric: String,
+        fromTs: Long
+    ): List<Pair<Long, Double>> = withContext(Dispatchers.IO) {
+        telemetryDao.getMetricHistory(meshId, nodeId, metric, fromTs)
+            .map { it.timestamp to it.value }
+    }
+
+// Solo construye identidades — los puntos los carga cada card.
+    private fun observeCharts() {
+        viewModelScope.launch {
+            _uiState
+                .map { it.visibleNodes to it.viewMode }
+                .distinctUntilChanged()
+                .collect { (nodes, viewMode) ->
+                    val range = viewMode.chartRange ?: ChartTimeRange.H24
+                    val charts = nodes.mapNotNull { node ->
+                        val metric = node.metrics.firstOrNull() ?: return@mapNotNull null
+                        ChartUiModel(
+                            nodeId      = node.nodeId,
+                            meshId      = node.meshId,
+                            networkName = node.networkName,
+                            metricName  = metric.name,
+                            chartRange  = range
+                        )
+                    }
+                    _uiState.update { it.copy(charts = charts) }
+                }
         }
     }
 }

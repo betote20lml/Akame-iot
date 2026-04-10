@@ -21,6 +21,8 @@ import com.akameiot.app.ui.navigation.DrawerDestinations
 import com.akameiot.app.ui.navigation.Routes
 import com.akameiot.app.ui.navigation.Routes.LOGIN
 import com.akameiot.domain.model.AppUser
+import com.akameiot.app.ui.home.components.ChartCard
+import androidx.compose.material.icons.filled.Check
 
 
 
@@ -163,8 +165,82 @@ fun HomeScreen(
                 onSortAscending = { viewModel.setSortAscending(it) }
             )
 
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.MoreVert, contentDescription = null)
+            var showViewMenu by remember { mutableStateOf(false) }
+            Box {
+                IconButton(onClick = { showViewMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = null)
+                }
+                DropdownMenu(
+                    expanded         = showViewMenu,
+                    onDismissRequest = { showViewMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Tarjetas") },
+                        onClick = {
+                            viewModel.setViewMode(HomeViewMode.CARDS)
+                            showViewMenu = false
+                        },
+                        leadingIcon = {
+                            if (uiState.viewMode == HomeViewMode.CARDS)
+                                Icon(Icons.Default.Check, contentDescription = null)
+                        }
+                    )
+                    HorizontalDivider()
+                    listOf(
+                        HomeViewMode.CHARTS_24H to "Gráficas · 24h",
+                        HomeViewMode.CHARTS_7D  to "Gráficas · 7 días",
+                        HomeViewMode.CHARTS_1M  to "Gráficas · 1 mes",
+                        HomeViewMode.CHARTS_3M  to "Gráficas · 3 meses",
+                    ).forEach { (mode, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                viewModel.setViewMode(mode)
+                                showViewMenu = false
+                            },
+                            leadingIcon = {
+                                if (uiState.viewMode == mode)
+                                    Icon(Icons.Default.Check, contentDescription = null)
+                            }
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded         = showViewMenu,
+                    onDismissRequest = { showViewMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Tarjetas") },
+                        onClick = {
+                            viewModel.setViewMode(HomeViewMode.CARDS)
+                            showViewMenu = false
+                        },
+                        leadingIcon = {
+                            if (uiState.viewMode == HomeViewMode.CARDS)
+                                Icon(Icons.Default.Check, contentDescription = null)
+                        }
+                    )
+                    HorizontalDivider()
+                    listOf(
+                        HomeViewMode.CHARTS_24H to "Gráficas · 24h",
+                        HomeViewMode.CHARTS_7D  to "Gráficas · 7 días",
+                        HomeViewMode.CHARTS_1M  to "Gráficas · 1 mes",
+                        HomeViewMode.CHARTS_3M  to "Gráficas · 3 meses",
+                    ).forEach { (mode, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                viewModel.setViewMode(mode)
+                                showViewMenu = false
+                            },
+                            leadingIcon = {
+                                if (uiState.viewMode == mode)
+                                    Icon(Icons.Default.Check, contentDescription = null)
+                            }
+                        )
+                    }
+                }
             }
         },
     ) { padding ->
@@ -189,21 +265,45 @@ fun HomeScreen(
 
             } else {
 
+                when {
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(
-                        items = uiState.visibleNodes,
-                        key = { node ->
-                            "${node.networkName}_${node.nodeId}"
+                    uiState.viewMode == HomeViewMode.CARDS -> {
+                        LazyColumn(
+                            modifier            = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 8.dp),
+                            contentPadding      = PaddingValues(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(
+                                items = uiState.visibleNodes,
+                                key   = { node -> "${node.networkName}_${node.nodeId}" }
+                            ) { node ->
+                                TelemetryCard(node = node)
+                            }
                         }
-                    ) { node ->
-                        TelemetryCard(node = node)
+                    }
+
+                    uiState.viewMode.chartRange != null -> {
+                        LazyColumn(
+                            modifier            = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 8.dp),
+                            contentPadding      = PaddingValues(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(
+                                items = uiState.charts,
+                                key   = { chart -> "${chart.meshId}_${chart.nodeId}" }
+                            ) { chart ->
+                                ChartCard(
+                                    chart        = chart,
+                                    onLoadPoints = { meshId, nodeId, metric, fromTs ->
+                                        viewModel.loadChartPoints(meshId, nodeId, metric, fromTs)
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
