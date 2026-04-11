@@ -38,6 +38,7 @@ fun ChartCard(
     var points    by remember { mutableStateOf<List<Pair<Long, Double>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
+
     // Recarga cuando cambia el rango global (viene en chart.chartRange)
     LaunchedEffect(chart.chartRange,
         chart.meshId,
@@ -54,32 +55,69 @@ fun ChartCard(
         CartesianChartModelProducer()
     }
 
-    LaunchedEffect(points) {
-        if (points.isNotEmpty()) {
+    val stablePoints = remember(points) { points.toList() }
+
+    val chartData = remember(stablePoints) {
+        val size = stablePoints.size
+
+        val x = ArrayList<Float>(size)
+        val y = ArrayList<Double>(size)
+
+        for (i in 0 until size) {
+            val p = stablePoints[i]
+            x.add(p.first.toFloat())
+            y.add(p.second)
+        }
+
+        x to y
+    }
+
+    LaunchedEffect(chartData) {
+        if (chartData.first.isNotEmpty()) {
             modelProducer.runTransaction {
                 lineSeries {
                     series(
-                        x = points.map { it.first.toFloat() },
-                        y = points.map { it.second }
+                        x = chartData.first,
+                        y = chartData.second
                     )
                 }
             }
         }
     }
 
-    val timestamps = points.map { it.first }
-
     val datePattern = when (chart.chartRange) {
         ChartTimeRange.H24 -> "HH:mm"
         ChartTimeRange.D7  -> "EEE dd"
         ChartTimeRange.M1,
         ChartTimeRange.M3  -> "dd/MM"
+        ChartTimeRange.Y1  -> "dd/MM"
     }
 
-    val xFormatter = CartesianValueFormatter { _, x, _ ->
+    val dateFormatter = remember(datePattern) {
         SimpleDateFormat(datePattern, Locale.getDefault())
-            .format(Date(x.toLong() * 1000))
     }
+
+    val xFormatter = remember(dateFormatter) {
+        CartesianValueFormatter { _, x, _ ->
+            dateFormatter.format(Date(x.toLong() * 1000))
+        }
+    }
+
+    val minMax = remember(stablePoints) {
+        if (stablePoints.isEmpty()) null
+        else {
+            var min = stablePoints[0]
+            var max = stablePoints[0]
+
+            for (i in 1 until stablePoints.size) {
+                val p = stablePoints[i]
+                if (p.second < min.second) min = p
+                if (p.second > max.second) max = p
+            }
+            min to max
+        }
+    }
+
 
     Card(
         modifier  = Modifier.fillMaxWidth(),
@@ -90,16 +128,34 @@ fun ChartCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            Text(
-                text  = "${chart.networkName} · ${chart.nodeId}",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text  = TelemetryFormatter.formatName(chart.metricName, locale), // ← Cambio 1
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text  = "${chart.networkName} · ${chart.nodeId}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text  = TelemetryFormatter.formatName(chart.metricName, locale),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                minMax?.let { (min, max) ->
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Min: ${min.second}",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                        Text(
+                            text = "Max: ${max.second}",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 

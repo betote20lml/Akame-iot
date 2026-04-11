@@ -170,41 +170,6 @@ fun HomeScreen(
                 IconButton(onClick = { showViewMenu = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = null)
                 }
-                DropdownMenu(
-                    expanded         = showViewMenu,
-                    onDismissRequest = { showViewMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Tarjetas") },
-                        onClick = {
-                            viewModel.setViewMode(HomeViewMode.CARDS)
-                            showViewMenu = false
-                        },
-                        leadingIcon = {
-                            if (uiState.viewMode == HomeViewMode.CARDS)
-                                Icon(Icons.Default.Check, contentDescription = null)
-                        }
-                    )
-                    HorizontalDivider()
-                    listOf(
-                        HomeViewMode.CHARTS_24H to "Gráficas · 24h",
-                        HomeViewMode.CHARTS_7D  to "Gráficas · 7 días",
-                        HomeViewMode.CHARTS_1M  to "Gráficas · 1 mes",
-                        HomeViewMode.CHARTS_3M  to "Gráficas · 3 meses",
-                    ).forEach { (mode, label) ->
-                        DropdownMenuItem(
-                            text = { Text(label) },
-                            onClick = {
-                                viewModel.setViewMode(mode)
-                                showViewMenu = false
-                            },
-                            leadingIcon = {
-                                if (uiState.viewMode == mode)
-                                    Icon(Icons.Default.Check, contentDescription = null)
-                            }
-                        )
-                    }
-                }
 
                 DropdownMenu(
                     expanded         = showViewMenu,
@@ -227,6 +192,7 @@ fun HomeScreen(
                         HomeViewMode.CHARTS_7D  to "Gráficas · 7 días",
                         HomeViewMode.CHARTS_1M  to "Gráficas · 1 mes",
                         HomeViewMode.CHARTS_3M  to "Gráficas · 3 meses",
+                        HomeViewMode.CHARTS_1Y to "Gráficas · 1 año"
                     ).forEach { (mode, label) ->
                         DropdownMenuItem(
                             text = { Text(label) },

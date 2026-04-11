@@ -24,6 +24,7 @@ class ChartPointsUseCase(
         ChartTimeRange.D7 -> loadAgg("7d", meshId, nodeId, metric, fromTs)
         ChartTimeRange.M1 -> loadAgg("1m", meshId, nodeId, metric, fromTs)
         ChartTimeRange.M3 -> loadAgg("3m", meshId, nodeId, metric, fromTs)
+        ChartTimeRange.Y1 -> loadAgg("1y", meshId, nodeId, metric, fromTs)
     }
 
     private suspend fun loadAgg(
