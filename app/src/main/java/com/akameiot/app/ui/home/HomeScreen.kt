@@ -23,7 +23,7 @@ import com.akameiot.app.ui.navigation.Routes.LOGIN
 import com.akameiot.domain.model.AppUser
 import com.akameiot.app.ui.home.components.ChartCard
 import androidx.compose.material.icons.filled.Check
-
+import com.akameiot.app.ui.home.model.ChartPointsKey
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -262,12 +262,17 @@ fun HomeScreen(
                                 items = uiState.charts,
                                 key   = { chart -> "${chart.meshId}_${chart.nodeId}" }
                             ) { chart ->
+                                val key = ChartPointsKey(
+                                    meshId = chart.meshId,
+                                    nodeId = chart.nodeId,
+                                    metric = chart.metricName,
+                                    range = chart.chartRange  //y esto
+                                )
+
                                 ChartCard(
-                                    chart        = chart,
+                                    chart = chart,
                                     globalNow = uiState.globalNow,
-                                    onLoadPoints = { meshId, nodeId, metric, fromTs ->
-                                        viewModel.loadChartPoints(meshId, nodeId, metric, fromTs)
-                                    }
+                                    points = uiState.chartPoints[key] ?: emptyList()
                                 )
                             }
                         }

@@ -32,12 +32,11 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 fun ChartCard(
     chart: ChartUiModel,
     globalNow: Long,
-    onLoadPoints: suspend (meshId: String, nodeId: Int, metric: String, fromTs: Long) -> List<Pair<Long, Double>>
+    points: List<Pair<Long, Double>>
 ) {
     val locale = LocalConfiguration.current.locales[0]
     val colors = LocalAppColors.current
-    var points    by remember { mutableStateOf<List<Pair<Long, Double>>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val isLoading = globalNow == 0L
     val effectiveNow = if (globalNow > 0) {
         globalNow
     } else {
@@ -47,27 +46,16 @@ fun ChartCard(
     val minX = effectiveNow - chart.chartRange.seconds
     val maxX = effectiveNow
 
-    // Recarga cuando cambia el rango global (viene en chart.chartRange)
-    LaunchedEffect(chart.chartRange,
-        chart.meshId,
-        chart.nodeId,
-        chart.metricName,
-        globalNow
-    ) {
-        if (globalNow == 0L) return@LaunchedEffect
-        isLoading = true
-        val fromTs = globalNow - chart.chartRange.seconds
-        points    = onLoadPoints(chart.meshId, chart.nodeId, chart.metricName, fromTs)
-        isLoading = false
-    }
+
+
 
     val modelProducer = remember(chart.meshId, chart.nodeId) {
         CartesianChartModelProducer()
     }
 
-    val stablePoints = remember(points) { points.toList() }
+    val stablePoints = points
 
-    val chartData = remember(points, minX, maxX) {
+    val chartData = remember(stablePoints, minX, maxX) {
         val size = points.size + 2
 
         val x = ArrayList<Float>(size)
@@ -89,8 +77,8 @@ fun ChartCard(
         x to y
     }
 
-    LaunchedEffect(points, minX, maxX) {
-        if (points.isNotEmpty()) {
+    LaunchedEffect(stablePoints, minX, maxX) {
+        if (stablePoints.isNotEmpty()) {
             modelProducer.runTransaction {
                 lineSeries {
                     series(
@@ -188,7 +176,7 @@ fun ChartCard(
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     }
                 }
-                points.isEmpty() -> {
+                stablePoints.isEmpty() -> {
                     Box(
                         modifier         = Modifier.fillMaxWidth().height(160.dp),
                         contentAlignment = Alignment.Center

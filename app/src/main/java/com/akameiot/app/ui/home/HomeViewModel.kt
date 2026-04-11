@@ -27,10 +27,13 @@ import com.akameiot.domain.model.Network
 import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import com.akameiot.app.ui.home.HomeViewMode
+import com.akameiot.app.ui.home.model.ChartPointsKey
 import com.akameiot.app.ui.home.model.ChartTimeRange
 import com.akameiot.app.ui.home.model.ChartUiModel
 import com.akameiot.data.session.GlobalTimeStore
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 
 class HomeViewModel(
@@ -45,6 +48,7 @@ class HomeViewModel(
     private val chartPointsUseCase: com.akameiot.domain.usecase.ChartPointsUseCase,
     private val globalTimeStore: GlobalTimeStore,
 
+
     ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
@@ -52,6 +56,7 @@ class HomeViewModel(
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events = _events.asSharedFlow()
+    private val chartCache = mutableMapOf<ChartPointsKey, List<Pair<Long, Double>>>()
 
 
 
@@ -66,10 +71,93 @@ class HomeViewModel(
         observeCharts()
     }
 
+    private fun loadChartsBatch(
+        charts: List<ChartUiModel>,
+        globalNow: Long
+    ) {
+        if (charts.isEmpty()) return
+        if (globalNow == 0L) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+
+
+
+            val missingKeys = charts.map {
+                ChartPointsKey(
+                    meshId = it.meshId,
+                    nodeId = it.nodeId,
+                    metric = it.metricName,
+                    range = it.chartRange,
+                )
+            }.filter { it !in chartCache }
+
+            if (missingKeys.isEmpty()) return@launch
+
+            val requestTime = globalNow
+
+            val results = coroutineScope {
+                missingKeys.map { key ->
+                    async {
+                        val fromTs = requestTime - key.range.seconds
+                        key to chartPointsUseCase.load(
+                            key.meshId,
+                            key.nodeId,
+                            key.metric,
+                            fromTs,
+                            key.range
+                        )
+                    }
+                }.awaitAll().toMap()
+            }
+
+            if (_uiState.value.globalNow != requestTime) return@launch
+
+            chartCache.putAll(results)
+
+            _uiState.update { state ->
+                state.copy(
+                    chartPoints = state.chartPoints + results
+                )
+            }
+
+            if (chartCache.size > 200) {
+                val toRemove = chartCache.size - 200
+                val iterator = chartCache.entries.iterator()
+
+                repeat(toRemove) {
+                    if (iterator.hasNext()) {
+                        iterator.next()
+                        iterator.remove()
+                    }
+                }
+            }
+        }
+    }
+
+    private var lastGlobalNow: Long = 0L
+
     private fun observeGlobalNow() {
         viewModelScope.launch {
             globalTimeStore.globalNowFlow.collect { value ->
-                _uiState.update { it.copy(globalNow = value) }
+
+                val prev = lastGlobalNow
+                lastGlobalNow = value
+
+                val shouldInvalidate = prev != 0L && value > prev
+
+                _uiState.update {
+                    it.copy(
+                        globalNow = value,
+                        chartPoints = if (shouldInvalidate) emptyMap() else it.chartPoints
+                    )
+                }
+
+                if (shouldInvalidate) {
+                    chartCache.clear()
+                }   //eliminar esta logica
+
+                val state = _uiState.value
+                loadChartsBatch(state.charts, value)
             }
         }
     }
@@ -557,19 +645,6 @@ class HomeViewModel(
         _uiState.update { it.copy(viewMode = mode, chartFromTs = fromTs) }
     }
 
-    // Llamado por ChartCard individualmente cuando cambia su rango local.
-// suspend porque lo llama un LaunchedEffect desde la card.
-    suspend fun loadChartPoints(
-        meshId: String,
-        nodeId: Int,
-        metric: String,
-        fromTs: Long
-    ): List<Pair<Long, Double>> = withContext(Dispatchers.IO) {
-        val range = _uiState.value.viewMode.chartRange
-            ?: com.akameiot.domain.model.ChartTimeRange.H24
-        chartPointsUseCase.load(meshId, nodeId, metric, fromTs, range)
-    }
-
 // Solo construye identidades — los puntos los carga cada card.
     private fun observeCharts() {
         viewModelScope.launch {
@@ -589,6 +664,9 @@ class HomeViewModel(
                         )
                     }
                     _uiState.update { it.copy(charts = charts) }
+
+                    val globalNow = _uiState.value.globalNow
+                    loadChartsBatch(charts, globalNow)
                 }
         }
     }

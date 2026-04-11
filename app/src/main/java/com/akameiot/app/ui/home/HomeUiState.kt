@@ -1,5 +1,6 @@
 package com.akameiot.app.ui.home
 
+import com.akameiot.app.ui.home.model.ChartPointsKey
 import com.akameiot.app.ui.home.model.NodeTelemetryUiModel
 import com.akameiot.app.ui.home.model.TelemetryUiModel
 import com.akameiot.domain.model.AppUser
@@ -26,5 +27,6 @@ data class HomeUiState(
     val viewMode: HomeViewMode = HomeViewMode.CARDS,
     val charts: List<ChartUiModel> = emptyList(),
     val chartFromTs: Long = 0L,
-    val globalNow: Long = 0L
+    val globalNow: Long = 0L,
+    val chartPoints: Map<ChartPointsKey, List<Pair<Long, Double>>> = emptyMap()
 )
