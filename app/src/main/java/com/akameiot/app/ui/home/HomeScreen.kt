@@ -264,6 +264,7 @@ fun HomeScreen(
                             ) { chart ->
                                 ChartCard(
                                     chart        = chart,
+                                    globalNow = uiState.globalNow,
                                     onLoadPoints = { meshId, nodeId, metric, fromTs ->
                                         viewModel.loadChartPoints(meshId, nodeId, metric, fromTs)
                                     }

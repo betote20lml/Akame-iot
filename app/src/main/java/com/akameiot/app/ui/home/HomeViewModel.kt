@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
 import com.akameiot.app.ui.home.HomeViewMode
 import com.akameiot.app.ui.home.model.ChartTimeRange
 import com.akameiot.app.ui.home.model.ChartUiModel
+import com.akameiot.data.session.GlobalTimeStore
 
 
 class HomeViewModel(
@@ -42,8 +43,9 @@ class HomeViewModel(
     private val networkStore: DeviceNetworkStore,
     private val filterPreferencesStore: FilterPreferencesStore,
     private val chartPointsUseCase: com.akameiot.domain.usecase.ChartPointsUseCase,
+    private val globalTimeStore: GlobalTimeStore,
 
-) : ViewModel() {
+    ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -60,7 +62,16 @@ class HomeViewModel(
         loadMeshWindows()
         checkPendingFcmResubscribe()
         observeTelemetry()
+        observeGlobalNow()
         observeCharts()
+    }
+
+    private fun observeGlobalNow() {
+        viewModelScope.launch {
+            globalTimeStore.globalNowFlow.collect { value ->
+                _uiState.update { it.copy(globalNow = value) }
+            }
+        }
     }
 
     private suspend fun handleSessionExpired() {
@@ -135,6 +146,16 @@ class HomeViewModel(
                         val networkNames = networks.associate { it.thingName to it.displayName }
                         val uiTelemetry = latestTelemetry.toUiModel(networkNames)
                         val telemetryById = uiTelemetry.associateBy { it.meshId }
+
+                        val latestGlobalTs = latestTelemetry
+                            .maxOfOrNull { it.timestamp } ?: 0L
+
+                        if (latestGlobalTs > 0) {
+                            launch {
+                                globalTimeStore.setGlobalNow(latestGlobalTs)
+                            }
+                        }
+
 
 
                         val currentSelectedInfo = state.selectedNetworkInfo

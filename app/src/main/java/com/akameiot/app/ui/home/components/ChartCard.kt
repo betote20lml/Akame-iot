@@ -31,22 +31,32 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 @Composable
 fun ChartCard(
     chart: ChartUiModel,
+    globalNow: Long,
     onLoadPoints: suspend (meshId: String, nodeId: Int, metric: String, fromTs: Long) -> List<Pair<Long, Double>>
 ) {
     val locale = LocalConfiguration.current.locales[0]
     val colors = LocalAppColors.current
     var points    by remember { mutableStateOf<List<Pair<Long, Double>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    val effectiveNow = if (globalNow > 0) {
+        globalNow
+    } else {
+        System.currentTimeMillis() / 1000L
+    }
 
+    val minX = effectiveNow - chart.chartRange.seconds
+    val maxX = effectiveNow
 
     // Recarga cuando cambia el rango global (viene en chart.chartRange)
     LaunchedEffect(chart.chartRange,
         chart.meshId,
         chart.nodeId,
-        chart.metricName
+        chart.metricName,
+        globalNow
     ) {
+        if (globalNow == 0L) return@LaunchedEffect
         isLoading = true
-        val fromTs = System.currentTimeMillis() / 1000L - chart.chartRange.seconds
+        val fromTs = globalNow - chart.chartRange.seconds
         points    = onLoadPoints(chart.meshId, chart.nodeId, chart.metricName, fromTs)
         isLoading = false
     }
@@ -57,23 +67,30 @@ fun ChartCard(
 
     val stablePoints = remember(points) { points.toList() }
 
-    val chartData = remember(stablePoints) {
-        val size = stablePoints.size
+    val chartData = remember(points, minX, maxX) {
+        val size = points.size + 2
 
         val x = ArrayList<Float>(size)
         val y = ArrayList<Double>(size)
 
-        for (i in 0 until size) {
-            val p = stablePoints[i]
+        // punto inicio
+        x.add(minX.toFloat())
+        y.add(points.firstOrNull()?.second ?: 0.0)
+
+        for (p in points) {
             x.add(p.first.toFloat())
             y.add(p.second)
         }
 
+        // punto final
+        x.add(maxX.toFloat())
+        y.add(points.lastOrNull()?.second ?: 0.0)
+
         x to y
     }
 
-    LaunchedEffect(chartData) {
-        if (chartData.first.isNotEmpty()) {
+    LaunchedEffect(points, minX, maxX) {
+        if (points.isNotEmpty()) {
             modelProducer.runTransaction {
                 lineSeries {
                     series(
@@ -84,6 +101,7 @@ fun ChartCard(
             }
         }
     }
+
 
     val datePattern = when (chart.chartRange) {
         ChartTimeRange.H24 -> "HH:mm"

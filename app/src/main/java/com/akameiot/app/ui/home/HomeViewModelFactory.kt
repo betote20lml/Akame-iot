@@ -2,6 +2,7 @@ package com.akameiot.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.akameiot.data.session.GlobalTimeStore
 import com.akameiot.di.AppModule
 
 class HomeViewModelFactory : ViewModelProvider.Factory {
@@ -18,6 +19,7 @@ class HomeViewModelFactory : ViewModelProvider.Factory {
             networkStore = AppModule.networkStore,
             filterPreferencesStore = AppModule.filterPreferencesStore,
             chartPointsUseCase     = AppModule.chartPointsUseCase,
+            globalTimeStore = AppModule.globalTimeStore
         ) as T
     }
 }

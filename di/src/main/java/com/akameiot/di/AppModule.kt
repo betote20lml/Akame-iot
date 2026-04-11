@@ -37,6 +37,7 @@ import com.akameiot.data.repository_impl.SessionRepositoryImpl
 import com.akameiot.data.repository_impl.SyncRecentTelemetryUseCaseImpl
 import com.akameiot.data.repository_impl.TelemetryWindowRepositoryImpl
 import com.akameiot.data.session.FilterPreferencesStore
+import com.akameiot.data.session.GlobalTimeStore
 import com.akameiot.data.session.MeshUpdateWindowStore
 import com.akameiot.domain.repository.SessionRepository
 import com.akameiot.domain.repository.TelemetryAggRepository
@@ -229,6 +230,10 @@ object AppModule {
 
     val propagateAggBucketsUseCase: PropagateAggBucketsUseCase by lazy {
         PropagateAggBucketsUseCase(telemetryAggRepository)
+    }
+
+    val globalTimeStore by lazy {
+        GlobalTimeStore(appContext)
     }
 
 }

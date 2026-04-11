@@ -25,5 +25,6 @@ data class HomeUiState(
     val meshWindows: Map<String, Long> = emptyMap(),
     val viewMode: HomeViewMode = HomeViewMode.CARDS,
     val charts: List<ChartUiModel> = emptyList(),
-    val chartFromTs: Long = 0L
+    val chartFromTs: Long = 0L,
+    val globalNow: Long = 0L
 )
