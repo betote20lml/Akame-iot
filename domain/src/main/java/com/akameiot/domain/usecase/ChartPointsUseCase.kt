@@ -39,13 +39,15 @@ class ChartPointsUseCase(
 
     private fun TelemetryAggBucket.toPoints(): List<Pair<Long, Double>> {
         if (count == 1) return listOf(Pair(firstTs, firstVal))
+
+
         return listOf(
             Pair(firstTs, firstVal),
             Pair(minTs,   minVal),
             Pair(maxTs,   maxVal),
             Pair(lastTs,  lastVal)
         )
-            .sortedBy { pair -> pair.first }
-            .distinctBy { pair -> pair.first }
+            .sortedWith(compareBy({ it.first }, { it.second }))
+            .distinctBy { it.first }
     }
 }

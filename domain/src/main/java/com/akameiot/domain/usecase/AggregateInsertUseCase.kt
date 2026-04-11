@@ -32,7 +32,6 @@ class AggregateInsertUseCase(private val repository: TelemetryAggRepository) {
                     nodeId      = nodeId,
                     metric      = metric,
                     bucketStart = bucketStart,
-                    chunkSize   = chunkSize,
                     firstTs     = ts, firstVal = value,
                     lastTs      = ts, lastVal  = value,
                     minTs       = ts, minVal   = value,

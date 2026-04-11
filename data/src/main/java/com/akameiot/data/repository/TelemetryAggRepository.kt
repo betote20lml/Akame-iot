@@ -5,6 +5,7 @@ import com.akameiot.data.local.entity.TelemetryAggEntity
 import com.akameiot.domain.model.TelemetryAggBucket
 import com.akameiot.domain.repository.TelemetryAggRepository
 
+
 class TelemetryAggRepositoryImpl(
     private val dao: TelemetryDao
 ) : TelemetryAggRepository {
@@ -15,22 +16,31 @@ class TelemetryAggRepositoryImpl(
         dao.getAggBucket(level, meshId, nodeId, metric, bucketStart)?.toDomain()
 
     override suspend fun upsertAggBucket(bucket: TelemetryAggBucket) =
-        dao.upsertAgg(bucket.toEntity())
+        dao.upsertAggPoint(
+            level       = bucket.level,
+            meshId      = bucket.meshId,
+            nodeId      = bucket.nodeId,
+            metric      = bucket.metric,
+            bucketStart = bucket.bucketStart,
+            firstTs     = bucket.firstTs,
+            firstVal    = bucket.firstVal,
+            lastTs      = bucket.lastTs,
+            lastVal     = bucket.lastVal,
+            minTs       = bucket.minTs,
+            minVal      = bucket.minVal,
+            maxTs       = bucket.maxTs,
+            maxVal      = bucket.maxVal,
+            count       = bucket.count
+        )
 
     override suspend fun getAggHistory(
         level: String, meshId: String, nodeId: Int, metric: String, fromTs: Long
     ): List<TelemetryAggBucket> =
         dao.getAggHistory(level, meshId, nodeId, metric, fromTs).map { it.toDomain() }
 
-    // ── Mappers ──────────────────────────────────────────────────────────────
-
     private fun TelemetryAggEntity.toDomain() = TelemetryAggBucket(
-        level, meshId, nodeId, metric, bucketStart, chunkSize,
-        firstTs, firstVal, lastTs, lastVal, minTs, minVal, maxTs, maxVal, count
-    )
-
-    private fun TelemetryAggBucket.toEntity() = TelemetryAggEntity(
-        level, meshId, nodeId, metric, bucketStart, chunkSize,
-        firstTs, firstVal, lastTs, lastVal, minTs, minVal, maxTs, maxVal, count
+        level, meshId, nodeId, metric, bucketStart,
+        firstTs, firstVal, lastTs, lastVal,
+        minTs, minVal, maxTs, maxVal, count
     )
 }

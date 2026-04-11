@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.akameiot.data.local.entity.TelemetryAggEntity
 import com.akameiot.data.local.entity.TelemetryEntity
 import kotlinx.coroutines.flow.Flow
@@ -72,9 +73,6 @@ interface TelemetryDao {
     ): List<TelemetryEntity>
 
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertAgg(item: TelemetryAggEntity)
-
     @Query("""
     SELECT * FROM telemetry_agg
     WHERE level = :level
@@ -109,5 +107,97 @@ interface TelemetryDao {
         fromTs : Long
     ): List<TelemetryAggEntity>
 
+    @Query("""
+    INSERT OR IGNORE INTO telemetry_agg (
+        level, meshId, nodeId, metric, bucketStart,
+        firstTs, firstVal, lastTs, lastVal,
+        minTs, minVal, maxTs, maxVal, count
+    )
+    VALUES (
+        :level, :meshId, :nodeId, :metric, :bucketStart,
+        :firstTs, :firstVal, :lastTs, :lastVal,
+        :minTs, :minVal, :maxTs, :maxVal, 1
+    )
+""")
+    suspend fun insertAggIfAbsent(
+        level       : String,
+        meshId      : String,
+        nodeId      : Int,
+        metric      : String,
+        bucketStart : Long,
+        firstTs     : Long,
+        firstVal    : Double,
+        lastTs      : Long,
+        lastVal     : Double,
+        minTs       : Long,
+        minVal      : Double,
+        maxTs       : Long,
+        maxVal      : Double
+    )
+
+    @Query("""
+    UPDATE telemetry_agg SET
+        firstTs = :firstTs,
+        firstVal= :firstVal,
+        lastTs  = :lastTs,
+        lastVal = :lastVal,
+        minTs   = :minTs,
+        minVal  = :minVal,
+        maxTs   = :maxTs,
+        maxVal  = :maxVal,
+        count   = :count
+    WHERE level       = :level
+      AND meshId      = :meshId
+      AND nodeId      = :nodeId
+      AND metric      = :metric
+      AND bucketStart = :bucketStart
+    """)
+        suspend fun replaceAgg(
+            level: String,
+            meshId: String,
+            nodeId: Int,
+            metric: String,
+            bucketStart: Long,
+            firstTs: Long,
+            firstVal: Double,
+            lastTs: Long,
+            lastVal: Double,
+            minTs: Long,
+            minVal: Double,
+            maxTs: Long,
+            maxVal: Double,
+            count: Int
+        )
+
+    @Transaction
+    suspend fun upsertAggPoint(
+        level: String,
+        meshId: String,
+        nodeId: Int,
+        metric: String,
+        bucketStart: Long,
+        firstTs: Long,
+        firstVal: Double,
+        lastTs: Long,
+        lastVal: Double,
+        minTs: Long,
+        minVal: Double,
+        maxTs: Long,
+        maxVal: Double,
+        count: Int
+    ) {
+        insertAggIfAbsent(
+            level, meshId, nodeId, metric, bucketStart,
+            firstTs, firstVal, lastTs, lastVal,
+            minTs, minVal, maxTs, maxVal
+        )
+
+        replaceAgg(
+            level, meshId, nodeId, metric, bucketStart,
+            firstTs, firstVal, lastTs, lastVal,
+            minTs, minVal, maxTs, maxVal,
+            count
+        )
+    }
 
 }

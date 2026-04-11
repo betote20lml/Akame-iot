@@ -39,7 +39,11 @@ fun ChartCard(
     var isLoading by remember { mutableStateOf(true) }
 
     // Recarga cuando cambia el rango global (viene en chart.chartRange)
-    LaunchedEffect(chart.chartRange) {
+    LaunchedEffect(chart.chartRange,
+        chart.meshId,
+        chart.nodeId,
+        chart.metricName
+    ) {
         isLoading = true
         val fromTs = System.currentTimeMillis() / 1000L - chart.chartRange.seconds
         points    = onLoadPoints(chart.meshId, chart.nodeId, chart.metricName, fromTs)

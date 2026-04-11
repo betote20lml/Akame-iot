@@ -13,14 +13,11 @@ import androidx.room.Index
     ]
 )
 data class TelemetryAggEntity(
-    val level       : String,   // "7d" | "1m" | "3m" | "1y"
+    val level       : String,
     val meshId      : String,
     val nodeId      : Int,
     val metric      : String,
-    val bucketStart : Long,     // segundos
-    val chunkSize   : Long,     // segundos (3600*3, 3600*6, 86400, 86400*7)
-
-    // Valores a preservar forma
+    val bucketStart : Long,
     val firstTs     : Long,
     val firstVal    : Double,
     val lastTs      : Long,

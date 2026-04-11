@@ -24,10 +24,8 @@ class PropagateAggBucketsUseCase(
         PROPAGATION_CHAIN.forEach { (srcLevel, srcChunk, dstLevel) ->
             val dstChunk = AggregateInsertUseCase.LEVELS[dstLevel] ?: return@forEach
 
-            // Solo busca buckets cerrados dentro de la ventana del nivel destino
-            // hacia atrás — evita cargar toda la historia.
-            // Una ventana de 2 * dstChunk es suficiente para capturar
-            // buckets fuente recién cerrados que aún no se propagaron.
+            // Buckets cerrados dentro de una ventana acotada (2 * dstChunk)
+            // para no cargar toda la historia en cada llamada
             val lookbackTs = nowTs - (dstChunk * 2)
 
             val closedBuckets = repository.getAggHistory(
@@ -36,9 +34,7 @@ class PropagateAggBucketsUseCase(
                 nodeId = nodeId,
                 metric = metric,
                 fromTs = lookbackTs
-            ).filter { bucket ->
-                bucket.bucketStart + srcChunk < nowTs
-            }
+            ).filter { it.bucketStart + srcChunk < nowTs }
 
             if (closedBuckets.isEmpty()) return@forEach
 
@@ -48,17 +44,20 @@ class PropagateAggBucketsUseCase(
                     val existing = repository.getAggBucket(
                         dstLevel, meshId, nodeId, metric, dstBucketStart
                     )
-                    val merged = mergeBuckets(
-                        level       = dstLevel,
-                        meshId      = meshId,
-                        nodeId      = nodeId,
-                        metric      = metric,
-                        bucketStart = dstBucketStart,
-                        chunkSize   = dstChunk,
-                        incoming    = sourceBuckets,
-                        existing    = existing
+                    // upsertAggBucket es idempotente:
+                    // si el bucket destino ya tiene estos valores exactos,
+                    // el ON CONFLICT DO UPDATE no produce cambio observable
+                    repository.upsertAggBucket(
+                        mergeBuckets(
+                            level       = dstLevel,
+                            meshId      = meshId,
+                            nodeId      = nodeId,
+                            metric      = metric,
+                            bucketStart = dstBucketStart,
+                            incoming    = sourceBuckets,
+                            existing    = existing
+                        )
                     )
-                    repository.upsertAggBucket(merged)
                 }
         }
     }
@@ -69,12 +68,10 @@ class PropagateAggBucketsUseCase(
         nodeId      : Int,
         metric      : String,
         bucketStart : Long,
-        chunkSize   : Long,
         incoming    : List<TelemetryAggBucket>,
         existing    : TelemetryAggBucket?
     ): TelemetryAggBucket {
         val all = if (existing != null) incoming + existing else incoming
-
         val first = all.minByOrNull { it.firstTs }!!
         val last  = all.maxByOrNull { it.lastTs }!!
         val min   = all.minByOrNull { it.minVal }!!
@@ -86,15 +83,10 @@ class PropagateAggBucketsUseCase(
             nodeId      = nodeId,
             metric      = metric,
             bucketStart = bucketStart,
-            chunkSize   = chunkSize,
-            firstTs     = first.firstTs,
-            firstVal    = first.firstVal,
-            lastTs      = last.lastTs,
-            lastVal     = last.lastVal,
-            minTs       = min.minTs,
-            minVal      = min.minVal,
-            maxTs       = max.maxTs,
-            maxVal      = max.maxVal,
+            firstTs     = first.firstTs, firstVal = first.firstVal,
+            lastTs      = last.lastTs,   lastVal  = last.lastVal,
+            minTs       = min.minTs,     minVal   = min.minVal,
+            maxTs       = max.maxTs,     maxVal   = max.maxVal,
             count       = all.sumOf { it.count }
         )
     }

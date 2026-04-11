@@ -11,7 +11,7 @@ import com.akameiot.data.local.entity.TelemetryEntity
         TelemetryEntity::class,
         TelemetryAggEntity::class,
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

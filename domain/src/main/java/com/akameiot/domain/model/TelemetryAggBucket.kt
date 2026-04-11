@@ -6,7 +6,6 @@ data class TelemetryAggBucket(
     val nodeId      : Int,
     val metric      : String,
     val bucketStart : Long,
-    val chunkSize   : Long,
     val firstTs     : Long,
     val firstVal    : Double,
     val lastTs      : Long,
