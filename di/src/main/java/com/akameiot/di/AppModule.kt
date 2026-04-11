@@ -30,6 +30,7 @@ import com.akameiot.data.session.DeviceNetworkStore
 import com.akameiot.domain.repository.SnsRepository
 import com.akameiot.domain.usecase.SubscribeToDeviceTopicUseCase
 import com.akameiot.data.network.NetworkManager
+import com.akameiot.data.repository.TelemetryAggRepositoryImpl
 import com.akameiot.data.repository.TelemetryRepository
 import com.akameiot.data.session.FcmTokenStore
 import com.akameiot.data.repository_impl.SessionRepositoryImpl
@@ -38,8 +39,12 @@ import com.akameiot.data.repository_impl.TelemetryWindowRepositoryImpl
 import com.akameiot.data.session.FilterPreferencesStore
 import com.akameiot.data.session.MeshUpdateWindowStore
 import com.akameiot.domain.repository.SessionRepository
+import com.akameiot.domain.repository.TelemetryAggRepository
+import com.akameiot.domain.usecase.AggregateInsertUseCase
 import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
+import com.akameiot.domain.usecase.ChartPointsUseCase
 import com.akameiot.domain.usecase.CheckLocalSessionUseCase
+import com.akameiot.domain.usecase.PropagateAggBucketsUseCase
 import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
 
@@ -177,8 +182,10 @@ object AppModule {
 
     val telemetryRepository by lazy {
         TelemetryRepository(
-            dao = telemetryDao,
-            api = NetworkModule.telemetryApi
+            dao                        = telemetryDao,
+            api                        = NetworkModule.telemetryApi,
+            aggregateInsertUseCase     = aggregateInsertUseCase,
+            propagateAggBucketsUseCase = propagateAggBucketsUseCase
         )
     }
 
@@ -206,6 +213,22 @@ object AppModule {
             telemetryWindowRepository = telemetryWindowRepository,
             meshWindowRepository = meshWindowStore
         )
+    }
+
+    val telemetryAggRepository: TelemetryAggRepository by lazy {
+        TelemetryAggRepositoryImpl(telemetryDao)
+    }
+
+    val aggregateInsertUseCase: AggregateInsertUseCase by lazy {
+        AggregateInsertUseCase(telemetryAggRepository)
+    }
+
+    val chartPointsUseCase: ChartPointsUseCase by lazy {
+        ChartPointsUseCase(telemetryRepository, telemetryAggRepository)
+    }
+
+    val propagateAggBucketsUseCase: PropagateAggBucketsUseCase by lazy {
+        PropagateAggBucketsUseCase(telemetryAggRepository)
     }
 
 }

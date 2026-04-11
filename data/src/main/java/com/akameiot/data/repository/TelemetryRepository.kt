@@ -6,17 +6,25 @@ import com.akameiot.data.remote.api.TelemetryApiService
 import com.akameiot.data.remote.dto.TelemetryDto
 import kotlinx.coroutines.flow.Flow
 import com.akameiot.data.local.entity.TelemetryEntity
+import com.akameiot.domain.repository.TelemetryRepository as TelemetryRepositoryDomain
+import com.akameiot.domain.usecase.AggregateInsertUseCase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+
+private val bgScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
 class TelemetryRepository(
     private val dao: TelemetryDao,
-    private val api: TelemetryApiService
-) {
+    private val api: TelemetryApiService,
+    private val aggregateInsertUseCase: AggregateInsertUseCase,
+    private val propagateAggBucketsUseCase: com.akameiot.domain.usecase.PropagateAggBucketsUseCase,
+) : TelemetryRepositoryDomain {
 
-    //Devuelve el último timestamp guardado para este mesh, o 0 si no hay registros.
     suspend fun getLatestTimestamp(meshId: String): Long =
         dao.getLatestTimestamp(meshId) ?: 0L
 
-    //Decide si hace una hot query o una cold query según la ventana temporal.
     suspend fun fetchAndSaveWindow(
         bearerToken: String,
         meshId: String,
@@ -27,17 +35,14 @@ class TelemetryRepository(
         val windowSec = nowSec - fromTs
 
         if (windowSec < 24 * 3600) {
-            // HOT → SOLO UN MESH
             val response = api.getRecentTelemetry(
                 bearerToken = "Bearer $bearerToken",
                 meshId = meshId,
                 sinceTs = fromTs
             )
             val entities = response.items.flatMap { it.toEntities() }
-            dao.insertAll(entities)
-
+            insertAndAggregate(entities)  // ← reemplaza dao.insertAll
         } else {
-            // COLD → TODOS LOS MESHES
             coldFetchAndSave(
                 bearerToken = bearerToken,
                 meshIds = meshIds,
@@ -54,8 +59,6 @@ class TelemetryRepository(
         toTs: Long
     ) {
         val auth = "Bearer $bearerToken"
-
-        // 1. Iniciar query
         val startResp = api.startColdQuery(
             bearerToken = auth,
             meshes = meshIds.joinToString(","),
@@ -64,30 +67,22 @@ class TelemetryRepository(
         )
         val queryId = startResp.queryExecutionId
 
-        // 2. Poll hasta SUCCEEDED
         var status = ""
         var attempts = 0
-        val maxAttempts = 300
-        while (status != "SUCCEEDED" && attempts < maxAttempts)  {
+        while (status != "SUCCEEDED" && attempts < 300) {
             kotlinx.coroutines.delay(2_000)
             val statusResp = api.getColdQueryStatus(
                 bearerToken = auth,
                 queryExecutionId = queryId
             )
             status = statusResp.status
-
-            if (status == "FAILED" || status == "CANCELLED") {
+            if (status == "FAILED" || status == "CANCELLED")
                 throw IllegalStateException("Cold query failed: $status")
-            }
-
             attempts++
-
         }
-        if (status != "SUCCEEDED") {
+        if (status != "SUCCEEDED")
             throw IllegalStateException("Cold query timeout")
-        }
 
-        // 3. Paginar resultados
         var nextToken: String? = null
         do {
             val page = api.getColdQueryResults(
@@ -97,14 +92,42 @@ class TelemetryRepository(
                 nextToken = nextToken
             )
             val entities = page.items.flatMap { it.toEntities() }
-            dao.insertAll(entities)
+            insertAndAggregate(entities)  // ← reemplaza dao.insertAll
             nextToken = page.nextToken
         } while (nextToken != null)
     }
 
     suspend fun saveTelemetry(dtos: List<TelemetryDto>) {
         val entities = dtos.flatMap { it.toEntities() }
+        insertAndAggregate(entities)  // ← reemplaza dao.insertAll
+    }
+
+    // ── Punto único de inserción ──────────────────────────────────────────────
+    private suspend fun insertAndAggregate(entities: List<TelemetryEntity>) {
         dao.insertAll(entities)
+
+        // Agregación O(1) — síncrona porque es barata por diseño
+        entities.forEach { e ->
+            aggregateInsertUseCase.insert(
+                meshId = e.meshid,
+                nodeId = e.nodeId,
+                metric = e.metric,
+                ts     = e.timestamp,
+                value  = e.value
+            )
+        }
+
+        // Propagación jerárquica — asíncrona, no bloquea el sync
+        val series = entities.distinctBy { Triple(it.meshid, it.nodeId, it.metric) }
+        bgScope.launch {
+            series.forEach { e ->
+                propagateAggBucketsUseCase.propagate(
+                    meshId = e.meshid,
+                    nodeId = e.nodeId,
+                    metric = e.metric
+                )
+            }
+        }
     }
 
     suspend fun cleanOldData(days: Int) {
@@ -114,4 +137,10 @@ class TelemetryRepository(
 
     fun getMetric(meshId: String, nodeId: Int, metric: String): Flow<List<TelemetryEntity>> =
         dao.getMetric(meshId, nodeId, metric)
+
+    override suspend fun getMetricHistory(
+        meshId: String, nodeId: Int, metric: String, fromTs: Long
+    ): List<Pair<Long, Double>> =
+        dao.getMetricHistory(meshId, nodeId, metric, fromTs)
+            .map { it.timestamp to it.value }
 }

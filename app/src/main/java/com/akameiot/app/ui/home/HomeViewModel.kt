@@ -41,6 +41,7 @@ class HomeViewModel(
     private val telemetryDao: TelemetryDao,
     private val networkStore: DeviceNetworkStore,
     private val filterPreferencesStore: FilterPreferencesStore,
+    private val chartPointsUseCase: com.akameiot.domain.usecase.ChartPointsUseCase,
 
 ) : ViewModel() {
 
@@ -543,8 +544,9 @@ class HomeViewModel(
         metric: String,
         fromTs: Long
     ): List<Pair<Long, Double>> = withContext(Dispatchers.IO) {
-        telemetryDao.getMetricHistory(meshId, nodeId, metric, fromTs)
-            .map { it.timestamp to it.value }
+        val range = _uiState.value.viewMode.chartRange
+            ?: com.akameiot.domain.model.ChartTimeRange.H24
+        chartPointsUseCase.load(meshId, nodeId, metric, fromTs, range)
     }
 
 // Solo construye identidades — los puntos los carga cada card.

@@ -17,6 +17,7 @@ class HomeViewModelFactory : ViewModelProvider.Factory {
             telemetryDao = AppModule.telemetryDao,
             networkStore = AppModule.networkStore,
             filterPreferencesStore = AppModule.filterPreferencesStore,
+            chartPointsUseCase     = AppModule.chartPointsUseCase,
         ) as T
     }
 }

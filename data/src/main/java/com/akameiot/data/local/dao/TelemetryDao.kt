@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.akameiot.data.local.entity.TelemetryAggEntity
 import com.akameiot.data.local.entity.TelemetryEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -69,6 +70,44 @@ interface TelemetryDao {
         metric: String,
         fromTimestamp: Long
     ): List<TelemetryEntity>
+
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAgg(item: TelemetryAggEntity)
+
+    @Query("""
+    SELECT * FROM telemetry_agg
+    WHERE level = :level
+      AND meshId = :meshId
+      AND nodeId = :nodeId
+      AND metric = :metric
+      AND bucketStart = :bucketStart
+    LIMIT 1
+""")
+    suspend fun getAggBucket(
+        level       : String,
+        meshId      : String,
+        nodeId      : Int,
+        metric      : String,
+        bucketStart : Long
+    ): TelemetryAggEntity?
+
+    @Query("""
+    SELECT * FROM telemetry_agg
+    WHERE level   = :level
+      AND meshId  = :meshId
+      AND nodeId  = :nodeId
+      AND metric  = :metric
+      AND bucketStart >= :fromTs
+    ORDER BY bucketStart ASC
+""")
+    suspend fun getAggHistory(
+        level  : String,
+        meshId : String,
+        nodeId : Int,
+        metric : String,
+        fromTs : Long
+    ): List<TelemetryAggEntity>
 
 
 }
