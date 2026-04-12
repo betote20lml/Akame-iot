@@ -62,7 +62,7 @@ interface TelemetryDao {
     WHERE meshid = :meshId
     AND nodeId = :nodeId
     AND metric = :metric
-    AND timestamp >= :fromTimestamp
+    AND timestamp > :fromTimestamp
     ORDER BY timestamp ASC
 """)
     suspend fun getMetricHistory(

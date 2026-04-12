@@ -34,6 +34,7 @@ import com.akameiot.data.session.GlobalTimeStore
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import java.util.Collections
 
 
 class HomeViewModel(
@@ -56,7 +57,13 @@ class HomeViewModel(
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events = _events.asSharedFlow()
-    private val chartCache = mutableMapOf<ChartPointsKey, List<Pair<Long, Double>>>()
+    data class CachedChart(
+        val points: MutableList<Pair<Long, Double>>,
+        val lastTs: Long
+    )
+
+    private val chartCache = mutableMapOf<ChartPointsKey, CachedChart>()
+    private val inFlightKeys = Collections.synchronizedSet(mutableSetOf<ChartPointsKey>())
 
 
 
@@ -80,87 +87,135 @@ class HomeViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
 
-
-
-            val missingKeys = charts.map {
+            val keysToLoad = charts.map {
                 ChartPointsKey(
                     meshId = it.meshId,
                     nodeId = it.nodeId,
                     metric = it.metricName,
-                    range = it.chartRange,
+                    range  = it.chartRange,
                 )
-            }.filter { it !in chartCache }
+            }.filter { key ->
+                val cached = chartCache[key]
 
-            if (missingKeys.isEmpty()) return@launch
+                when {
+                    key in inFlightKeys -> false
 
-            val requestTime = globalNow
+                    cached == null -> true
 
-            val results = coroutineScope {
-                missingKeys.map { key ->
-                    async {
-                        val fromTs = requestTime - key.range.seconds
-                        key to chartPointsUseCase.load(
-                            key.meshId,
-                            key.nodeId,
-                            key.metric,
-                            fromTs,
-                            key.range
-                        )
-                    }
-                }.awaitAll().toMap()
-            }
-
-            if (_uiState.value.globalNow != requestTime) return@launch
-
-            chartCache.putAll(results)
-
-            _uiState.update { state ->
-                state.copy(
-                    chartPoints = state.chartPoints + results
-                )
-            }
-
-            if (chartCache.size > 200) {
-                val toRemove = chartCache.size - 200
-                val iterator = chartCache.entries.iterator()
-
-                repeat(toRemove) {
-                    if (iterator.hasNext()) {
-                        iterator.next()
-                        iterator.remove()
+                    else -> {
+                        val delta = globalNow - cached.lastTs
+                        delta >= 5
                     }
                 }
+            }
+
+            if (keysToLoad.isEmpty()) return@launch
+
+            inFlightKeys.addAll(keysToLoad)
+
+            try {
+                val results = mutableMapOf<ChartPointsKey, CachedChart>()
+
+                keysToLoad.chunked(6).forEach { chunk ->
+                    coroutineScope {
+                        chunk.map { key ->
+                            async {
+                                val cached = chartCache[key]
+                                val fromTs = cached?.lastTs ?: (globalNow - key.range.seconds)
+
+                                val newData = chartPointsUseCase.load(
+                                    key.meshId,
+                                    key.nodeId,
+                                    key.metric,
+                                    fromTs,
+                                    key.range
+                                )
+
+                                if (newData.isEmpty() && cached != null) return@async null
+
+                                val cutoff = globalNow - key.range.seconds
+
+                                val merged = if (cached != null) {
+                                    val list = cached.points
+
+                                    newData.forEach { newPoint ->
+                                        if (list.isEmpty() || newPoint.first > list.last().first) {
+                                            list.add(newPoint)
+                                        }
+                                    }
+
+                                    // trim ventana
+                                    val firstValidIndex = list.indexOfFirst { it.first >= cutoff }
+                                    if (firstValidIndex > 0) {
+                                        list.subList(0, firstValidIndex).clear()
+                                    }
+
+                                    list
+                                } else {
+                                    newData.toMutableList()
+                                }
+
+                                key to CachedChart(
+                                    points = merged,
+                                    lastTs = merged.lastOrNull()?.first ?: fromTs
+                                )
+                            }
+                        }.awaitAll()
+                            .filterNotNull()
+                            .forEach { (key, cached) -> results[key] = cached }
+                    }
+                }
+
+                if (_uiState.value.globalNow != globalNow) return@launch
+
+                chartCache.putAll(results)
+
+                if (chartCache.size > 200) {
+                    val toRemove = chartCache.size - 200
+                    val iterator = chartCache.entries.iterator()
+                    repeat(toRemove) {
+                        if (iterator.hasNext()) {
+                            iterator.next()
+                            iterator.remove()
+                        }
+                    }
+                }
+
+                _uiState.update { state ->
+                    val updated = HashMap(state.chartPoints)
+                    results.forEach { (key, cached) ->
+                        updated[key] = cached.points.toList()
+                    }
+                    state.copy(chartPoints = updated)
+                }
+
+            } finally {
+                inFlightKeys.removeAll(keysToLoad.toSet())
             }
         }
     }
 
-    private var lastGlobalNow: Long = 0L
 
     private fun observeGlobalNow() {
         viewModelScope.launch {
             globalTimeStore.globalNowFlow.collect { value ->
 
-                val prev = lastGlobalNow
-                lastGlobalNow = value
+                val snapshot = _uiState.updateAndGet { it.copy(globalNow = value) }
 
-                val shouldInvalidate = prev != 0L && value > prev
-
-                _uiState.update {
-                    it.copy(
-                        globalNow = value,
-                        chartPoints = if (shouldInvalidate) emptyMap() else it.chartPoints
-                    )
-                }
-
-                if (shouldInvalidate) {
-                    if (chartCache.size >= 200) {
-                        val toRemove = chartCache.keys.take(chartCache.size - 199)
-                        toRemove.forEach { chartCache.remove(it) }
+                val cachedCharts = snapshot.charts.ifEmpty {
+                    val range = snapshot.viewMode.chartRange ?: ChartTimeRange.H24
+                    snapshot.visibleNodes.mapNotNull { node ->
+                        val metric = node.metrics.firstOrNull() ?: return@mapNotNull null
+                        ChartUiModel(
+                            nodeId      = node.nodeId,
+                            meshId      = node.meshId,
+                            networkName = node.networkName,
+                            metricName  = metric.name,
+                            chartRange  = range
+                        )
                     }
                 }
-
-                val state = _uiState.value
-                loadChartsBatch(state.charts, value)
+                loadChartsBatch(cachedCharts, value)
             }
         }
     }
