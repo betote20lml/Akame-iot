@@ -5,6 +5,7 @@ import com.akameiot.domain.model.TelemetryAggBucket
 import com.akameiot.domain.repository.TelemetryAggRepository
 import com.akameiot.domain.repository.TelemetryRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
 
@@ -87,5 +88,17 @@ class ChartPointsUseCase(
                     .filter { it.count > 0 }
                     .flatMap { it.toPoints() }
             }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun observe(
+        meshId     : String,
+        nodeId     : Int,
+        metric     : String,
+        fromTsFlow : kotlinx.coroutines.flow.Flow<Long>,
+        range      : ChartTimeRange
+    ): kotlinx.coroutines.flow.Flow<List<Pair<Long, Double>>> =
+        fromTsFlow.flatMapLatest { fromTs ->
+            observe(meshId, nodeId, metric, fromTs, range)
+        }
 
 }

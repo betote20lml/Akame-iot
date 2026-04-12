@@ -74,62 +74,45 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState
                 .map { state ->
-                    Triple(
-                        state.visibleNodes.map { node ->
-                            Triple(
-                                node.meshId,
-                                node.nodeId,
-                                node.metrics.firstOrNull()?.name
-                            )
-                        },
-                        state.viewMode,
-                        state.globalNow
-                    )
+                    state.visibleNodes.map { node ->
+                        Triple(
+                            node.meshId,
+                            node.nodeId,
+                            node.metrics.firstOrNull()?.name
+                        )
+                    } to state.viewMode
                 }
                 .distinctUntilChanged()
-                .flatMapLatest { (nodesInfo, viewMode, globalNow) ->
+                .flatMapLatest { (nodesInfo, viewMode) ->
 
                     val range = viewMode.chartRange ?: return@flatMapLatest flowOf(emptyMap())
 
+                    val fromTsFlow = globalTimeStore.globalNowFlow
+                        .map { globalNow -> globalNow - range.seconds }
+                        .distinctUntilChanged()
+
                     val flows = nodesInfo.mapNotNull { (meshId, nodeId, metricName) ->
-
                         val metric = metricName ?: return@mapNotNull null
-
                         val key = ChartPointsKey(
                             meshId = meshId,
                             nodeId = nodeId,
                             metric = metric,
                             range  = range
                         )
-
-                        val fromTs = globalNow - range.seconds
-
-                        chartPointsUseCase.observe(
-                            meshId,
-                            nodeId,
-                            metric,
-                            fromTs,
-                            range
-                        ).map { points ->
-                            key to points
-                        }
+                        chartPointsUseCase.observe(meshId, nodeId, metric, fromTsFlow, range)
+                            .map { points -> key to points }
                     }
 
-                    if (flows.isEmpty()) {
-                        flowOf(emptyMap())
-                    } else {
-                        combine(flows) { pairs -> pairs.toMap() }
-                    }
+                    if (flows.isEmpty()) flowOf(emptyMap())
+                    else combine(flows) { pairs -> pairs.toMap() }
                 }
                 .collect { chartMap ->
-
                     val currentState = _uiState.value
                     val range = currentState.viewMode.chartRange
 
                     val charts = if (range != null) {
                         currentState.visibleNodes.mapNotNull { node ->
                             val metric = node.metrics.firstOrNull() ?: return@mapNotNull null
-
                             ChartUiModel(
                                 nodeId      = node.nodeId,
                                 meshId      = node.meshId,
