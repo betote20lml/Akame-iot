@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 
 private val bgScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -143,4 +144,13 @@ class TelemetryRepository(
     ): List<Pair<Long, Double>> =
         dao.getMetricHistory(meshId, nodeId, metric, fromTs)
             .map { it.timestamp to it.value }
+
+    override fun observeMetricHistory(
+        meshId: String,
+        nodeId: Int,
+        metric: String,
+        fromTs: Long
+    ): Flow<List<Pair<Long, Double>>> =
+        dao.observeMetricHistory(meshId, nodeId, metric, fromTs)
+            .map { list -> list.map { it.timestamp to it.value } }
 }

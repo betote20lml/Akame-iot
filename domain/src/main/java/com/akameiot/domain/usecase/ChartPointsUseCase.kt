@@ -4,6 +4,11 @@ import com.akameiot.domain.model.ChartTimeRange
 import com.akameiot.domain.model.TelemetryAggBucket
 import com.akameiot.domain.repository.TelemetryAggRepository
 import com.akameiot.domain.repository.TelemetryRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+
+
 
 class ChartPointsUseCase(
     private val telemetryRepository : TelemetryRepository,      // datos crudos
@@ -51,4 +56,36 @@ class ChartPointsUseCase(
             .sortedWith(compareBy({ it.first }, { it.second }))
             .distinctBy { it.first }
     }
+
+    fun observe(
+        meshId : String,
+        nodeId : Int,
+        metric : String,
+        fromTs : Long,
+        range  : ChartTimeRange
+    ): Flow<List<Pair<Long, Double>>> = when (range) {
+
+        ChartTimeRange.H24 ->
+            telemetryRepository.observeMetricHistory(meshId, nodeId, metric, fromTs)
+
+        ChartTimeRange.D7 -> observeAgg("7d", meshId, nodeId, metric, fromTs)
+        ChartTimeRange.M1 -> observeAgg("1m", meshId, nodeId, metric, fromTs)
+        ChartTimeRange.M3 -> observeAgg("3m", meshId, nodeId, metric, fromTs)
+        ChartTimeRange.Y1 -> observeAgg("1y", meshId, nodeId, metric, fromTs)
+    }
+
+    private fun observeAgg(
+        level  : String,
+        meshId : String,
+        nodeId : Int,
+        metric : String,
+        fromTs : Long
+    ): Flow<List<Pair<Long, Double>>> =
+        aggRepository.observeAggHistory(level, meshId, nodeId, metric, fromTs)
+            .map { buckets ->
+                buckets
+                    .filter { it.count > 0 }
+                    .flatMap { it.toPoints() }
+            }
+
 }

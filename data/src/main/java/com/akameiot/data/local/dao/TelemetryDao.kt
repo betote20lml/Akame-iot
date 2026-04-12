@@ -200,4 +200,38 @@ interface TelemetryDao {
         )
     }
 
+    @Query("""
+    SELECT * FROM telemetry
+    WHERE meshid = :meshId
+    AND nodeId = :nodeId
+    AND metric = :metric
+    AND timestamp >= :fromTs
+    ORDER BY timestamp ASC
+    """)
+        fun observeMetricHistory(
+            meshId: String,
+            nodeId: Int,
+            metric: String,
+            fromTs: Long
+        ): Flow<List<TelemetryEntity>>
+
+
+    @Query("""
+    SELECT * FROM telemetry_agg
+    WHERE level   = :level
+      AND meshId  = :meshId
+      AND nodeId  = :nodeId
+      AND metric  = :metric
+      AND bucketStart >= :fromTs
+    ORDER BY bucketStart ASC
+    """)
+        fun observeAggHistory(
+            level  : String,
+            meshId : String,
+            nodeId : Int,
+            metric : String,
+            fromTs : Long
+        ): Flow<List<TelemetryAggEntity>>
+
+
 }

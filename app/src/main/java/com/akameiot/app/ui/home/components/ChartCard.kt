@@ -34,6 +34,7 @@ fun ChartCard(
     globalNow: Long,
     points: List<Pair<Long, Double>>
 ) {
+
     val locale = LocalConfiguration.current.locales[0]
     val colors = LocalAppColors.current
     val isLoading = globalNow == 0L
@@ -47,45 +48,52 @@ fun ChartCard(
     val maxX = effectiveNow
 
 
-
-
-    val modelProducer = remember(chart.meshId, chart.nodeId) {
-        CartesianChartModelProducer()
-    }
-
+    val modelProducer = remember { CartesianChartModelProducer() }
     val stablePoints = points
-
     val chartData = remember(stablePoints, minX, maxX) {
-        val size = points.size + 2
+
+        val size = stablePoints.size + 2
 
         val x = ArrayList<Float>(size)
         val y = ArrayList<Double>(size)
 
-        // punto inicio
-        x.add(minX.toFloat())
-        y.add(points.firstOrNull()?.second ?: 0.0)
+        val base = minX.toFloat()
 
-        for (p in points) {
-            x.add(p.first.toFloat())
+
+
+        fun normalize(ts: Long): Float {
+            val delta = ts - base
+            if (delta < 0) return 0f
+            if (delta > Int.MAX_VALUE) return Int.MAX_VALUE.toFloat()
+            return delta
+        }
+
+
+        // inicio
+        x.add(normalize(minX))
+        y.add(stablePoints.firstOrNull()?.second ?: 0.0)
+
+        val sortedPoints = stablePoints.sortedBy { it.first }
+
+        for (p in sortedPoints) {
+            x.add(normalize(p.first))
             y.add(p.second)
         }
 
-        // punto final
-        x.add(maxX.toFloat())
-        y.add(points.lastOrNull()?.second ?: 0.0)
+        // final
+        x.add(normalize(maxX))
+        y.add(stablePoints.lastOrNull()?.second ?: 0.0)
 
         x to y
     }
 
-    LaunchedEffect(stablePoints, minX, maxX) {
-        if (stablePoints.isNotEmpty()) {
-            modelProducer.runTransaction {
-                lineSeries {
-                    series(
-                        x = chartData.first,
-                        y = chartData.second
-                    )
-                }
+    LaunchedEffect(chart.metricName, chartData){
+        modelProducer.runTransaction {
+            lineSeries {
+                series(
+                    x = chartData.first,
+                    y = chartData.second
+                )
             }
         }
     }
@@ -105,7 +113,8 @@ fun ChartCard(
 
     val xFormatter = remember(dateFormatter) {
         CartesianValueFormatter { _, x, _ ->
-            dateFormatter.format(Date(x.toLong() * 1000))
+            val realTs = minX + x.toLong()
+            dateFormatter.format(Date(realTs * 1000))
         }
     }
 
@@ -170,10 +179,12 @@ fun ChartCard(
             when {
                 isLoading -> {
                     Box(
-                        modifier         = Modifier.fillMaxWidth().height(160.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        Text("Points: ${stablePoints.size}")
                     }
                 }
                 stablePoints.isEmpty() -> {

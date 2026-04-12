@@ -4,6 +4,8 @@ import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.local.entity.TelemetryAggEntity
 import com.akameiot.domain.model.TelemetryAggBucket
 import com.akameiot.domain.repository.TelemetryAggRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 
 class TelemetryAggRepositoryImpl(
@@ -43,4 +45,14 @@ class TelemetryAggRepositoryImpl(
         firstTs, firstVal, lastTs, lastVal,
         minTs, minVal, maxTs, maxVal, count
     )
+
+    override fun observeAggHistory(
+        level: String,
+        meshId: String,
+        nodeId: Int,
+        metric: String,
+        fromTs: Long
+    ): Flow<List<TelemetryAggBucket>> =
+        dao.observeAggHistory(level, meshId, nodeId, metric, fromTs)
+            .map { list -> list.map { it.toDomain() } }
 }

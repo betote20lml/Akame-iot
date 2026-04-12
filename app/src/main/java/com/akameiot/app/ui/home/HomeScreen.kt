@@ -231,50 +231,51 @@ fun HomeScreen(
 
             } else {
 
-                when {
+                if (uiState.viewMode == HomeViewMode.CARDS) {
 
-                    uiState.viewMode == HomeViewMode.CARDS -> {
-                        LazyColumn(
-                            modifier            = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 8.dp),
-                            contentPadding      = PaddingValues(vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(
-                                items = uiState.visibleNodes,
-                                key   = { node -> "${node.networkName}_${node.nodeId}" }
-                            ) { node ->
-                                TelemetryCard(node = node)
-                            }
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(
+                            items = uiState.visibleNodes,
+                            key = { node -> "${node.networkName}_${node.nodeId}" }
+                        ) { node ->
+                            TelemetryCard(node = node)
                         }
                     }
 
-                    uiState.viewMode.chartRange != null -> {
-                        LazyColumn(
-                            modifier            = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 8.dp),
-                            contentPadding      = PaddingValues(vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(
-                                items = uiState.charts,
-                                key   = { chart -> "${chart.meshId}_${chart.nodeId}" }
-                            ) { chart ->
-                                val key = ChartPointsKey(
-                                    meshId = chart.meshId,
-                                    nodeId = chart.nodeId,
-                                    metric = chart.metricName,
-                                    range = chart.chartRange  //y esto
-                                )
+                } else {
 
-                                ChartCard(
-                                    chart = chart,
-                                    globalNow = uiState.globalNow,
-                                    points = uiState.chartPoints[key] ?: emptyList()
-                                )
-                            }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(
+                            items = uiState.charts,
+                            key = { chart -> "${chart.meshId}_${chart.nodeId}" }
+                        ) { chart ->
+
+                            val key = ChartPointsKey(
+                                meshId = chart.meshId,
+                                nodeId = chart.nodeId,
+                                metric = chart.metricName,
+                                range = chart.chartRange
+                            )
+                            val pts = uiState.chartPoints[key] ?: emptyList()
+
+                            ChartCard(
+                                chart = chart,
+                                globalNow = uiState.globalNow,
+                                points = pts
+                            )
                         }
                     }
                 }

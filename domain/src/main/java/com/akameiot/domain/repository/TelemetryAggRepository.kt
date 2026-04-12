@@ -1,6 +1,7 @@
 package com.akameiot.domain.repository
 
 import com.akameiot.domain.model.TelemetryAggBucket
+import kotlinx.coroutines.flow.Flow
 
 interface TelemetryAggRepository {
 
@@ -21,4 +22,13 @@ interface TelemetryAggRepository {
         metric : String,
         fromTs : Long
     ): List<TelemetryAggBucket>
+
+    fun observeAggHistory(
+        level  : String,
+        meshId : String,
+        nodeId : Int,
+        metric : String,
+        fromTs : Long
+    ): Flow<List<TelemetryAggBucket>>
+
 }

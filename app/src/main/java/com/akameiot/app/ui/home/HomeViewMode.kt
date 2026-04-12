@@ -2,7 +2,7 @@ package com.akameiot.app.ui.home
 
 import com.akameiot.app.ui.home.model.ChartTimeRange
 
-enum class HomeViewMode(val chartRange: ChartTimeRange? = null) {
+enum class HomeViewMode(val chartRange: ChartTimeRange = ChartTimeRange.H24) {
     CARDS,
     CHARTS_24H(ChartTimeRange.H24),
     CHARTS_7D(ChartTimeRange.D7),
