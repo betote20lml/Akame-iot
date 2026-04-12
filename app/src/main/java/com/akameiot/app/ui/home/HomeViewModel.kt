@@ -153,8 +153,11 @@ class HomeViewModel(
                 }
 
                 if (shouldInvalidate) {
-                    chartCache.clear()
-                }   //eliminar esta logica
+                    if (chartCache.size >= 200) {
+                        val toRemove = chartCache.keys.take(chartCache.size - 199)
+                        toRemove.forEach { chartCache.remove(it) }
+                    }
+                }
 
                 val state = _uiState.value
                 loadChartsBatch(state.charts, value)

@@ -145,19 +145,19 @@ fun ChartCard(
                     )
                     Text(
                         text  = TelemetryFormatter.formatName(chart.metricName, locale),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
 
                 minMax?.let { (min, max) ->
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = "Min: ${min.second}",
-                            style = MaterialTheme.typography.labelSmall
+                            text = "Min: ${"%.2f".format(min.second)}",
+                            style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "Max: ${max.second}",
-                            style = MaterialTheme.typography.labelSmall
+                            text = "Max: ${"%.2f".format(max.second)}",
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
@@ -165,7 +165,7 @@ fun ChartCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // ← Chips eliminados — el rango viene del menú global
+
 
             when {
                 isLoading -> {
@@ -194,7 +194,7 @@ fun ChartCard(
                     CartesianChartHost(
                         chart = rememberCartesianChart(
                             rememberLineCartesianLayer(),
-                            startAxis  = VerticalAxis.rememberStart(),
+                            startAxis = VerticalAxis.rememberStart(),
                             bottomAxis = HorizontalAxis.rememberBottom(
                                 valueFormatter = xFormatter
                             )
