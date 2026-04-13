@@ -684,9 +684,13 @@ class HomeViewModel(
                             range  = range
                         )
                         if (key !in chartFlowCache) {
+                            android.util.Log.d("PRELOAD", "Precargando key: $key")
                             viewModelScope.launch {
                                 getOrCreateChartFlow(key, fromTsFlow).collect()
                             }
+
+                        }else {
+                            android.util.Log.d("PRELOAD", "Key ya en cache: $key")
                         }
                     }
                 }
