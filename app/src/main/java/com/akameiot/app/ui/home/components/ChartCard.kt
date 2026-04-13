@@ -38,21 +38,22 @@ fun ChartCard(
     val locale = LocalConfiguration.current.locales[0]
     val colors = LocalAppColors.current
     val isLoading = globalNow == 0L
-    val effectiveNow = if (globalNow > 0) {
+
+    val maxX = if (globalNow > 0) {
         globalNow
     } else {
         System.currentTimeMillis() / 1000L
     }
-
-    val minX = effectiveNow - chart.chartRange.seconds
-    val maxX = effectiveNow
+    val minX = maxX - chart.chartRange.seconds
 
 
-    val modelProducer = remember { CartesianChartModelProducer() }
-    val stablePoints = points
-    val chartData = remember(stablePoints, minX, maxX) {
+    val modelProducer = remember {
+        CartesianChartModelProducer()
+    }
 
-        val size = stablePoints.size + 2
+    val chartData = remember(points, minX, maxX) {
+
+        val size = points.size + 2
 
         val x = ArrayList<Float>(size)
         val y = ArrayList<Double>(size)
@@ -71,9 +72,9 @@ fun ChartCard(
 
         // inicio
         x.add(normalize(minX))
-        y.add(stablePoints.firstOrNull()?.second ?: 0.0)
+        y.add(points.firstOrNull()?.second ?: 0.0)
 
-        val sortedPoints = stablePoints.sortedBy { it.first }
+        val sortedPoints = points.sortedBy { it.first }
 
         for (p in sortedPoints) {
             x.add(normalize(p.first))
@@ -82,7 +83,7 @@ fun ChartCard(
 
         // final
         x.add(normalize(maxX))
-        y.add(stablePoints.lastOrNull()?.second ?: 0.0)
+        y.add(points.lastOrNull()?.second ?: 0.0)
 
         x to y
     }
@@ -118,14 +119,14 @@ fun ChartCard(
         }
     }
 
-    val minMax = remember(stablePoints) {
-        if (stablePoints.isEmpty()) null
+    val minMax = remember(points) {
+        if (points.isEmpty()) null
         else {
-            var min = stablePoints[0]
-            var max = stablePoints[0]
+            var min = points[0]
+            var max = points[0]
 
-            for (i in 1 until stablePoints.size) {
-                val p = stablePoints[i]
+            for (i in 1 until points.size) {
+                val p = points[i]
                 if (p.second < min.second) min = p
                 if (p.second > max.second) max = p
             }
@@ -184,10 +185,10 @@ fun ChartCard(
                             .height(160.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Points: ${stablePoints.size}")
+                        Text("Points: ${points.size}")
                     }
                 }
-                stablePoints.isEmpty() -> {
+                points.isEmpty() -> {
                     Box(
                         modifier         = Modifier.fillMaxWidth().height(160.dp),
                         contentAlignment = Alignment.Center

@@ -52,12 +52,10 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private val chartFlowCache =
         mutableMapOf<ChartPointsKey, Flow<List<Pair<Long, Double>>>>()
+    private val chartPointsMutable = mutableMapOf<ChartPointsKey, List<Pair<Long, Double>>>()
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events = _events.asSharedFlow()
-
-
-
 
 
 
@@ -77,67 +75,56 @@ class HomeViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeCharts() {
         viewModelScope.launch {
-
             _uiState
                 .map { state ->
                     state.visibleNodes.mapNotNull { node ->
                         val metric = node.metrics.firstOrNull()?.name ?: return@mapNotNull null
-
                         ChartPointsKey(
                             meshId = node.meshId,
                             nodeId = node.nodeId,
                             metric = metric,
                             range  = state.viewMode.chartRange
                         )
-
                     }
                 }
                 .distinctUntilChanged()
                 .flatMapLatest { keys ->
+                    if (keys.isEmpty()) return@flatMapLatest emptyFlow()
 
-                    if (keys.isEmpty()) return@flatMapLatest flowOf(emptyMap())
                     val range = keys.first().range
-
                     val fromTsFlow = globalTimeStore.globalNowFlow
                         .map { it - range.seconds }
                         .distinctUntilChanged()
 
+                    // limpiar puntos de keys inactivas
+                    val activeKeys = keys.toSet()
+                    chartPointsMutable.keys.removeAll { it !in activeKeys }
 
-                    val flows = keys.map { key ->
+                    merge(*keys.map { key ->
                         getOrCreateChartFlow(key, fromTsFlow)
-                    }
-
-                    if (flows.isEmpty()) {
-                        flowOf(emptyMap())
-                    } else {
-                        combine(flows) { pairs ->
-                            pairs.toMap()
-                        }
-                    }
+                    }.toTypedArray())
                 }
-                .collect { chartMap ->
+                .collect { (key, points) ->
+                    // O(1) — solo actualiza la key que cambió
+                    chartPointsMutable[key] = points
 
                     val currentState = _uiState.value
-                    val range = currentState.viewMode.chartRange
-
-                    val charts = if (range != null) {
-                        currentState.visibleNodes.mapNotNull { node ->
-                            val metric = node.metrics.firstOrNull() ?: return@mapNotNull null
-
-                            ChartUiModel(
-                                nodeId      = node.nodeId,
-                                meshId      = node.meshId,
-                                networkName = node.networkName,
-                                metricName  = metric.name,
-                                chartRange  = range
-                            )
-                        }
-                    } else emptyList()
+                    val charts = currentState.visibleNodes.mapNotNull { node ->
+                        val metric = node.metrics.firstOrNull() ?: return@mapNotNull null
+                        ChartUiModel(
+                            nodeId      = node.nodeId,
+                            meshId      = node.meshId,
+                            networkName = node.networkName,
+                            metricName  = metric.name,
+                            chartRange  = currentState.viewMode.chartRange
+                        )
+                    }
 
                     _uiState.update {
                         it.copy(
-                            chartPoints = chartMap,
-                            charts = charts
+                            chartPoints = chartPointsMutable.toMap(),
+                            charts = charts,
+                            chartPointsVersion = it.chartPointsVersion + 1
                         )
                     }
                 }
@@ -656,14 +643,14 @@ class HomeViewModel(
             .onStart { emit(emptyList()) }
             .shareIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
+                started = SharingStarted.Eagerly,
                 replay = 1
             )
 
         chartFlowCache[key] = newFlow
 
-        if (chartFlowCache.size > 200) {
-            val toRemove = chartFlowCache.size - 200
+        if (chartFlowCache.size > 600) {
+            val toRemove = chartFlowCache.size - 600
             val iterator = chartFlowCache.entries.iterator()
             repeat(toRemove) {
                 if (iterator.hasNext()) {
@@ -676,7 +663,7 @@ class HomeViewModel(
         return newFlow.map { key to it }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+
     private fun preloadChartFlows() {
         viewModelScope.launch {
             _uiState

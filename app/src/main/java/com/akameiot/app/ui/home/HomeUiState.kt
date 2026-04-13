@@ -28,5 +28,6 @@ data class HomeUiState(
     val charts: List<ChartUiModel> = emptyList(),
     val chartFromTs: Long = 0L,
     val globalNow: Long = 0L,
-    val chartPoints: Map<ChartPointsKey, List<Pair<Long, Double>>> = emptyMap()
+    val chartPoints: Map<ChartPointsKey, List<Pair<Long, Double>>> = emptyMap(),
+    val chartPointsVersion: Int = 0
 )
