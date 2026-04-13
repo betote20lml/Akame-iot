@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
 import com.akameiot.app.ui.home.model.ChartPointsKey
 import com.akameiot.app.ui.home.model.ChartUiModel
 import com.akameiot.data.session.GlobalTimeStore
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 
 class HomeViewModel(
@@ -49,6 +50,8 @@ class HomeViewModel(
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val chartFlowCache =
+        mutableMapOf<ChartPointsKey, Flow<List<Pair<Long, Double>>>>()
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events = _events.asSharedFlow()
@@ -67,52 +70,60 @@ class HomeViewModel(
         observeTelemetry()
         observeGlobalNow()
         observeCharts()
+        preloadChartFlows()
+
     }
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeCharts() {
         viewModelScope.launch {
+
             _uiState
                 .map { state ->
-                    state.visibleNodes.map { node ->
-                        Triple(
-                            node.meshId,
-                            node.nodeId,
-                            node.metrics.firstOrNull()?.name
+                    state.visibleNodes.mapNotNull { node ->
+                        val metric = node.metrics.firstOrNull()?.name ?: return@mapNotNull null
+
+                        ChartPointsKey(
+                            meshId = node.meshId,
+                            nodeId = node.nodeId,
+                            metric = metric,
+                            range  = state.viewMode.chartRange
                         )
-                    } to state.viewMode
+
+                    }
                 }
                 .distinctUntilChanged()
-                .flatMapLatest { (nodesInfo, viewMode) ->
+                .flatMapLatest { keys ->
 
-                    val range = viewMode.chartRange ?: return@flatMapLatest flowOf(emptyMap())
+                    if (keys.isEmpty()) return@flatMapLatest flowOf(emptyMap())
+                    val range = keys.first().range
 
                     val fromTsFlow = globalTimeStore.globalNowFlow
-                        .map { globalNow -> globalNow - range.seconds }
+                        .map { it - range.seconds }
                         .distinctUntilChanged()
 
-                    val flows = nodesInfo.mapNotNull { (meshId, nodeId, metricName) ->
-                        val metric = metricName ?: return@mapNotNull null
-                        val key = ChartPointsKey(
-                            meshId = meshId,
-                            nodeId = nodeId,
-                            metric = metric,
-                            range  = range
-                        )
-                        chartPointsUseCase.observe(meshId, nodeId, metric, fromTsFlow, range)
-                            .map { points -> key to points }
+
+                    val flows = keys.map { key ->
+                        getOrCreateChartFlow(key, fromTsFlow)
                     }
 
-                    if (flows.isEmpty()) flowOf(emptyMap())
-                    else combine(flows) { pairs -> pairs.toMap() }
+                    if (flows.isEmpty()) {
+                        flowOf(emptyMap())
+                    } else {
+                        combine(flows) { pairs ->
+                            pairs.toMap()
+                        }
+                    }
                 }
                 .collect { chartMap ->
+
                     val currentState = _uiState.value
                     val range = currentState.viewMode.chartRange
 
                     val charts = if (range != null) {
                         currentState.visibleNodes.mapNotNull { node ->
                             val metric = node.metrics.firstOrNull() ?: return@mapNotNull null
+
                             ChartUiModel(
                                 nodeId      = node.nodeId,
                                 meshId      = node.meshId,
@@ -154,7 +165,7 @@ class HomeViewModel(
             } catch (e: SessionExpiredException) {
                 handleSessionExpired()
             } catch (_: Exception) {
-                 }
+            }
         }
     }
 
@@ -383,12 +394,12 @@ class HomeViewModel(
         val currentOrder = _uiState.value.networksOrder.toMutableList()
         if (selected) {
 
-                if (current.none { it.thingName == network.thingName }) {
-                    current.add(network)
-                }
-                if (!currentOrder.contains(network.thingName)) {
-                    currentOrder.add(network.thingName)
-                }
+            if (current.none { it.thingName == network.thingName }) {
+                current.add(network)
+            }
+            if (!currentOrder.contains(network.thingName)) {
+                currentOrder.add(network.thingName)
+            }
         } else {
             current.removeAll { it.thingName == network.thingName }
             currentOrder.remove(network.thingName)
@@ -619,10 +630,80 @@ class HomeViewModel(
 
 
     fun setViewMode(mode: HomeViewMode) {
-        val fromTs = mode.chartRange?.let {
+        val fromTs = mode.chartRange.let {
             System.currentTimeMillis() / 1000L - it.seconds
-        } ?: 0L
+        }
         _uiState.update { it.copy(viewMode = mode, chartFromTs = fromTs) }
+    }
+
+    private fun getOrCreateChartFlow(
+        key: ChartPointsKey,
+        fromTsFlow: Flow<Long>
+    ): Flow<Pair<ChartPointsKey, List<Pair<Long, Double>>>> {
+
+        val existing = chartFlowCache[key]
+        if (existing != null) {
+            return existing.map { key to it }
+        }
+
+        val newFlow = chartPointsUseCase.observe(
+            key.meshId,
+            key.nodeId,
+            key.metric,
+            fromTsFlow,
+            key.range
+        )
+            .onStart { emit(emptyList()) }
+            .shareIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                replay = 1
+            )
+
+        chartFlowCache[key] = newFlow
+
+        if (chartFlowCache.size > 200) {
+            val toRemove = chartFlowCache.size - 200
+            val iterator = chartFlowCache.entries.iterator()
+            repeat(toRemove) {
+                if (iterator.hasNext()) {
+                    iterator.next()
+                    iterator.remove()
+                }
+            }
+        }
+
+        return newFlow.map { key to it }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun preloadChartFlows() {
+        viewModelScope.launch {
+            _uiState
+                .map { it.visibleNodes }
+                .distinctUntilChanged()
+                .collect { nodes ->
+                    val range = com.akameiot.app.ui.home.model.ChartTimeRange.H24
+                    val fromTsFlow = globalTimeStore.globalNowFlow
+                        .map { it - range.seconds }
+                        .distinctUntilChanged()
+
+                    nodes.forEach { node ->
+                        val metric = node.metrics.firstOrNull()?.name ?: return@forEach
+                        val key = ChartPointsKey(
+                            meshId = node.meshId,
+                            nodeId = node.nodeId,
+                            metric = metric,
+                            range  = range
+                        )
+                        if (key !in chartFlowCache) {
+                            viewModelScope.launch {
+                                getOrCreateChartFlow(key, fromTsFlow).collect()
+                            }
+                        }
+                    }
+                }
+        }
     }
 
 
