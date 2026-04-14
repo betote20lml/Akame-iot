@@ -5,5 +5,7 @@ data class ChartUiModel(
     val meshId: String,
     val networkName: String,
     val metricName: String,
-    val chartRange: ChartTimeRange = ChartTimeRange.H24
+    val chartRange: ChartTimeRange = ChartTimeRange.H24,
+    val isStale: Boolean = false,
+    val isStaleByTime: Boolean = false
 )

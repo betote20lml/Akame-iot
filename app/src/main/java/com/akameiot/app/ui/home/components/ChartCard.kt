@@ -62,11 +62,18 @@ fun ChartCard(
     }
 
     // colores del tema
+    val isAnyStale = chart.isStale || chart.isStaleByTime
     val lineColor = Color(0xFF2196F3)
+    val cardBg = if (isAnyStale) colors.staleBackground else colors.cardBackground
+    val cardBorder = if (isAnyStale) colors.staleBorder else colors.cardBorder
+
+
+
+
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     val axisTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     val density = LocalDensity.current
-    val axisTextSizePx = with(density) { 10.sp.toPx() }
+    val axisTextSizePx = with(density) { 12.sp.toPx() }
     val axisTextColorInt = android.graphics.Color.argb(
         (axisTextColor.alpha * 255).toInt(),
         (axisTextColor.red * 255).toInt(),
@@ -78,8 +85,11 @@ fun ChartCard(
         modifier  = Modifier.fillMaxWidth(),
         shape     = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border    = BorderStroke(1.dp, colors.cardBorder),
-        colors    = CardDefaults.cardColors(containerColor = colors.cardBackground)
+        border    = BorderStroke(
+            width = if (isAnyStale) 1.5.dp else 1.dp,
+            color = cardBorder
+        ),
+        colors    = CardDefaults.cardColors(containerColor = cardBg)
     ) {
         Column(modifier = Modifier.padding(top = 16.dp, bottom = 16.dp, end = 16.dp, start = 0.dp)) {
 

@@ -249,8 +249,6 @@ fun HomeScreen(
                     }
 
                 } else {
-
-
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -259,25 +257,36 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(
-                            items = uiState.charts,
-                            key = { chart -> "${chart.meshId}_${chart.nodeId}" }
-                        ) { chart ->
+                            items = uiState.visibleNodes,
+                            key = { node -> "${node.meshId}_${node.nodeId}" }
+                        ) { node ->
+                            val metric = node.metrics.firstOrNull()
+                            if (metric != null) {
+                                val key = ChartPointsKey(
+                                    meshId = node.meshId,
+                                    nodeId = node.nodeId,
+                                    metric = metric.name,
+                                    range  = uiState.viewMode.chartRange
+                                )
+                                val pts = uiState.chartPoints[key] ?: emptyList()
 
-                            val key = ChartPointsKey(
-                                meshId = chart.meshId,
-                                nodeId = chart.nodeId,
-                                metric = chart.metricName,
-                                range = chart.chartRange
-                            )
-                            val pts = uiState.chartPoints[key] ?: emptyList()
-
-                            ChartCard(
-                                chart = chart,
-                                globalNow = uiState.globalNow,
-                                points = pts
-                            )
+                                ChartCard(
+                                    chart = com.akameiot.app.ui.home.model.ChartUiModel(
+                                        nodeId        = node.nodeId,
+                                        meshId        = node.meshId,
+                                        networkName   = node.networkName,
+                                        metricName    = metric.name,
+                                        chartRange    = uiState.viewMode.chartRange,
+                                        isStale       = node.isStale,
+                                        isStaleByTime = node.isStaleByTime
+                                    ),
+                                    globalNow = uiState.globalNow,
+                                    points    = pts
+                                )
+                            }
                         }
                     }
+
                 }
             }
 

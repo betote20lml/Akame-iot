@@ -28,7 +28,6 @@ import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.akameiot.app.ui.home.model.ChartPointsKey
-import com.akameiot.app.ui.home.model.ChartUiModel
 import com.akameiot.data.session.GlobalTimeStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
@@ -105,27 +104,9 @@ class HomeViewModel(
                     }.toTypedArray())
                 }
                 .collect { (key, points) ->
-                    // O(1) — solo actualiza la key que cambió
                     chartPointsMutable[key] = points
-
-                    val currentState = _uiState.value
-                    val charts = currentState.visibleNodes.mapNotNull { node ->
-                        val metric = node.metrics.firstOrNull() ?: return@mapNotNull null
-                        ChartUiModel(
-                            nodeId      = node.nodeId,
-                            meshId      = node.meshId,
-                            networkName = node.networkName,
-                            metricName  = metric.name,
-                            chartRange  = currentState.viewMode.chartRange
-                        )
-                    }
-
                     _uiState.update {
-                        it.copy(
-                            chartPoints = chartPointsMutable.toMap(),
-                            charts = charts,
-                            chartPointsVersion = it.chartPointsVersion + 1
-                        )
+                        it.copy(chartPoints = chartPointsMutable.toMap())
                     }
                 }
         }
