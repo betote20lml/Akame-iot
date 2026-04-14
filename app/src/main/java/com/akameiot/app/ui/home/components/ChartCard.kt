@@ -81,10 +81,12 @@ fun ChartCard(
         border    = BorderStroke(1.dp, colors.cardBorder),
         colors    = CardDefaults.cardColors(containerColor = colors.cardBackground)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(top = 16.dp, bottom = 16.dp, end = 16.dp, start = 0.dp)) {
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 18.dp, end = 0.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
@@ -131,7 +133,7 @@ fun ChartCard(
                     ) {
                         Text(
                             text  = "Sin datos para este rango",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
                     }
@@ -143,11 +145,11 @@ fun ChartCard(
                             .fillMaxWidth()
                             .height(160.dp)
                     ) {
-                        val yLabelWidth = 36.dp.toPx()
-                        val xLabelHeight = 20.dp.toPx()
+                        val yLabelWidth = 44.dp.toPx()
+                        val xLabelHeight = 22.dp.toPx()
                         val plotLeft   = yLabelWidth
                         val plotRight  = size.width
-                        val plotTop    = 4.dp.toPx()
+                        val plotTop    = 8.dp.toPx()
                         val plotBottom = size.height - xLabelHeight
                         val plotWidth  = plotRight - plotLeft
                         val plotHeight = plotBottom - plotTop
@@ -163,8 +165,9 @@ fun ChartCard(
                         val yMax = maxY + yPadding
                         val ySpan = yMax - yMin
 
+                        val xPadding = 12.dp.toPx()
                         fun toX(ts: Long): Float =
-                            plotLeft + ((ts - minX).toFloat() / (maxX - minX).toFloat()) * plotWidth
+                            plotLeft + xPadding + ((ts - minX).toFloat() / (maxX - minX).toFloat()) * (plotWidth - xPadding * 2)
 
                         fun toY(v: Double): Float =
                             plotBottom - ((v - yMin) / ySpan * plotHeight).toFloat()
@@ -220,10 +223,12 @@ fun ChartCard(
 
                         // labels eje X — 5 puntos
                         val xLabels = 5
+
                         for (i in 0..xLabels) {
                             val fraction = i.toFloat() / xLabels
+
                             val ts = minX + ((maxX - minX) * fraction).toLong()
-                            val x = plotLeft + fraction * plotWidth
+                            val x = toX(ts)
 
                             drawContext.canvas.nativeCanvas.drawText(
                                 dateFormatter.format(Date(ts * 1000)),
