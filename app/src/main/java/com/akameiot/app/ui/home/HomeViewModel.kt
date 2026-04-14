@@ -65,7 +65,6 @@ class HomeViewModel(
         loadMeshWindows()
         checkPendingFcmResubscribe()
         observeTelemetry()
-        observeGlobalNow()
         observeCharts()
         preloadChartFlows()
 
@@ -109,15 +108,6 @@ class HomeViewModel(
                         it.copy(chartPoints = chartPointsMutable.toMap())
                     }
                 }
-        }
-    }
-
-
-    private fun observeGlobalNow() {
-        viewModelScope.launch {
-            globalTimeStore.globalNowFlow.collect { value ->
-                _uiState.update { it.copy(globalNow = value) }
-            }
         }
     }
 
@@ -198,9 +188,7 @@ class HomeViewModel(
                             .maxOfOrNull { it.timestamp } ?: 0L
 
                         if (latestGlobalTs > 0) {
-                            launch {
-                                globalTimeStore.setGlobalNow(latestGlobalTs)
-                            }
+                            globalTimeStore.setGlobalNow(latestGlobalTs)
                         }
 
 
@@ -336,7 +324,8 @@ class HomeViewModel(
                             savedFilterNetworkNames = emptyList(),
                             visibleNodes = sortedNodes,
                             availableMetrics = availableMetrics,
-                            isEmptyState = uiTelemetry.isEmpty()
+                            isEmptyState = uiTelemetry.isEmpty(),
+                            globalNow = if (latestGlobalTs > 0) latestGlobalTs else state.globalNow
                         )
                     }
                 }
@@ -666,18 +655,14 @@ class HomeViewModel(
                         )
                         if (key !in chartFlowCache) {
                             android.util.Log.d("PRELOAD", "Precargando key: $key")
-                            viewModelScope.launch {
-                                getOrCreateChartFlow(key, fromTsFlow).collect()
-                            }
-
-                        }else {
+                            getOrCreateChartFlow(key, fromTsFlow)
+                        } else {
                             android.util.Log.d("PRELOAD", "Key ya en cache: $key")
                         }
                     }
                 }
         }
     }
-
 
 
 }
