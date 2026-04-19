@@ -19,6 +19,7 @@ import com.akameiot.app.ui.home.formatter.TelemetryFormatter
 import com.akameiot.app.ui.home.model.ChartTimeRange
 import com.akameiot.app.ui.home.model.ChartUiModel
 import com.akameiot.coreui.theme.LocalAppColors
+import androidx.compose.ui.platform.LocalWindowInfo
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -35,9 +36,14 @@ fun ChartCard(
     val maxX = if (globalNow > 0) globalNow else System.currentTimeMillis() / 1000L
     val minX = maxX - chart.chartRange.seconds
 
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(LocalDensity.current) {
+        windowInfo.containerSize.width.toDp()
+    }
+
     val datePattern = when (chart.chartRange) {
         ChartTimeRange.H24 -> "HH:mm"
-        ChartTimeRange.D7  -> "EEE dd"
+        ChartTimeRange.D7  -> if (screenWidthDp < 480.dp) "EEE" else "EEE dd"
         ChartTimeRange.M1,
         ChartTimeRange.M3  -> "dd/MM"
         ChartTimeRange.Y1  -> "dd/MM"
@@ -155,14 +161,9 @@ fun ChartCard(
                             .fillMaxWidth()
                             .height(160.dp)
                     ) {
-                        val yLabelWidth = 44.dp.toPx()
                         val xLabelHeight = 22.dp.toPx()
-                        val plotLeft   = yLabelWidth
-                        val plotRight  = size.width
                         val plotTop    = 8.dp.toPx()
                         val plotBottom = size.height - xLabelHeight
-                        val plotWidth  = plotRight - plotLeft
-                        val plotHeight = plotBottom - plotTop
 
                         val sortedPoints = points.sortedBy { it.first }
 
@@ -175,9 +176,24 @@ fun ChartCard(
                         val yMax = maxY + yPadding
                         val ySpan = yMax - yMin
 
+                        val tempPaint = android.graphics.Paint().apply {
+                            textSize = axisTextSizePx
+                            isAntiAlias = true
+                        }
+                        val gridLines = 4
+                        val widestLabel = (0..gridLines).maxOf { i ->
+                            val fraction = i.toFloat() / gridLines
+                            val value = yMin + fraction * ySpan
+                            tempPaint.measureText("%.1f".format(value))
+                        }
+                        val yLabelWidth = widestLabel + 22.dp.toPx()
+                        val plotRight  = size.width
+                        val plotWidth  = plotRight - yLabelWidth
+                        val plotHeight = plotBottom - plotTop
+
                         val xPadding = 12.dp.toPx()
                         fun toX(ts: Long): Float =
-                            plotLeft + xPadding + ((ts - minX).toFloat() / (maxX - minX).toFloat()) * (plotWidth - xPadding * 2)
+                            yLabelWidth + xPadding + ((ts - minX).toFloat() / (maxX - minX).toFloat()) * (plotWidth - xPadding * 2)
 
                         fun toY(v: Double): Float =
                             plotBottom - ((v - yMin) / ySpan * plotHeight).toFloat()
@@ -211,7 +227,7 @@ fun ChartCard(
                             isAntiAlias = true
                         }
 
-                        val gridLines = 4
+
                         for (i in 0..gridLines) {
                             val fraction = i.toFloat() / gridLines
                             val y = plotBottom - fraction * plotHeight
@@ -219,7 +235,7 @@ fun ChartCard(
 
                             // línea grid
                             drawContext.canvas.nativeCanvas.drawLine(
-                                plotLeft, y, plotRight, y, gridPaint
+                                yLabelWidth, y, plotRight, y, gridPaint
                             )
 
                             // label eje Y
@@ -232,7 +248,7 @@ fun ChartCard(
                         }
 
                         // labels eje X — 5 puntos
-                        val xLabels = 5
+                        val xLabels = if (chart.chartRange == ChartTimeRange.D7) 7 else 5
 
                         for (i in 0..xLabels) {
                             val fraction = i.toFloat() / xLabels
@@ -279,7 +295,3 @@ fun ChartCard(
         }
     }
 }
-
-
-
-
