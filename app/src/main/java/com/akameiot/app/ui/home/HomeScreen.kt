@@ -22,8 +22,10 @@ import com.akameiot.app.ui.navigation.Routes
 import com.akameiot.app.ui.navigation.Routes.LOGIN
 import com.akameiot.domain.model.AppUser
 import com.akameiot.app.ui.home.components.ChartCard
-import androidx.compose.material.icons.filled.Check
 import com.akameiot.app.ui.home.model.ChartPointsKey
+import com.akameiot.coreui.components.AppDropdownMenu
+import com.akameiot.coreui.components.AppMenuCheckItem
+import com.akameiot.coreui.components.AppMenuDivider
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -171,22 +173,20 @@ fun HomeScreen(
                     Icon(Icons.Default.MoreVert, contentDescription = null)
                 }
 
-                DropdownMenu(
-                    expanded         = showViewMenu,
-                    onDismissRequest = { showViewMenu = false }
+
+                AppDropdownMenu(
+                    expanded = showViewMenu,
+                    onDismiss = { showViewMenu = false }
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Tarjetas") },
+                    AppMenuCheckItem(
+                        label = "Tarjetas",
+                        checked = uiState.viewMode == HomeViewMode.CARDS,
                         onClick = {
                             viewModel.setViewMode(HomeViewMode.CARDS)
                             showViewMenu = false
-                        },
-                        leadingIcon = {
-                            if (uiState.viewMode == HomeViewMode.CARDS)
-                                Icon(Icons.Default.Check, contentDescription = null)
                         }
                     )
-                    HorizontalDivider()
+                    AppMenuDivider()
                     listOf(
                         HomeViewMode.CHARTS_24H to "Gráficas · 24h",
                         HomeViewMode.CHARTS_7D  to "Gráficas · 7 días",
@@ -194,15 +194,12 @@ fun HomeScreen(
                         HomeViewMode.CHARTS_3M  to "Gráficas · 3 meses",
                         HomeViewMode.CHARTS_1Y to "Gráficas · 1 año"
                     ).forEach { (mode, label) ->
-                        DropdownMenuItem(
-                            text = { Text(label) },
+                        AppMenuCheckItem(
+                            label = label,
+                            checked = uiState.viewMode == mode,
                             onClick = {
                                 viewModel.setViewMode(mode)
                                 showViewMenu = false
-                            },
-                            leadingIcon = {
-                                if (uiState.viewMode == mode)
-                                    Icon(Icons.Default.Check, contentDescription = null)
                             }
                         )
                     }

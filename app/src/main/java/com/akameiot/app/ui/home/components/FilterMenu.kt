@@ -1,20 +1,15 @@
 package com.akameiot.app.ui.home.components
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
 import com.akameiot.coreui.components.AppSelectableSortableItem
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.akameiot.domain.model.Network
 import com.akameiot.coreui.components.AppDropdownMenu
 import com.akameiot.coreui.components.AppMenuSectionHeader
 import com.akameiot.coreui.components.AppMenuDivider
-import com.akameiot.coreui.theme.LocalSpacing
 import androidx.compose.ui.platform.LocalConfiguration
 import com.akameiot.app.ui.home.formatter.TelemetryFormatter
+import com.akameiot.coreui.components.AppMenuCheckItem
 
 @Composable
 fun FilterMenu(
@@ -35,7 +30,6 @@ fun FilterMenu(
 ) {
     var showNetworkOptions by remember { mutableStateOf(false) }
     var showMetricOptions by remember { mutableStateOf(false) }
-    val spacing = LocalSpacing.current
     val locale = LocalConfiguration.current.locales[0]
 
     AppDropdownMenu(
@@ -130,43 +124,22 @@ fun FilterMenu(
         HorizontalDivider()
 
         // ── Orden ──
-        DropdownMenuItem(
-            text = {
-                Text(
-                    "Orden ascendente",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            leadingIcon = {
-                if (sortAscending == true) Icon(Icons.Default.Check, contentDescription = null)
-                else Spacer(Modifier.size(24.dp))
-            },
+        AppMenuCheckItem(
+            label = "Orden ascendente",
+            checked = sortAscending == true,
             onClick = {
-                // Si ya estaba seleccionado, deselecciona (null). Si no, selecciona.
                 onSortAscending(if (sortAscending == true) null else true)
                 onDismiss()
-            },
-            contentPadding = PaddingValues(0.dp)
+            }
         )
 
-        DropdownMenuItem(
-            text = {
-                Text(
-                    "Orden descendente",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            leadingIcon = {
-                if (sortAscending == false) Icon(Icons.Default.Check, contentDescription = null)
-                else Spacer(Modifier.size(24.dp))
-            },
+        AppMenuCheckItem(
+            label = "Orden descendente",
+            checked = sortAscending == false,
             onClick = {
                 onSortAscending(if (sortAscending == false) null else false)
                 onDismiss()
-            },
-            contentPadding = PaddingValues(0.dp)
+            }
         )
     }
 }

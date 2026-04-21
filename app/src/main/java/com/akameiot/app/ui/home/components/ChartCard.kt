@@ -53,6 +53,16 @@ fun ChartCard(
         SimpleDateFormat(datePattern, Locale.getDefault())
     }
 
+    val xLabelsData = remember(minX, maxX, chart.chartRange, datePattern) {
+        val count = if (chart.chartRange == ChartTimeRange.D7) 7 else 5
+
+        (0..count).map { i ->
+            val fraction = i.toFloat() / count
+            val ts = minX + ((maxX - minX) * fraction).toLong()
+            ts to dateFormatter.format(Date(ts * 1000))
+        }
+    }
+
     val minMax = remember(points) {
         if (points.isEmpty()) null
         else {
@@ -65,6 +75,10 @@ fun ChartCard(
             }
             min to max
         }
+    }
+
+    val sortedPoints = remember(points) {
+        points.sortedBy { it.first }
     }
 
     // colores del tema
@@ -86,6 +100,38 @@ fun ChartCard(
         (axisTextColor.green * 255).toInt(),
         (axisTextColor.blue * 255).toInt()
     )
+
+    val gridPaint = remember(gridColor) {
+        android.graphics.Paint().apply {
+            color = android.graphics.Color.argb(
+                (gridColor.alpha * 255).toInt(),
+                (gridColor.red * 255).toInt(),
+                (gridColor.green * 255).toInt(),
+                (gridColor.blue * 255).toInt()
+            )
+            style = android.graphics.Paint.Style.STROKE
+            isAntiAlias = true
+        }
+    }
+
+    val yTextPaint = remember(axisTextColorInt, axisTextSizePx) {
+        android.graphics.Paint().apply {
+            color = axisTextColorInt
+            textSize = axisTextSizePx
+            textAlign = android.graphics.Paint.Align.RIGHT
+            isAntiAlias = true
+        }
+    }
+
+    val xTextPaint = remember(axisTextColorInt, axisTextSizePx) {
+        android.graphics.Paint().apply {
+            color = axisTextColorInt
+            textSize = axisTextSizePx
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+    }
+
 
     Card(
         modifier  = Modifier.fillMaxWidth(),
@@ -165,10 +211,8 @@ fun ChartCard(
                         val plotTop    = 8.dp.toPx()
                         val plotBottom = size.height - xLabelHeight
 
-                        val sortedPoints = points.sortedBy { it.first }
-
-                        val minY = sortedPoints.minOf { it.second }
-                        val maxY = sortedPoints.maxOf { it.second }
+                        val minY = minMax!!.first.second
+                        val maxY = minMax.second.second
                         val yRange = if (maxY - minY < 0.001) 1.0 else maxY - minY
                         val yPadding = yRange * 0.1
 
@@ -192,40 +236,14 @@ fun ChartCard(
                         val plotHeight = plotBottom - plotTop
 
                         val xPadding = 12.dp.toPx()
+                        val xRange = (maxX - minX).toFloat().coerceAtLeast(1f)
+                        val xScale = (plotWidth - xPadding * 2) / xRange
+
                         fun toX(ts: Long): Float =
-                            yLabelWidth + xPadding + ((ts - minX).toFloat() / (maxX - minX).toFloat()) * (plotWidth - xPadding * 2)
+                            yLabelWidth + xPadding + (ts - minX) * xScale
 
                         fun toY(v: Double): Float =
                             plotBottom - ((v - yMin) / ySpan * plotHeight).toFloat()
-
-                        // grid horizontal — 4 líneas
-                        val gridPaint = android.graphics.Paint().apply {
-                            color = android.graphics.Color.argb(
-                                (gridColor.alpha * 255).toInt(),
-                                (gridColor.red * 255).toInt(),
-                                (gridColor.green * 255).toInt(),
-                                (gridColor.blue * 255).toInt()
-                            )
-                            style = android.graphics.Paint.Style.STROKE
-                            strokeWidth = 1.dp.toPx()
-                            pathEffect = android.graphics.DashPathEffect(
-                                floatArrayOf(4.dp.toPx(), 4.dp.toPx()), 0f
-                            )
-                        }
-
-                        val yTextPaint = android.graphics.Paint().apply {
-                            color = axisTextColorInt
-                            textSize = axisTextSizePx
-                            textAlign = android.graphics.Paint.Align.RIGHT
-                            isAntiAlias = true
-                        }
-
-                        val xTextPaint = android.graphics.Paint().apply {
-                            color = axisTextColorInt
-                            textSize = axisTextSizePx
-                            textAlign = android.graphics.Paint.Align.CENTER
-                            isAntiAlias = true
-                        }
 
 
                         for (i in 0..gridLines) {
@@ -248,16 +266,11 @@ fun ChartCard(
                         }
 
                         // labels eje X — 5 puntos
-                        val xLabels = if (chart.chartRange == ChartTimeRange.D7) 7 else 5
-
-                        for (i in 0..xLabels) {
-                            val fraction = i.toFloat() / xLabels
-
-                            val ts = minX + ((maxX - minX) * fraction).toLong()
+                        xLabelsData.forEach { (ts, label) ->
                             val x = toX(ts)
 
                             drawContext.canvas.nativeCanvas.drawText(
-                                dateFormatter.format(Date(ts * 1000)),
+                                label,
                                 x,
                                 size.height - 2.dp.toPx(),
                                 xTextPaint
