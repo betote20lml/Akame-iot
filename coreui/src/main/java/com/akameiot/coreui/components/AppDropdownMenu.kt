@@ -94,8 +94,8 @@ fun AppMenuCheckItem(
 @Composable
 fun AppMenuDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(vertical = 2.dp),
+        modifier = Modifier.padding(vertical = 4.dp),
         thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
     )
 }
