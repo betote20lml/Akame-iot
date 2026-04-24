@@ -20,7 +20,6 @@ data class NodeLimitItem(
     val metricDisplayName: String,   // translated e.g. "Humedad"
 
     val stats: List<RangeStats> = listOf(
-        RangeStats("24 h",    null, null),
         RangeStats("7 días",  null, null),
         RangeStats("1 mes",   null, null),
         RangeStats("3 meses", null, null),

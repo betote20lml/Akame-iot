@@ -99,11 +99,10 @@ class IndexFactoryViewModel(
                 // Levels must match exactly what AggregateInsertUseCase writes:
                 // "hour", "day", "month"
                 val ranges = listOf(
-                    Triple("24 h",    86_400L,     "hour"),
-                    Triple("7 días",  604_800L,    "hour"),
-                    Triple("1 mes",   2_592_000L,  "day"),
-                    Triple("3 meses", 7_776_000L,  "day"),
-                    Triple("1 año",   31_536_000L, "month"),
+                    Triple("7 días",  604_800L,    "7d"),
+                    Triple("1 mes",   2_592_000L,  "1m"),
+                    Triple("3 meses", 7_776_000L,  "3m"),
+                    Triple("1 año",   31_536_000L, "1y"),
                 )
 
                 val items = nodesForMetric.map { entity ->

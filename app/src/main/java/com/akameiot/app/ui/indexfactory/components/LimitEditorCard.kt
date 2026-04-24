@@ -41,15 +41,12 @@ fun LimitEditorCard(
                     Text(
                         text = item.nodeName,
                         style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
-                        text = item.networkName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+
                 }
                 // Metric badge
                 Surface(
@@ -78,13 +75,13 @@ fun LimitEditorCard(
                     modifier = Modifier.weight(1.4f),
                 )
                 Text(
-                    "Mín",
+                    "Mínimo",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    "Máx",
+                    "Máximo",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
@@ -92,7 +89,7 @@ fun LimitEditorCard(
             }
 
             Spacer(Modifier.height(4.dp))
-            HorizontalDivider(thickness = 0.5.dp)
+            HorizontalDivider(thickness = 1.dp)
             Spacer(Modifier.height(4.dp))
 
             item.stats.forEach { stat -> StatsRow(stat = stat) }
@@ -106,8 +103,8 @@ fun LimitEditorCard(
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f))
                 Text(
-                    text = "  Límites personalizados  ",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "  Límites Útiles  ",
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -117,6 +114,8 @@ fun LimitEditorCard(
             Spacer(Modifier.height(12.dp))
 
             // ── Editable fields ───────────────────────────────────────────────
+            val isDirty = item.userMin.isNotEmpty() || item.userMax.isNotEmpty()
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
@@ -134,6 +133,17 @@ fun LimitEditorCard(
                     modifier = Modifier.weight(1f),
                 )
             }
+
+            Spacer(Modifier.height(12.dp))
+
+            Button(
+                onClick = { /* onSave — implementar después */ },
+                enabled = isDirty,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text("Guardar límites")
+            }
         }
     }
 }
@@ -145,28 +155,33 @@ private fun StatsRow(stat: RangeStats) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = stat.label,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1.4f),
         )
         Text(
             text = stat.min?.let { "%.2f".format(it) } ?: "—",
-            style = MaterialTheme.typography.bodySmall,
-            color = if (stat.min != null) MaterialTheme.colorScheme.tertiary
-            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                alpha = if (stat.min != null) 1f else 0.4f
+            ),
             fontWeight = FontWeight.Medium,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Start,
             modifier = Modifier.weight(1f),
         )
         Text(
             text = stat.max?.let { "%.2f".format(it) } ?: "—",
-            style = MaterialTheme.typography.bodySmall,
-            color = if (stat.max != null) MaterialTheme.colorScheme.error
-            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                alpha = if (stat.max != null) 1f else 0.4f
+            ),
             fontWeight = FontWeight.Medium,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Start,
             modifier = Modifier.weight(1f),
         )
     }
