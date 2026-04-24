@@ -9,35 +9,34 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.akameiot.app.ui.home.HomeScreen
-import com.akameiot.app.ui.landing.LandingScreen
-import com.akameiot.app.ui.login.LoginScreen
-import com.akameiot.app.ui.register.RegisterScreen
-import com.akameiot.app.ui.terms.TermsScreen
-import com.akameiot.app.ui.verification.VerificationScreen
-import com.akameiot.app.ui.qrauth.QrAuthScreen
-import com.akameiot.app.ui.splash.SplashScreen
-import com.akameiot.app.ui.resetpassword.ResetPasswordScreen
-import com.akameiot.app.ui.auth.AuthSharedViewModel
 import com.akameiot.app.ui.home.HomeViewModel
 import com.akameiot.app.ui.home.HomeViewModelFactory
+import com.akameiot.app.ui.indexfactory.IndexFactoryScreen
+import com.akameiot.app.ui.landing.LandingScreen
+import com.akameiot.app.ui.login.LoginScreen
+import com.akameiot.app.ui.auth.AuthSharedViewModel
+import com.akameiot.app.ui.qrauth.QrAuthScreen
+import com.akameiot.app.ui.register.RegisterScreen
+import com.akameiot.app.ui.resetpassword.ResetPasswordScreen
+import com.akameiot.app.ui.splash.SplashScreen
+import com.akameiot.app.ui.terms.TermsScreen
 import com.akameiot.app.ui.token.PairingTokenScreen
+import com.akameiot.app.ui.verification.VerificationScreen
 import com.akameiot.domain.model.AppUser
 
 @Composable
 fun AppNavHost(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-
     val navController = rememberNavController()
 
     val authSharedViewModel: AuthSharedViewModel =
         androidx.lifecycle.viewmodel.compose.viewModel()
 
-
     NavHost(
-        navController = navController,
+        navController    = navController,
         startDestination = Routes.SPLASH,
-        modifier = modifier
+        modifier         = modifier,
     ) {
 
         composable(Routes.SPLASH) {
@@ -49,7 +48,8 @@ fun AppNavHost(
         }
 
         composable(Routes.TOKEN) {
-            val homeViewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = HomeViewModelFactory())
+            val homeViewModel: HomeViewModel =
+                androidx.lifecycle.viewmodel.compose.viewModel(factory = HomeViewModelFactory())
             val uiState by homeViewModel.uiState.collectAsState()
             if (uiState.appUser is AppUser.Limited) {
                 LaunchedEffect(Unit) {
@@ -72,15 +72,15 @@ fun AppNavHost(
 
         composable(Routes.LOGIN) {
             LoginScreen(
-                navController = navController,
-                sharedViewModel = authSharedViewModel
+                navController   = navController,
+                sharedViewModel = authSharedViewModel,
             )
         }
 
         composable(Routes.REGISTER) {
             RegisterScreen(
-                navController = navController,
-                sharedViewModel = authSharedViewModel
+                navController   = navController,
+                sharedViewModel = authSharedViewModel,
             )
         }
 
@@ -89,30 +89,31 @@ fun AppNavHost(
         }
 
         composable(
-            route = Routes.RESET_PASSWORD_WITH_ARG,
-            arguments = listOf(
-                navArgument("email") {
-                    type = NavType.StringType
-                }
-            )
+            route     = Routes.RESET_PASSWORD_WITH_ARG,
+            arguments = listOf(navArgument("email") { type = NavType.StringType }),
         ) { backStackEntry ->
-
-            val email =
-                backStackEntry.arguments?.getString("email")
-                    ?: return@composable
-
-            ResetPasswordScreen(
-                navController = navController,
-                email = email
-            )
+            val email = backStackEntry.arguments?.getString("email") ?: return@composable
+            ResetPasswordScreen(navController = navController, email = email)
         }
-
 
         composable(Routes.VERIFICATION) {
             VerificationScreen(
-                navController = navController,
-                sharedViewModel = authSharedViewModel
+                navController   = navController,
+                sharedViewModel = authSharedViewModel,
             )
+        }
+
+        composable(
+            route     = Routes.INDEX_FACTORY_WITH_ARG,
+            arguments = listOf(
+                navArgument("metricKey") {
+                    type     = NavType.StringType
+                    nullable = true
+                },
+            ),
+        ) { backStackEntry ->
+            val metricKey = backStackEntry.arguments?.getString("metricKey")
+            IndexFactoryScreen(navController, metricKey)
         }
     }
 }

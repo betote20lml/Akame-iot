@@ -2,26 +2,19 @@ package com.akameiot.app.ui.navigation
 
 object Routes {
     const val SPLASH = "splash"
+    const val HOME   = "home"
+    const val LOGIN  = "login"
 
-    const val HOME = "home"
+    const val RESET_PASSWORD_WITH_ARG = "reset_password/{email}"
+    fun resetPassword(email: String) = "reset_password/$email"
 
-    const val LOGIN = "login"
-
-     const val RESET_PASSWORD_WITH_ARG =
-        "reset_password/{email}"
-
-    fun resetPassword(email: String) =
-        "reset_password/$email"
-
-    const val REGISTER = "register"
-    const val TERMS = "terms"
-    const val LANDING = "landing"
-
-    const val QR_AUTH = "qr_auth"
-
+    const val REGISTER   = "register"
+    const val TERMS      = "terms"
+    const val LANDING    = "landing"
+    const val QR_AUTH    = "qr_auth"
     const val VERIFICATION = "verification"
+    const val TOKEN      = "token"
 
-    const val TOKEN = "token"
-
-
+    const val INDEX_FACTORY_WITH_ARG = "index_factory/{metricKey}"
+    fun indexFactory(metricKey: String) = "index_factory/$metricKey"
 }

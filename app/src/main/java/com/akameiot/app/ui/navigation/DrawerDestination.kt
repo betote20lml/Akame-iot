@@ -5,13 +5,15 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.ui.graphics.vector.ImageVector
 
 data class DrawerDestination(
     val route: String,
     val label: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val isIndexFactory: Boolean = false,
 )
 
 object DrawerDestinations {
@@ -20,27 +22,33 @@ object DrawerDestinations {
         DrawerDestination(
             route = Routes.HOME,
             label = "Dashboard",
-            icon = Icons.Default.Dashboard
+            icon  = Icons.Default.Dashboard,
         ),
         DrawerDestination(
             route = "account",
             label = "Cuenta",
-            icon = Icons.Default.Person
+            icon  = Icons.Default.Person,
         ),
         DrawerDestination(
             route = "alerts",
             label = "Alertas",
-            icon = Icons.Default.Notifications
+            icon  = Icons.Default.Notifications,
         ),
         DrawerDestination(
             route = "settings",
             label = "Configuración",
-            icon = Icons.Default.Settings
+            icon  = Icons.Default.Settings,
         ),
         DrawerDestination(
             route = Routes.TOKEN,
             label = "Token de Acceso",
-            icon = Icons.Default.VpnKey
-        )
+            icon  = Icons.Default.VpnKey,
+        ),
+        DrawerDestination(
+            route          = "",
+            label          = "Editar límites",
+            icon           = Icons.Default.Tune,
+            isIndexFactory = true,
+        ),
     )
 }
