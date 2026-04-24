@@ -9,11 +9,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.akameiot.app.ui.indexfactory.NodeLimitItem
 import com.akameiot.app.ui.indexfactory.RangeStats
+
+
+val columnEndPadding = 8.dp
 
 @Composable
 fun LimitEditorCard(
@@ -51,13 +55,13 @@ fun LimitEditorCard(
                 // Metric badge
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.primaryContainer,  // era primaryContainer
                 ) {
                     Text(
                         text = item.metricDisplayName,
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Medium,                // era Bold
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, // era onPrimaryContainer
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         maxLines = 1,
                     )
@@ -66,40 +70,55 @@ fun LimitEditorCard(
 
             Spacer(Modifier.height(14.dp))
 
-            // ── Historical stats table ────────────────────────────────────────
-            Row(modifier = Modifier.fillMaxWidth()) {
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text(
                     "Período",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1.4f),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.weight(1f, fill = true),
                 )
                 Text(
                     "Mínimo",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .weight(1f, fill = true)
+                        .padding(end = columnEndPadding),
                 )
+
                 Text(
                     "Máximo",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .weight(1f, fill = true)
+                        .padding(end = columnEndPadding),
                 )
             }
 
             Spacer(Modifier.height(4.dp))
-            HorizontalDivider(thickness = 1.dp)
+            HorizontalDivider(
+                thickness = 1.dp,
+                modifier = Modifier.padding(end = columnEndPadding)
+            )
             Spacer(Modifier.height(4.dp))
 
             item.stats.forEach { stat -> StatsRow(stat = stat) }
 
             Spacer(Modifier.height(16.dp))
 
-            // ── Custom limits divider ─────────────────────────────────────────
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = columnEndPadding),
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f))
                 Text(
@@ -113,7 +132,7 @@ fun LimitEditorCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // ── Editable fields ───────────────────────────────────────────────
+
             val isDirty = item.userMin.isNotEmpty() || item.userMax.isNotEmpty()
 
             Row(
@@ -148,11 +167,11 @@ fun LimitEditorCard(
     }
 }
 
-// ── Row helpers ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun StatsRow(stat: RangeStats) {
     Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
@@ -162,7 +181,7 @@ private fun StatsRow(stat: RangeStats) {
             text = stat.label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1.4f),
+            modifier = Modifier.weight(1f, fill = true),
         )
         Text(
             text = stat.min?.let { "%.2f".format(it) } ?: "—",
@@ -171,8 +190,10 @@ private fun StatsRow(stat: RangeStats) {
                 alpha = if (stat.min != null) 1f else 0.4f
             ),
             fontWeight = FontWeight.Medium,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Start,
-            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .weight(1f, fill = true)
+                .padding(end = columnEndPadding),
         )
         Text(
             text = stat.max?.let { "%.2f".format(it) } ?: "—",
@@ -181,8 +202,10 @@ private fun StatsRow(stat: RangeStats) {
                 alpha = if (stat.max != null) 1f else 0.4f
             ),
             fontWeight = FontWeight.Medium,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Start,
-            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .weight(1f, fill = true)
+                .padding(end = columnEndPadding),
         )
     }
 }
