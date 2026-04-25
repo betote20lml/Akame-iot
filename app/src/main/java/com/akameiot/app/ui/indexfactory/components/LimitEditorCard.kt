@@ -18,6 +18,7 @@ import com.akameiot.app.ui.indexfactory.RangeStats
 
 
 val columnEndPadding = 8.dp
+val columnHorizontalPadding = 8.dp
 
 @Composable
 fun LimitEditorCard(
@@ -34,7 +35,14 @@ fun LimitEditorCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(
+                start = 16.dp + columnHorizontalPadding,
+                end = 16.dp + columnHorizontalPadding,
+                top = 16.dp,
+                bottom = 16.dp
+            )
+        ) {
 
             // ── Header ────────────────────────────────────────────────────────
             Row(
@@ -88,8 +96,7 @@ fun LimitEditorCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.End,
                     modifier = Modifier
-                        .weight(1f, fill = true)
-                        .padding(end = columnEndPadding),
+                        .weight(1f, fill = true),
                 )
 
                 Text(
@@ -98,15 +105,13 @@ fun LimitEditorCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.End,
                     modifier = Modifier
-                        .weight(1f, fill = true)
-                        .padding(end = columnEndPadding),
+                        .weight(1f, fill = true),
                 )
             }
 
             Spacer(Modifier.height(4.dp))
             HorizontalDivider(
                 thickness = 1.dp,
-                modifier = Modifier.padding(end = columnEndPadding)
             )
             Spacer(Modifier.height(4.dp))
 
@@ -117,8 +122,7 @@ fun LimitEditorCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = columnEndPadding),
+                    .fillMaxWidth(),
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f))
                 Text(
@@ -192,8 +196,7 @@ private fun StatsRow(stat: RangeStats) {
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.End,
             modifier = Modifier
-                .weight(1f, fill = true)
-                .padding(end = columnEndPadding),
+                .weight(1f, fill = true),
         )
         Text(
             text = stat.max?.let { "%.2f".format(it) } ?: "—",
@@ -204,8 +207,7 @@ private fun StatsRow(stat: RangeStats) {
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.End,
             modifier = Modifier
-                .weight(1f, fill = true)
-                .padding(end = columnEndPadding),
+                .weight(1f, fill = true),
         )
     }
 }
@@ -219,13 +221,33 @@ private fun LimitTextField(
 ) {
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { newValue ->
+            val normalized = newValue.replace(',', '.')
+
+            val filtered = buildString {
+                var hasDot = false
+
+                for (char in normalized) {
+                    if (char.isDigit()) {
+                        append(char)
+                    } else if (char == '.' && !hasDot) {
+                        append(char)
+                        hasDot = true
+                    }
+                }
+            }
+
+            val finalValue = if (filtered == ".") "" else filtered
+            onValueChange(finalValue)
+        },
         label = { Text(label, fontSize = 12.sp) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         shape = RoundedCornerShape(12.dp),
         modifier = modifier,
-        textStyle = MaterialTheme.typography.bodyMedium,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            textAlign = TextAlign.End
+        ),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor   = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
