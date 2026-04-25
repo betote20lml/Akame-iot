@@ -29,7 +29,13 @@ class DrawerViewModel(
     private fun observeMetrics() {
         viewModelScope.launch {
             telemetryDao.observeLatestPerMetric()
-                .map { list -> list.map { it.metric }.distinct().sorted() }
+                .map { list ->
+                    list
+                        .map { it.metric }
+                        .filterNot { it.endsWith("_index") }
+                        .distinct()
+                        .sorted()
+                }
                 .distinctUntilChanged()
                 .collect { keys ->
                     val locale = Locale.getDefault()

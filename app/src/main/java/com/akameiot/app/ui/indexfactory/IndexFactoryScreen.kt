@@ -68,6 +68,11 @@ fun IndexFactoryScreen(
                         "Recuperar desde la nube — próximamente",
                         duration = SnackbarDuration.Short,
                     )
+                is IndexFactoryEvent.LimitSaved ->
+                    snackbarHostState.showSnackbar(
+                        "Límites guardados para ${event.nodeName}",
+                        duration = SnackbarDuration.Short,
+                    )
             }
         }
     }
@@ -227,10 +232,14 @@ fun IndexFactoryScreen(
                             items = uiState.visibleItems,
                             key = { "${it.meshId}_${it.nodeId}_${it.metricKey}" },
                         ) { item ->
+                            val edit = uiState.editState[item.nodeId] ?: ("" to "")
                             LimitEditorCard(
-                                item          = item,
+                                item            = item,
+                                userMin         = edit.first,
+                                userMax         = edit.second,
                                 onUserMinChange = { viewModel.onUserMinChange(item.nodeId, it) },
                                 onUserMaxChange = { viewModel.onUserMaxChange(item.nodeId, it) },
+                                onSave          = { viewModel.saveLimit(item) },
                             )
                         }
                     }

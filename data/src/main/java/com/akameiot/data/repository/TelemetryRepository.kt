@@ -21,6 +21,7 @@ class TelemetryRepository(
     private val api: TelemetryApiService,
     private val aggregateInsertUseCase: AggregateInsertUseCase,
     private val propagateAggBucketsUseCase: com.akameiot.domain.usecase.PropagateAggBucketsUseCase,
+    private val calculateIndexUseCase: com.akameiot.domain.usecase.CalculateIndexUseCase,
 ) : TelemetryRepositoryDomain {
 
     suspend fun getLatestTimestamp(meshId: String): Long =
@@ -107,28 +108,55 @@ class TelemetryRepository(
     private suspend fun insertAndAggregate(entities: List<TelemetryEntity>) {
         dao.insertAll(entities)
 
-        // Agregación O(1) — síncrona porque es barata por diseño
-        entities.forEach { e ->
+        val points = entities.map { e ->
+            com.akameiot.domain.usecase.TelemetryPoint(
+                meshId    = e.meshid,
+                nodeId    = e.nodeId,
+                timestamp = e.timestamp,
+                metric    = e.metric,
+                value     = e.value,
+            )
+        }
+
+        // Calcula índices — solo para nodos con límites definidos
+        val indexPoints = calculateIndexUseCase.calculate(points)
+
+        // Convierte índices de vuelta a entities e inserta
+        val indexEntities = indexPoints.map { p ->
+            TelemetryEntity(
+                meshid    = p.meshId,
+                nodeId    = p.nodeId,
+                timestamp = p.timestamp,
+                metric    = p.metric,
+                value     = p.value,
+            )
+        }
+        if (indexEntities.isNotEmpty()) dao.insertAll(indexEntities)
+
+        // Agrega crudos + índices
+        val allEntities = entities + indexEntities
+        allEntities.forEach { e ->
             aggregateInsertUseCase.insert(
                 meshId = e.meshid,
                 nodeId = e.nodeId,
                 metric = e.metric,
                 ts     = e.timestamp,
-                value  = e.value
+                value  = e.value,
             )
         }
 
-        // Propagación jerárquica — asíncrona, no bloquea el sync
-        val series = entities.distinctBy { Triple(it.meshid, it.nodeId, it.metric) }
+        // Propagación jerárquica asíncrona
+        val series = allEntities.distinctBy { Triple(it.meshid, it.nodeId, it.metric) }
         bgScope.launch {
             series.forEach { e ->
                 propagateAggBucketsUseCase.propagate(
                     meshId = e.meshid,
                     nodeId = e.nodeId,
-                    metric = e.metric
+                    metric = e.metric,
                 )
             }
         }
+
     }
 
     suspend fun cleanOldData(days: Int) {

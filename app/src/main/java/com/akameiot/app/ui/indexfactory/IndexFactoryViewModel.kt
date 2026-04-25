@@ -1,29 +1,65 @@
 package com.akameiot.app.ui.indexfactory
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akameiot.app.ui.home.formatter.TelemetryFormatter
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.session.DeviceNetworkStore
-import com.akameiot.di.AppModule
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 
-sealed interface IndexFactoryEvent {
-    data class ShowError(val message: String) : IndexFactoryEvent
-    object ExportChanges : IndexFactoryEvent
-    object RecoverFromCloud : IndexFactoryEvent
-}
 
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 class IndexFactoryViewModel(
     private val telemetryDao: TelemetryDao,
     private val networkStore: DeviceNetworkStore,
+    private val nodeLimitRepository: com.akameiot.domain.repository.NodeLimitRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(IndexFactoryUiState(isLoading = true))
-    val uiState: StateFlow<IndexFactoryUiState> = _uiState.asStateFlow()
+    private val spaceRegex = Regex("\\s+")
+
+    private val _baseState = MutableStateFlow(IndexFactoryUiState(isLoading = true))
+    private val searchQuery = MutableStateFlow("")
+
+    val uiState: StateFlow<IndexFactoryUiState> =
+        combine(
+            _baseState,
+            searchQuery.debounce(300)
+        ) { state, query ->
+
+            val raw = query.trim().lowercase()
+
+            val visible = if (raw.isEmpty()) {
+                state.items
+            } else {
+                val normalizedQuery = raw
+                    .replace("·", "")
+                    .replace(spaceRegex, " ")
+                    .trim()
+
+                state.items.filter { item ->
+                    val normalizedName = item.nodeName
+                        .lowercase()
+                        .replace("·", "")
+                        .replace(spaceRegex, " ")
+                        .trim()
+
+                    normalizedName.contains(normalizedQuery)
+                }
+            }
+
+            state.copy(
+                searchQuery = query,
+                visibleItems = visible
+            )
+        }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                IndexFactoryUiState(isLoading = true)
+            )
 
     private val _events = MutableSharedFlow<IndexFactoryEvent>()
     val events: SharedFlow<IndexFactoryEvent> = _events.asSharedFlow()
@@ -35,11 +71,12 @@ class IndexFactoryViewModel(
 
     fun selectMetric(metricKey: String) {
         val display = TelemetryFormatter.formatName(metricKey, Locale.getDefault())
-        _uiState.update {
+        _baseState.update {
             it.copy(
                 selectedMetric = metricKey,
                 selectedMetricDisplay = display,
                 isLoading = true,
+                editState = emptyMap()
             )
         }
         loadItemsForMetric(metricKey)
@@ -48,24 +85,33 @@ class IndexFactoryViewModel(
     // ── Search ────────────────────────────────────────────────────────────────
 
     fun setSearchActive(active: Boolean) {
-        _uiState.update {
-            it.copy(searchActive = active, searchQuery = if (!active) "" else it.searchQuery)
+        _baseState.update {
+            it.copy(
+                searchActive = active,
+            )
         }
-        refilter()
+        if (!active) searchQuery.value = ""
     }
 
     fun onSearchQueryChange(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
-        refilter()
+        searchQuery.value = query
     }
 
     // ── Limit editing ─────────────────────────────────────────────────────────
 
-    fun onUserMinChange(nodeId: Int, value: String) =
-        updateItem(nodeId) { it.copy(userMin = value) }
+    fun onUserMinChange(nodeId: Int, value: String) {
+        _baseState.update { state ->
+            val current = state.editState[nodeId] ?: ("" to "")
+            state.copy(editState = state.editState + (nodeId to (value to current.second)))
+        }
+    }
 
-    fun onUserMaxChange(nodeId: Int, value: String) =
-        updateItem(nodeId) { it.copy(userMax = value) }
+    fun onUserMaxChange(nodeId: Int, value: String) {
+        _baseState.update { state ->
+            val current = state.editState[nodeId] ?: ("" to "")
+            state.copy(editState = state.editState + (nodeId to (current.first to value)))
+        }
+    }
 
     // ── Menu actions (stubs) ──────────────────────────────────────────────────
 
@@ -78,63 +124,67 @@ class IndexFactoryViewModel(
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private fun loadItemsForMetric(metricKey: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Refresh network names in case they changed
                 networkNamesCache = networkStore.getNetworks()
                     .associate { it.thingName to it.displayName }
 
-                // Get one snapshot of the latest-per-metric data
                 val latestEntities = telemetryDao.observeLatestPerMetric().first()
-
                 val nodesForMetric = latestEntities
                     .filter { it.metric == metricKey }
                     .distinctBy { it.meshid to it.nodeId }
 
-                val nowSeconds = System.currentTimeMillis() / 1000L
-                val locale = Locale.getDefault()
-                val metricDisplayName = TelemetryFormatter.formatName(metricKey, locale)
+                if (nodesForMetric.isEmpty()) {
+                    _baseState.update { it.copy(items = emptyList(), isLoading = false) }
 
+                    return@launch
+                }
+
+                val nowSeconds = System.currentTimeMillis() / 1000L
+                val metricDisplayName = TelemetryFormatter.formatName(metricKey, Locale.getDefault())
+
+                // ── 5 queries totales independientemente del número de nodos ──────
+
+                val raw24h = telemetryDao.getMetricMinMaxAllNodes(
+                    meshId        = nodesForMetric.first().meshid,
+                    metric        = metricKey,
+                    fromTimestamp = nowSeconds - 86_400L,
+                ).associateBy { it.nodeId }
 
                 val ranges = listOf(
-                    Triple("7 días",  604_800L,  "7d"),
-                    Triple("1 mes",   2_592_000L, "1m"),
-                    Triple("3 meses", 7_776_000L, "3m"),
-                    Triple("1 año",   31_536_000L,"1y"),
+                    Triple("7 días",  604_800L,    "7d"),
+                    Triple("1 mes",   2_592_000L,  "1m"),
+                    Triple("3 meses", 7_776_000L,  "3m"),
+                    Triple("1 año",   31_536_000L, "1y"),
                 )
+
+                val aggByLevel = ranges.associate { (_, secondsBack, level) ->
+                    level to telemetryDao.getAggMinMaxAllNodes(
+                        level  = level,
+                        meshId = nodesForMetric.first().meshid,
+                        metric = metricKey,
+                        fromTs = nowSeconds - secondsBack,
+                    ).associateBy { it.nodeId }
+                }
+
 
                 val items = nodesForMetric.map { entity ->
                     val networkName = networkNamesCache[entity.meshid] ?: entity.meshid
-                    val nodeName    = "$networkName · ${entity.nodeId}"
 
-                    // ── 24h directo desde telemetry ──────────────────────────────────
-                    val from24h   = nowSeconds - 86_400L
-                    val raw24h    = telemetryDao.getMetricHistory(
-                        meshId        = entity.meshid,
-                        nodeId        = entity.nodeId,
-                        metric        = metricKey,
-                        fromTimestamp = from24h,
-                    )
-                    val stat24h = RangeStats(
-                        label = "1 día",
-                        min   = raw24h.minOfOrNull { it.value },
-                        max   = raw24h.maxOfOrNull { it.value },
-                    )
-
-                    // ── rangos de agregados ───────────────────────────────────────────
-                    val aggStats = ranges.map { (label, secondsBack, level) ->
-                        val fromTs  = nowSeconds - secondsBack
-                        val buckets = telemetryDao.getAggHistory(
-                            level  = level,
-                            meshId = entity.meshid,
-                            nodeId = entity.nodeId,
-                            metric = metricKey,
-                            fromTs = fromTs,
+                    val stat24h = raw24h[entity.nodeId].let { row ->
+                        RangeStats(
+                            label = "1 día",
+                            min   = row?.minVal?.let { "%.2f".format(it) } ?: "—",
+                            max   = row?.maxVal?.let { "%.2f".format(it) } ?: "—",
                         )
+                    }
+
+                    val aggStats = ranges.map { (label, _, level) ->
+                        val row = aggByLevel[level]?.get(entity.nodeId)
                         RangeStats(
                             label = label,
-                            min   = buckets.minOfOrNull { it.minVal },
-                            max   = buckets.maxOfOrNull { it.maxVal },
+                            min   = row?.minVal?.let { "%.2f".format(it) } ?: "—",
+                            max   = row?.maxVal?.let { "%.2f".format(it) } ?: "—",
                         )
                     }
 
@@ -142,66 +192,44 @@ class IndexFactoryViewModel(
                         networkName       = networkName,
                         meshId            = entity.meshid,
                         nodeId            = entity.nodeId,
-                        nodeName          = nodeName,
+                        nodeName          = "$networkName · ${entity.nodeId}",
                         metricKey         = metricKey,
                         metricDisplayName = metricDisplayName,
                         stats             = listOf(stat24h) + aggStats,
                     )
                 }.sortedWith(compareBy({ it.networkName }, { it.nodeId }))
 
-                _uiState.update { it.copy(items = items, isLoading = false) }
-                refilter()
+                _baseState.update { it.copy(items = items, isLoading = false) }
+
 
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
+                _baseState.update { it.copy(isLoading = false) }
                 _events.emit(IndexFactoryEvent.ShowError(e.message ?: "Error cargando datos"))
             }
         }
     }
 
-    private fun updateItem(nodeId: Int, transform: (NodeLimitItem) -> NodeLimitItem) {
-        _uiState.update { state ->
-            state.copy(items = state.items.map { if (it.nodeId == nodeId) transform(it) else it })
-        }
-        refilter()
-    }
+    fun saveLimit(item: NodeLimitItem) {
+        val edit = _baseState.value.editState[item.nodeId] ?: return
+        val min = edit.first.toDoubleOrNull()
+        val max = edit.second.toDoubleOrNull()
+        if (min == null && max == null) return
 
-    private fun refilter() {
-        val state = _uiState.value
-        val raw   = state.searchQuery.trim().lowercase()
-
-        val visible = if (raw.isEmpty()) {
-            state.items
-        } else {
-
-            val normalizedQuery = raw
-                .replace("·", "")
-                .replace(Regex("\\s+"), " ")
-                .trim()
-
-            state.items.filter { item ->
-                val normalizedName = item.nodeName
-                    .lowercase()
-                    .replace("·", "")
-                    .replace(Regex("\\s+"), " ")
-                    .trim()
-
-                // Busca la query normalizada, o bien red y nodeId por separado
-                normalizedName.contains(normalizedQuery)
+        viewModelScope.launch {
+            try {
+                nodeLimitRepository.upsert(
+                    com.akameiot.domain.model.NodeLimit(
+                        meshId  = item.meshId,
+                        nodeId  = item.nodeId,
+                        metric  = item.metricKey,
+                        userMin = min,
+                        userMax = max,
+                    )
+                )
+                _events.emit(IndexFactoryEvent.LimitSaved(item.nodeName))
+            } catch (e: Exception) {
+                _events.emit(IndexFactoryEvent.ShowError(e.message ?: "Error guardando límites"))
             }
         }
-
-        _uiState.update { it.copy(visibleItems = visible) }
     }
-}
-
-// ── Factory ───────────────────────────────────────────────────────────────────
-
-class IndexFactoryViewModelFactory : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        IndexFactoryViewModel(
-            telemetryDao = AppModule.telemetryDao,
-            networkStore = AppModule.networkStore,
-        ) as T
 }

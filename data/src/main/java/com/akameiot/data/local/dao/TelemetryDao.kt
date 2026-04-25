@@ -234,4 +234,73 @@ interface TelemetryDao {
         ): Flow<List<TelemetryAggEntity>>
 
 
+    @Query("""
+    SELECT * FROM telemetry
+    WHERE meshid = :meshId
+    AND metric   = :metric
+    AND timestamp > :fromTimestamp
+    ORDER BY nodeId ASC, timestamp ASC
+""")
+    suspend fun getMetricHistoryAllNodes(
+        meshId        : String,
+        metric        : String,
+        fromTimestamp : Long,
+    ): List<TelemetryEntity>
+
+    @Query("""
+    SELECT * FROM telemetry_agg
+    WHERE level   = :level
+    AND meshId    = :meshId
+    AND metric    = :metric
+    AND bucketStart >= :fromTs
+    ORDER BY nodeId ASC, bucketStart ASC
+""")
+    suspend fun getAggHistoryAllNodes(
+        level  : String,
+        meshId : String,
+        metric : String,
+        fromTs : Long,
+    ): List<TelemetryAggEntity>
+
+    data class NodeMinMax(
+        val nodeId : Int,
+        val minVal : Double,
+        val maxVal : Double,
+    )
+
+    @Query("""
+    SELECT nodeId,
+           MIN(value) AS minVal,
+           MAX(value) AS maxVal
+    FROM telemetry
+    WHERE meshid    = :meshId
+    AND   metric    = :metric
+    AND   timestamp > :fromTimestamp
+    GROUP BY nodeId
+""")
+    suspend fun getMetricMinMaxAllNodes(
+        meshId        : String,
+        metric        : String,
+        fromTimestamp : Long,
+    ): List<NodeMinMax>
+
+    @Query("""
+    SELECT nodeId,
+           MIN(minVal) AS minVal,
+           MAX(maxVal) AS maxVal
+    FROM telemetry_agg
+    WHERE level       = :level
+    AND   meshId      = :meshId
+    AND   metric      = :metric
+    AND   bucketStart >= :fromTs
+    GROUP BY nodeId
+""")
+    suspend fun getAggMinMaxAllNodes(
+        level  : String,
+        meshId : String,
+        metric : String,
+        fromTs : Long,
+    ): List<NodeMinMax>
+
+
 }

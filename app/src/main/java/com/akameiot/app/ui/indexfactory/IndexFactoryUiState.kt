@@ -5,8 +5,8 @@ import com.akameiot.domain.model.AppUser
 // ── Historical stats for a single time-range ──────────────────────────────────
 data class RangeStats(
     val label: String,
-    val min: Double?,
-    val max: Double?,
+    val min: String,
+    val max: String,
 )
 
 // ── One row in the list ────────────────────────────────────────────────────────
@@ -14,21 +14,18 @@ data class NodeLimitItem(
     val networkName: String,
     val meshId: String,
     val nodeId: Int,
-    // Display name: "<NetworkName> · <nodeId>" — also used for search
     val nodeName: String,
     val metricKey: String,           // raw key e.g. "humidity"
     val metricDisplayName: String,   // translated e.g. "Humedad"
 
     val stats: List<RangeStats> = listOf(
-        RangeStats("1 día",    null, null),
-        RangeStats("7 días",  null, null),
-        RangeStats("1 mes",   null, null),
-        RangeStats("3 meses", null, null),
-        RangeStats("1 año",   null, null),
+        RangeStats("1 día",    "—", "—"),
+        RangeStats("7 días",  "—", "—"),
+        RangeStats("1 mes",   "—", "—"),
+        RangeStats("3 meses", "—", "—"),
+        RangeStats("1 año",   "—", "—"),
     ),
 
-    val userMin: String = "",
-    val userMax: String = "",
 )
 
 // ── Screen-level UI state ──────────────────────────────────────────────────────
@@ -37,8 +34,8 @@ data class IndexFactoryUiState(
     val isLoading: Boolean = false,
 
     // Metric submenu
-    val selectedMetric: String? = null,        // raw key e.g. "humidity"
-    val selectedMetricDisplay: String? = null, // translated e.g. "Humedad"
+    val selectedMetric: String? = null,
+    val selectedMetricDisplay: String? = null,
 
     // Search
     val searchQuery: String = "",
@@ -46,4 +43,5 @@ data class IndexFactoryUiState(
 
     val items: List<NodeLimitItem> = emptyList(),
     val visibleItems: List<NodeLimitItem> = emptyList(),
+    val editState: Map<Int, Pair<String, String>> = emptyMap(),
 )

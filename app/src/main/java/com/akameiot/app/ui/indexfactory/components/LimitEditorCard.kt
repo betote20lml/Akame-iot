@@ -17,14 +17,16 @@ import com.akameiot.app.ui.indexfactory.NodeLimitItem
 import com.akameiot.app.ui.indexfactory.RangeStats
 
 
-val columnEndPadding = 8.dp
 val columnHorizontalPadding = 8.dp
 
 @Composable
 fun LimitEditorCard(
     item: NodeLimitItem,
+    userMin: String,
+    userMax: String,
     onUserMinChange: (String) -> Unit,
     onUserMaxChange: (String) -> Unit,
+    onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -137,20 +139,20 @@ fun LimitEditorCard(
             Spacer(Modifier.height(12.dp))
 
 
-            val isDirty = item.userMin.isNotEmpty() || item.userMax.isNotEmpty()
+            val isDirty = userMin.isNotEmpty() || userMax.isNotEmpty()
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 LimitTextField(
-                    value = item.userMin,
+                    value = userMin,
                     onValueChange = onUserMinChange,
                     label = "Mínimo",
                     modifier = Modifier.weight(1f),
                 )
                 LimitTextField(
-                    value = item.userMax,
+                    value = userMax,
                     onValueChange = onUserMaxChange,
                     label = "Máximo",
                     modifier = Modifier.weight(1f),
@@ -160,7 +162,7 @@ fun LimitEditorCard(
             Spacer(Modifier.height(12.dp))
 
             Button(
-                onClick = { /* onSave — implementar después */ },
+                onClick = onSave,
                 enabled = isDirty,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -188,26 +190,24 @@ private fun StatsRow(stat: RangeStats) {
             modifier = Modifier.weight(1f, fill = true),
         )
         Text(
-            text = stat.min?.let { "%.2f".format(it) } ?: "—",
+            text = stat.min,   // ← ya es String, sin format
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                alpha = if (stat.min != null) 1f else 0.4f
+                alpha = if (stat.min != "—") 1f else 0.4f
             ),
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.End,
-            modifier = Modifier
-                .weight(1f, fill = true),
+            modifier = Modifier.weight(1f, fill = true),
         )
         Text(
-            text = stat.max?.let { "%.2f".format(it) } ?: "—",
+            text = stat.max,   // ← ya es String, sin format
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                alpha = if (stat.max != null) 1f else 0.4f
+                alpha = if (stat.max != "—") 1f else 0.4f
             ),
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.End,
-            modifier = Modifier
-                .weight(1f, fill = true),
+            modifier = Modifier.weight(1f, fill = true),
         )
     }
 }

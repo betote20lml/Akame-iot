@@ -11,11 +11,7 @@ import com.akameiot.domain.model.AppUser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/**
- * Single source of truth for the navigation drawer content.
- * Used by HomeScreen and IndexFactoryScreen (and any future screens)
- * so drawer logic is never duplicated.
- */
+
 @Composable
 fun AppDrawerContent(
     navController: NavController,

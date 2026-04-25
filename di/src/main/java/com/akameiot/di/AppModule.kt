@@ -181,12 +181,25 @@ object AppModule {
         DatabaseProvider.getDatabase(appContext).telemetryDao()
     }
 
+    val nodeLimitDao by lazy {
+        DatabaseProvider.getDatabase(appContext).nodeLimitDao()
+    }
+
+    val nodeLimitRepository: com.akameiot.domain.repository.NodeLimitRepository by lazy {
+        com.akameiot.data.repository_impl.NodeLimitRepositoryImpl(nodeLimitDao)
+    }
+
+    val calculateIndexUseCase by lazy {
+        com.akameiot.domain.usecase.CalculateIndexUseCase(nodeLimitRepository)
+    }
+
     val telemetryRepository by lazy {
         TelemetryRepository(
             dao                        = telemetryDao,
             api                        = NetworkModule.telemetryApi,
             aggregateInsertUseCase     = aggregateInsertUseCase,
-            propagateAggBucketsUseCase = propagateAggBucketsUseCase
+            propagateAggBucketsUseCase = propagateAggBucketsUseCase,
+            calculateIndexUseCase      = calculateIndexUseCase,
         )
     }
 
