@@ -95,24 +95,35 @@ class IndexFactoryViewModel(
                 val locale = Locale.getDefault()
                 val metricDisplayName = TelemetryFormatter.formatName(metricKey, locale)
 
-                // (label, secondsBack, agg-level)
-                // Levels must match exactly what AggregateInsertUseCase writes:
-                // "hour", "day", "month"
+
                 val ranges = listOf(
-                    Triple("7 días",  604_800L,    "7d"),
-                    Triple("1 mes",   2_592_000L,  "1m"),
-                    Triple("3 meses", 7_776_000L,  "3m"),
-                    Triple("1 año",   31_536_000L, "1y"),
+                    Triple("7 días",  604_800L,  "7d"),
+                    Triple("1 mes",   2_592_000L, "1m"),
+                    Triple("3 meses", 7_776_000L, "3m"),
+                    Triple("1 año",   31_536_000L,"1y"),
                 )
 
                 val items = nodesForMetric.map { entity ->
                     val networkName = networkNamesCache[entity.meshid] ?: entity.meshid
+                    val nodeName    = "$networkName · ${entity.nodeId}"
 
-                    // Node name: "<NetworkDisplayName> · <nodeId>"
-                    val nodeName = "$networkName · ${entity.nodeId}"
+                    // ── 24h directo desde telemetry ──────────────────────────────────
+                    val from24h   = nowSeconds - 86_400L
+                    val raw24h    = telemetryDao.getMetricHistory(
+                        meshId        = entity.meshid,
+                        nodeId        = entity.nodeId,
+                        metric        = metricKey,
+                        fromTimestamp = from24h,
+                    )
+                    val stat24h = RangeStats(
+                        label = "1 día",
+                        min   = raw24h.minOfOrNull { it.value },
+                        max   = raw24h.maxOfOrNull { it.value },
+                    )
 
-                    val stats = ranges.map { (label, secondsBack, level) ->
-                        val fromTs = nowSeconds - secondsBack
+                    // ── rangos de agregados ───────────────────────────────────────────
+                    val aggStats = ranges.map { (label, secondsBack, level) ->
+                        val fromTs  = nowSeconds - secondsBack
                         val buckets = telemetryDao.getAggHistory(
                             level  = level,
                             meshId = entity.meshid,
@@ -134,7 +145,7 @@ class IndexFactoryViewModel(
                         nodeName          = nodeName,
                         metricKey         = metricKey,
                         metricDisplayName = metricDisplayName,
-                        stats             = stats,
+                        stats             = listOf(stat24h) + aggStats,
                     )
                 }.sortedWith(compareBy({ it.networkName }, { it.nodeId }))
 
@@ -157,10 +168,29 @@ class IndexFactoryViewModel(
 
     private fun refilter() {
         val state = _uiState.value
-        val query = state.searchQuery.trim().lowercase()
-        // Search by nodeName which is "<NetworkName> · <nodeId>"
-        val visible = if (query.isEmpty()) state.items
-        else state.items.filter { it.nodeName.lowercase().contains(query) }
+        val raw   = state.searchQuery.trim().lowercase()
+
+        val visible = if (raw.isEmpty()) {
+            state.items
+        } else {
+
+            val normalizedQuery = raw
+                .replace("·", "")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+
+            state.items.filter { item ->
+                val normalizedName = item.nodeName
+                    .lowercase()
+                    .replace("·", "")
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
+
+                // Busca la query normalizada, o bien red y nodeId por separado
+                normalizedName.contains(normalizedQuery)
+            }
+        }
+
         _uiState.update { it.copy(visibleItems = visible) }
     }
 }
