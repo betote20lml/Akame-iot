@@ -17,6 +17,10 @@ import androidx.compose.ui.unit.sp
 import com.akameiot.app.ui.indexfactory.NodeLimitItem
 import com.akameiot.app.ui.indexfactory.RangeStats
 import com.akameiot.coreui.theme.LocalAppColors
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 
 
 val columnHorizontalPadding = 8.dp
@@ -142,7 +146,7 @@ fun LimitEditorCard(
             Spacer(Modifier.height(12.dp))
 
 
-            val isDirty = userMin.isNotEmpty() || userMax.isNotEmpty()
+            val isDirty = userMin != item.savedMin || userMax != item.savedMax
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -152,12 +156,14 @@ fun LimitEditorCard(
                     value = userMin,
                     onValueChange = onUserMinChange,
                     label = "Mínimo",
+                    placeholder   = item.savedMin,
                     modifier = Modifier.weight(1f),
                 )
                 LimitTextField(
                     value = userMax,
                     onValueChange = onUserMaxChange,
                     label = "Máximo",
+                    placeholder   = item.savedMax,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -220,37 +226,54 @@ private fun LimitTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    placeholder: String,       // ← nuevo: valor previo como placeholder
     modifier: Modifier = Modifier,
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+
     OutlinedTextField(
         value = value,
         onValueChange = { newValue ->
             val normalized = newValue.replace(',', '.')
-
             val filtered = buildString {
                 var hasDot = false
-
                 for (char in normalized) {
-                    if (char.isDigit()) {
-                        append(char)
-                    } else if (char == '.' && !hasDot) {
-                        append(char)
-                        hasDot = true
-                    }
+                    if (char.isDigit()) append(char)
+                    else if (char == '.' && !hasDot) { append(char); hasDot = true }
                 }
             }
-
-            val finalValue = if (filtered == ".") "" else filtered
-            onValueChange(finalValue)
+            onValueChange(if (filtered == ".") "" else filtered)
         },
         label = { Text(label, fontSize = 12.sp) },
+        placeholder = {
+            if (placeholder.isNotEmpty()) {
+                Text(
+                    text = placeholder,
+                    style = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                )
+            }
+        },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        shape = RoundedCornerShape(12.dp),
-        modifier = modifier,
-        textStyle = MaterialTheme.typography.bodyMedium.copy(
-            textAlign = TextAlign.End
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Decimal,
+            imeAction    = ImeAction.Done,
         ),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.onFocusChanged { focusState ->
+            if (focusState.isFocused && !isFocused) {
+                // Al ganar foco: limpiar para que el usuario escriba desde cero
+                onValueChange("")
+            }
+            if (!focusState.isFocused && isFocused && value.isEmpty()) {
+                // Al perder foco sin escribir nada: restaurar placeholder como valor
+                onValueChange(placeholder)
+            }
+            isFocused = focusState.isFocused
+        },
+        textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor   = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,

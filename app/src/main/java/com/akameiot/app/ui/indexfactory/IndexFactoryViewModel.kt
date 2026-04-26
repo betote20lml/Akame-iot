@@ -169,9 +169,14 @@ class IndexFactoryViewModel(
                     ).associateBy { it.nodeId }
                 }
 
+                val savedLimits = nodeLimitRepository.getLimitsForMetric(
+                    meshId = nodesForMetric.first().meshid,
+                    metric = metricKey,
+                ).associateBy { it.nodeId }
 
                 val items = nodesForMetric.map { entity ->
                     val networkName = networkNamesCache[entity.meshid] ?: entity.meshid
+                    val saved = savedLimits[entity.nodeId]
 
                     val stat24h = raw24h[entity.nodeId].let { row ->
                         RangeStats(
@@ -198,10 +203,21 @@ class IndexFactoryViewModel(
                         metricKey         = metricKey,
                         metricDisplayName = metricDisplayName,
                         stats             = listOf(stat24h) + aggStats,
+                        savedMin          = saved?.userMin?.let { "%.2f".format(it) } ?: "",
+                        savedMax          = saved?.userMax?.let { "%.2f".format(it) } ?: "",
                     )
                 }.sortedWith(compareBy({ it.networkName }, { it.nodeId }))
 
-                _baseState.update { it.copy(items = items, isLoading = false) }
+                val initialEditState = items.associate { item ->
+                    item.nodeId to (item.savedMin to item.savedMax)
+                }
+                _baseState.update {
+                    it.copy(
+                        items         = items,
+                        isLoading     = false,
+                        editState     = initialEditState,
+                    )
+                }
 
 
             } catch (e: Exception) {
@@ -228,6 +244,17 @@ class IndexFactoryViewModel(
                         userMax = max,
                     )
                 )
+                _baseState.update { state ->
+                    val updatedItems = state.items.map {
+                        if (it.nodeId == item.nodeId)
+                            it.copy(
+                                savedMin = edit.first,
+                                savedMax = edit.second,
+                            )
+                        else it
+                    }
+                    state.copy(items = updatedItems)
+                }
                 _events.emit(IndexFactoryEvent.LimitSaved(item.nodeName))
             } catch (e: Exception) {
                 _events.emit(IndexFactoryEvent.ShowError(e.message ?: "Error guardando límites"))

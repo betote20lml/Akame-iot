@@ -15,17 +15,17 @@ data class NodeLimitItem(
     val meshId: String,
     val nodeId: Int,
     val nodeName: String,
-    val metricKey: String,           // raw key e.g. "humidity"
-    val metricDisplayName: String,   // translated e.g. "Humedad"
-
+    val metricKey: String,
+    val metricDisplayName: String,
     val stats: List<RangeStats> = listOf(
-        RangeStats("1 día",    "—", "—"),
+        RangeStats("1 día",   "—", "—"),
         RangeStats("7 días",  "—", "—"),
         RangeStats("1 mes",   "—", "—"),
         RangeStats("3 meses", "—", "—"),
         RangeStats("1 año",   "—", "—"),
     ),
-
+    val savedMin: String = "",
+    val savedMax: String = "",
 )
 
 // ── Screen-level UI state ──────────────────────────────────────────────────────
