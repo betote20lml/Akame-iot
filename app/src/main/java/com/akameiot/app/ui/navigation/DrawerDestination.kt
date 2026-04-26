@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,11 +33,7 @@ object DrawerDestinations {
             label = "Alertas",
             icon  = Icons.Default.Notifications,
         ),
-        DrawerDestination(
-            route = "settings",
-            label = "Configuración",
-            icon  = Icons.Default.Settings,
-        ),
+
         DrawerDestination(
             route = Routes.TOKEN,
             label = "Token de Acceso",
@@ -46,7 +41,7 @@ object DrawerDestinations {
         ),
         DrawerDestination(
             route          = "",
-            label          = "Editar límites",
+            label          = "Crear Índice",
             icon           = Icons.Default.Tune,
             isIndexFactory = true,
         ),

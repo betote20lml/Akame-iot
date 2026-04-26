@@ -2,13 +2,14 @@ package com.akameiot.app.ui.indexfactory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.akameiot.app.ui.home.formatter.TelemetryFormatter
+import com.akameiot.domain.formatter.MetricFormatter
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.session.DeviceNetworkStore
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import com.akameiot.domain.policy.isIndexMetric
 
 
 @OptIn(kotlinx.coroutines.FlowPreview::class)
@@ -70,7 +71,8 @@ class IndexFactoryViewModel(
     // ── Metric selection ──────────────────────────────────────────────────────
 
     fun selectMetric(metricKey: String) {
-        val display = TelemetryFormatter.formatName(metricKey, Locale.getDefault())
+        if (metricKey.isIndexMetric()) return
+        val display = MetricFormatter.formatName(metricKey, Locale.getDefault())
         _baseState.update {
             it.copy(
                 selectedMetric = metricKey,
@@ -141,7 +143,7 @@ class IndexFactoryViewModel(
                 }
 
                 val nowSeconds = System.currentTimeMillis() / 1000L
-                val metricDisplayName = TelemetryFormatter.formatName(metricKey, Locale.getDefault())
+                val metricDisplayName = MetricFormatter.formatName(metricKey, Locale.getDefault())
 
                 // ── 5 queries totales independientemente del número de nodos ──────
 

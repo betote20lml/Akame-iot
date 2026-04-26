@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import com.akameiot.app.ui.home.formatter.TelemetryFormatter
+import com.akameiot.domain.formatter.MetricFormatter
 import com.akameiot.app.ui.home.model.NodeTelemetryUiModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -17,7 +17,6 @@ import com.akameiot.coreui.theme.LocalAppColors
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import com.akameiot.app.ui.home.model.MetricTrend
 
 
@@ -45,8 +44,8 @@ fun TelemetryCard(node: NodeTelemetryUiModel) {
     val formattedMetrics = remember(metricsKey, locale) {
         node.metrics.map { metric ->
             FormattedMetric(
-                name = TelemetryFormatter.formatName(metric.name, locale),
-                value = TelemetryFormatter.formatValue(metric.name, metric.latestValue, locale),
+                name = MetricFormatter.formatName(metric.name, locale),
+                value = MetricFormatter.formatValue(metric.name, metric.latestValue, locale),
                 trend = metric.trend
             )
         }
@@ -104,29 +103,38 @@ fun TelemetryCard(node: NodeTelemetryUiModel) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        val isNegative = metric.value.trim().startsWith("-")
+
+                        val metricColor = if (isNegative) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            valueColor
+                        }
+
                         when (metric.trend) {
                             MetricTrend.UP -> Icon(
                                 imageVector = Icons.Default.ArrowUpward,
                                 contentDescription = null,
-                                tint = Color(0xFF4CAF50),
+                                tint = metricColor,
                                 modifier = Modifier.size(16.dp)
                             )
                             MetricTrend.DOWN -> Icon(
                                 imageVector = Icons.Default.ArrowDownward,
                                 contentDescription = null,
-                                tint = Color(0xFFF44336),
+                                tint = metricColor,
                                 modifier = Modifier.size(16.dp)
                             )
                             MetricTrend.FLAT -> Spacer(modifier = Modifier.size(16.dp))
                         }
+
                         Text(
                             text = metric.value,
                             style = MaterialTheme.typography.titleMedium,
-                            color = valueColor
+                            color = metricColor
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(6.dp))
             }
         }
     }

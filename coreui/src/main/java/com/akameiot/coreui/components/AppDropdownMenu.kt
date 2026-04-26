@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -22,13 +23,14 @@ private val menuItemTextStyle: TextStyle
 fun AppDropdownMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
+    width: Dp = 200.dp,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        modifier = modifier.width(240.dp),
+        modifier = modifier.width(width),
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
         shadowElevation = 4.dp,
@@ -54,7 +56,7 @@ fun AppMenuSectionHeader(
             )
         },
         onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 0.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
         modifier = Modifier.height(44.dp)
     )
 }
@@ -67,7 +69,7 @@ fun AppMenuCheckItem(
 ) {
     val bgModifier = if (checked)
         Modifier
-            .padding(horizontal = 6.dp)
+            .padding(horizontal = 4.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
     else
@@ -84,7 +86,7 @@ fun AppMenuCheckItem(
             )
         },
         onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 0.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
         modifier = Modifier
             .height(44.dp)
             .then(bgModifier)

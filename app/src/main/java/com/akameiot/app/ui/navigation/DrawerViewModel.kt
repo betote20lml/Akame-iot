@@ -3,12 +3,13 @@ package com.akameiot.app.ui.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.akameiot.app.ui.home.formatter.TelemetryFormatter
+import com.akameiot.domain.formatter.MetricFormatter
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.di.AppModule
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Locale
+import com.akameiot.domain.policy.isIndexMetric
 
 data class DrawerUiState(
     val metrics: List<String> = emptyList(),
@@ -32,7 +33,7 @@ class DrawerViewModel(
                 .map { list ->
                     list
                         .map { it.metric }
-                        .filterNot { it.endsWith("_index") }
+                        .filterNot { it.isIndexMetric() }
                         .distinct()
                         .sorted()
                 }
@@ -40,7 +41,7 @@ class DrawerViewModel(
                 .collect { keys ->
                     val locale = Locale.getDefault()
                     val display = keys.associateWith {
-                        TelemetryFormatter.formatName(it, locale)
+                        MetricFormatter.formatName(it, locale)
                     }
                     _uiState.update {
                         it.copy(metrics = keys, metricsDisplay = display)

@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.akameiot.app.ui.home.components.ChartCard
@@ -24,6 +23,7 @@ import com.akameiot.app.ui.navigation.DrawerViewModelFactory
 import com.akameiot.app.ui.navigation.Routes.LOGIN
 import com.akameiot.coreui.components.*
 import kotlinx.coroutines.launch
+import com.akameiot.app.ui.home.components.ViewMenu
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -144,59 +144,19 @@ fun HomeScreen(
             )
 
             var showViewMenu by remember { mutableStateOf(false) }
+
             Box {
                 IconButton(onClick = { showViewMenu = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = null)
                 }
 
-                AppDropdownMenu(
-                    expanded  = showViewMenu,
+                ViewMenu(
+                    expanded = showViewMenu,
                     onDismiss = { showViewMenu = false },
-                ) {
-                    AppMenuCheckItem(
-                        label   = "Tarjetas",
-                        checked = uiState.viewMode == HomeViewMode.CARDS,
-                        onClick = {
-                            viewModel.setViewMode(HomeViewMode.CARDS)
-                            showViewMenu = false
-                        },
-                    )
-                    AppMenuDivider()
-                    listOf(
-                        HomeViewMode.CHARTS_24H to "Gráficas · 24h",
-                        HomeViewMode.CHARTS_7D  to "Gráficas · 7 días",
-                        HomeViewMode.CHARTS_1M  to "Gráficas · 1 mes",
-                        HomeViewMode.CHARTS_3M  to "Gráficas · 3 meses",
-                        HomeViewMode.CHARTS_1Y  to "Gráficas · 1 año",
-                    ).forEach { (mode, label) ->
-                        AppMenuCheckItem(
-                            label   = label,
-                            checked = uiState.viewMode == mode,
-                            onClick = {
-                                viewModel.setViewMode(mode)
-                                showViewMenu = false
-                            },
-                        )
-                    }
-                    AppMenuDivider()
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text  = "Agregar red",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 16.sp,
-                                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
-                                ),
-                            )
-                        },
-                        onClick = {
-                            showViewMenu = false
-                            showSheet = true
-                        },
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 0.dp),
-                        modifier = Modifier.height(44.dp),
-                    )
-                }
+                    currentMode = uiState.viewMode,
+                    onChangeMode = { viewModel.setViewMode(it) },
+                    onAddNetwork = { showSheet = true },
+                )
             }
         },
     ) { padding ->

@@ -15,13 +15,34 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.akameiot.app.ui.home.formatter.TelemetryFormatter
+import com.akameiot.domain.formatter.MetricFormatter
 import com.akameiot.app.ui.home.model.ChartTimeRange
 import com.akameiot.app.ui.home.model.ChartUiModel
 import com.akameiot.coreui.theme.LocalAppColors
 import androidx.compose.ui.platform.LocalWindowInfo
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.abs
+import kotlin.math.roundToLong
+
+
+
+private fun formatYAxisValue(value: Double, max: Double): String {
+    val absValue = abs(value)
+    val absMax = abs(max)
+
+    val isInteger = absValue == absValue.roundToLong().toDouble()
+
+    val decimals = when {
+        isInteger -> 0
+        absMax < 10  -> 2
+        absMax < 100 -> 1
+        else         -> 0
+    }
+
+    return "%.${decimals}f".format(value)
+}
+
 
 @Composable
 fun ChartCard(
@@ -154,11 +175,13 @@ fun ChartCard(
                 Column {
                     Text(
                         text  = "${chart.networkName} · ${chart.nodeId}",
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text  = TelemetryFormatter.formatName(chart.metricName, locale),
-                        style = MaterialTheme.typography.bodyMedium
+                        text  = MetricFormatter.formatName(chart.metricName, locale),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -166,11 +189,13 @@ fun ChartCard(
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text  = "Min: ${"%.2f".format(min.second)}",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text  = "Max: ${"%.2f".format(max.second)}",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -201,7 +226,10 @@ fun ChartCard(
                     }
                 }
 
+
+
                 else -> {
+
                     Canvas(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -228,7 +256,8 @@ fun ChartCard(
                         val widestLabel = (0..gridLines).maxOf { i ->
                             val fraction = i.toFloat() / gridLines
                             val value = yMin + fraction * ySpan
-                            tempPaint.measureText("%.1f".format(value))
+                            val formatted = formatYAxisValue(value, yMax)
+                            tempPaint.measureText(formatted)
                         }
                         val yLabelWidth = widestLabel + 22.dp.toPx()
                         val plotRight  = size.width
@@ -257,8 +286,10 @@ fun ChartCard(
                             )
 
                             // label eje Y
+                            val formatted = formatYAxisValue(value, yMax)
+
                             drawContext.canvas.nativeCanvas.drawText(
-                                "%.1f".format(value),
+                                formatted,
                                 yLabelWidth - 4.dp.toPx(),
                                 y + axisTextSizePx / 3,
                                 yTextPaint

@@ -1,5 +1,6 @@
 package com.akameiot.app.ui.indexfactory.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.akameiot.app.ui.indexfactory.NodeLimitItem
 import com.akameiot.app.ui.indexfactory.RangeStats
+import com.akameiot.coreui.theme.LocalAppColors
 
 
 val columnHorizontalPadding = 8.dp
@@ -29,13 +31,14 @@ fun LimitEditorCard(
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val appColors = LocalAppColors.current
+
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        ),
+        modifier  = modifier.fillMaxWidth(),
+        shape     = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border    = BorderStroke(width = 1.dp, color = appColors.cardBorder),
+        colors    = CardDefaults.cardColors(containerColor = appColors.cardBackground),
     ) {
         Column(
             modifier = Modifier.padding(
@@ -56,7 +59,6 @@ fun LimitEditorCard(
                         text = item.nodeName,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -65,13 +67,13 @@ fun LimitEditorCard(
                 // Metric badge
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,  // era primaryContainer
+                    color = MaterialTheme.colorScheme.primaryContainer,
                 ) {
                     Text(
                         text = item.metricDisplayName,
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium,                // era Bold
-                        color = MaterialTheme.colorScheme.onSurfaceVariant, // era onPrimaryContainer
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         maxLines = 1,
                     )
@@ -128,7 +130,7 @@ fun LimitEditorCard(
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f))
                 Text(
-                    text = "  Límites Útiles  ",
+                    text = "  Establecer Límites Útiles  ",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
