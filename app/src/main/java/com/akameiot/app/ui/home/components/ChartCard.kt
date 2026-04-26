@@ -20,6 +20,7 @@ import com.akameiot.app.ui.home.model.ChartTimeRange
 import com.akameiot.app.ui.home.model.ChartUiModel
 import com.akameiot.coreui.theme.LocalAppColors
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.text.font.FontWeight
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
@@ -104,7 +105,7 @@ fun ChartCard(
 
     // colores del tema
     val isAnyStale = chart.isStale || chart.isStaleByTime
-    val lineColor = Color(0xFF2196F3)
+    val lineColor = MaterialTheme.colorScheme.primary
     val cardBg = if (isAnyStale) colors.staleBackground else colors.cardBackground
     val cardBorder = if (isAnyStale) colors.staleBorder else colors.cardBorder
 
@@ -176,12 +177,14 @@ fun ChartCard(
                     Text(
                         text  = "${chart.networkName} · ${chart.nodeId}",
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text  = MetricFormatter.formatName(chart.metricName, locale),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.timestamp
                     )
                 }
 

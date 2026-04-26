@@ -17,6 +17,7 @@ import com.akameiot.coreui.theme.LocalAppColors
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 import com.akameiot.app.ui.home.model.MetricTrend
 
 
@@ -74,6 +75,7 @@ fun TelemetryCard(node: NodeTelemetryUiModel) {
             Text(
                 text = "${node.networkName} · ${node.nodeId}",
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -82,7 +84,8 @@ fun TelemetryCard(node: NodeTelemetryUiModel) {
             Text(
                 text = formattedDate,
                 style = MaterialTheme.typography.bodyMedium,
-                color = tsColor
+                fontWeight = FontWeight.SemiBold,
+                color = colors.timestamp
             )
 
 

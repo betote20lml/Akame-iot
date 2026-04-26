@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.foundation.layout.width
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,7 +42,9 @@ fun MainScaffold(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet (
+                modifier = Modifier.width(300.dp),
+            )  {
                 drawerContent()
             }
         }

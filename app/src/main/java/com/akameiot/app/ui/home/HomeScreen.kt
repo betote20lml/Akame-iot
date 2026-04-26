@@ -24,6 +24,7 @@ import com.akameiot.app.ui.navigation.Routes.LOGIN
 import com.akameiot.coreui.components.*
 import kotlinx.coroutines.launch
 import com.akameiot.app.ui.home.components.ViewMenu
+import androidx.compose.animation.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -177,59 +178,82 @@ fun HomeScreen(
 
             } else {
 
-                if (uiState.viewMode == HomeViewMode.CARDS) {
+                val currentMode = uiState.viewMode
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 8.dp),
-                        contentPadding     = PaddingValues(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(
-                            items = uiState.visibleNodes,
-                            key   = { node -> "${node.networkName}_${node.nodeId}" },
-                        ) { node ->
-                            TelemetryCard(node = node)
+                AnimatedContent(
+                    targetState = currentMode,
+                    transitionSpec = {
+                        val forward = targetState.indexIn() > initialState.indexIn()
+                        if (forward) {
+                            slideInHorizontally { it } + fadeIn() togetherWith
+                                    slideOutHorizontally { -it } + fadeOut()
+                        } else {
+                            slideInHorizontally { -it } + fadeIn() togetherWith
+                                    slideOutHorizontally { it } + fadeOut()
                         }
-                    }
-
-                } else {
-
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 8.dp),
-                        contentPadding     = PaddingValues(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(
-                            items = uiState.visibleNodes,
-                            key   = { node -> "${node.meshId}_${node.nodeId}" },
-                        ) { node ->
-                            val metric = node.metrics.firstOrNull()
-                            if (metric != null) {
-                                val key = ChartPointsKey(
-                                    meshId = node.meshId,
-                                    nodeId = node.nodeId,
-                                    metric = metric.name,
-                                    range  = uiState.viewMode.chartRange,
-                                )
-                                val pts = uiState.chartPoints[key] ?: emptyList()
-
-                                ChartCard(
-                                    chart = ChartUiModel(
-                                        nodeId        = node.nodeId,
-                                        meshId        = node.meshId,
-                                        networkName   = node.networkName,
-                                        metricName    = metric.name,
-                                        chartRange    = uiState.viewMode.chartRange,
-                                        isStale       = node.isStale,
-                                        isStaleByTime = node.isStaleByTime,
-                                    ),
-                                    globalNow = uiState.globalNow,
-                                    points    = pts,
-                                )
+                    },
+                    label = "view_mode_transition",
+                ) { mode ->
+                    if (mode == HomeViewMode.CARDS) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 8.dp)
+                                .swipeToChangeMode(
+                                    onSwipeLeft  = { uiState.viewMode.next()?.let { viewModel.setViewMode(it) } },
+                                    onSwipeRight = { uiState.viewMode.previous()?.let { viewModel.setViewMode(it) } },
+                                    swipeRightEnabled = uiState.viewMode.previous() != null,
+                                ),
+                            contentPadding      = PaddingValues(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(
+                                items = uiState.visibleNodes,
+                                key   = { node -> "${node.networkName}_${node.nodeId}" },
+                            ) { node ->
+                                TelemetryCard(node = node)
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 8.dp)
+                                .swipeToChangeMode(
+                                    onSwipeLeft  = { uiState.viewMode.next()?.let { viewModel.setViewMode(it) } },
+                                    onSwipeRight = { uiState.viewMode.previous()?.let { viewModel.setViewMode(it) } },
+                                    swipeRightEnabled = uiState.viewMode.previous() != null,
+                                ),
+                            contentPadding      = PaddingValues(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(
+                                items = uiState.visibleNodes,
+                                key   = { node -> "${node.meshId}_${node.nodeId}" },
+                            ) { node ->
+                                val metric = node.metrics.firstOrNull()
+                                if (metric != null) {
+                                    val key = ChartPointsKey(
+                                        meshId = node.meshId,
+                                        nodeId = node.nodeId,
+                                        metric = metric.name,
+                                        range  = mode.chartRange,
+                                    )
+                                    val pts = uiState.chartPoints[key] ?: emptyList()
+                                    ChartCard(
+                                        chart = ChartUiModel(
+                                            nodeId        = node.nodeId,
+                                            meshId        = node.meshId,
+                                            networkName   = node.networkName,
+                                            metricName    = metric.name,
+                                            chartRange    = mode.chartRange,
+                                            isStale       = node.isStale,
+                                            isStaleByTime = node.isStaleByTime,
+                                        ),
+                                        globalNow = uiState.globalNow,
+                                        points    = pts,
+                                    )
+                                }
                             }
                         }
                     }
