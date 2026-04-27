@@ -230,16 +230,16 @@ fun IndexFactoryScreen(
                     ) {
                         items(
                             items = uiState.visibleItems,
-                            key = { "${it.meshId}_${it.nodeId}_${it.metricKey}" },
+                            key = { "${it.item.meshId}_${it.item.nodeId}_${it.item.metricKey}" }
                         ) { item ->
-                            val edit = uiState.editState[item.nodeId] ?: ("" to "")
+
                             LimitEditorCard(
-                                item            = item,
-                                userMin         = edit.first,
-                                userMax         = edit.second,
-                                onUserMinChange = { viewModel.onUserMinChange(item.nodeId, it) },
-                                onUserMaxChange = { viewModel.onUserMaxChange(item.nodeId, it) },
-                                onSave          = { viewModel.saveLimit(item) },
+                                item            = item.item,
+                                userMin         = item.userMin,
+                                userMax         = item.userMax,
+                                onUserMinChange = { viewModel.onUserMinChange(item.item.nodeId, it) },
+                                onUserMaxChange = { viewModel.onUserMaxChange(item.item.nodeId, it) },
+                                onSave          = { viewModel.saveLimit(item.item) },
                             )
                         }
                     }

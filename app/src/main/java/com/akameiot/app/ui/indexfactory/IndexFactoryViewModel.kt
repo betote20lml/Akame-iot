@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import com.akameiot.domain.policy.isIndexMetric
+import androidx.compose.runtime.mutableStateListOf
 
 
 @OptIn(kotlinx.coroutines.FlowPreview::class)
@@ -40,8 +41,8 @@ class IndexFactoryViewModel(
                     .replace(spaceRegex, " ")
                     .trim()
 
-                state.items.filter { item ->
-                    val normalizedName = item.nodeName
+                state.items.filter { uiItem ->
+                    val normalizedName = uiItem.item.nodeName
                         .lowercase()
                         .replace("·", "")
                         .replace(spaceRegex, " ")
@@ -78,7 +79,6 @@ class IndexFactoryViewModel(
                 selectedMetric = metricKey,
                 selectedMetricDisplay = display,
                 isLoading = true,
-                editState = emptyMap()
             )
         }
         loadItemsForMetric(metricKey)
@@ -103,15 +103,29 @@ class IndexFactoryViewModel(
 
     fun onUserMinChange(nodeId: Int, value: String) {
         _baseState.update { state ->
-            val current = state.editState[nodeId] ?: ("" to "")
-            state.copy(editState = state.editState + (nodeId to (value to current.second)))
+            val list = state.items
+            val index = list.indexOfFirst { it.item.nodeId == nodeId }
+
+            if (index != -1) {
+                val current = list[index]
+                list[index] = current.copy(userMin = value)
+            }
+
+            state
         }
     }
 
     fun onUserMaxChange(nodeId: Int, value: String) {
         _baseState.update { state ->
-            val current = state.editState[nodeId] ?: ("" to "")
-            state.copy(editState = state.editState + (nodeId to (current.first to value)))
+            val list = state.items
+            val index = list.indexOfFirst { it.item.nodeId == nodeId }
+
+            if (index != -1) {
+                val current = list[index]
+                list[index] = current.copy(userMax = value)
+            }
+
+            state
         }
     }
 
@@ -137,7 +151,12 @@ class IndexFactoryViewModel(
                     .distinctBy { it.meshid to it.nodeId }
 
                 if (nodesForMetric.isEmpty()) {
-                    _baseState.update { it.copy(items = emptyList(), isLoading = false) }
+                    _baseState.update {
+                        it.copy(
+                            items = mutableStateListOf(),
+                            isLoading = false
+                        )
+                    }
 
                     return@launch
                 }
@@ -208,15 +227,20 @@ class IndexFactoryViewModel(
                     )
                 }.sortedWith(compareBy({ it.networkName }, { it.nodeId }))
 
-                val initialEditState = items.associate { item ->
-                    item.nodeId to (item.savedMin to item.savedMax)
+                val itemsUi = mutableStateListOf<NodeLimitItemUi>().apply {
+                    addAll(items.map { item ->
+                        NodeLimitItemUi(
+                            item = item,
+                            userMin = item.savedMin,
+                            userMax = item.savedMax
+                        )
+                    })
                 }
-                _baseState.update {
-                    it.copy(
-                        items         = items,
-                        isLoading     = false,
-                        editState     = initialEditState,
-                    )
+
+                _baseState.update { state ->
+                    state.items.clear()
+                    state.items.addAll(itemsUi)
+                    state.copy(isLoading = false)
                 }
 
 
@@ -228,9 +252,10 @@ class IndexFactoryViewModel(
     }
 
     fun saveLimit(item: NodeLimitItem) {
-        val edit = _baseState.value.editState[item.nodeId] ?: return
-        val min = edit.first.toDoubleOrNull()
-        val max = edit.second.toDoubleOrNull()
+        val uiItem = _baseState.value.items.find { it.item.nodeId == item.nodeId } ?: return
+
+        val min = uiItem.userMin.toDoubleOrNull()
+        val max = uiItem.userMax.toDoubleOrNull()
         if (min == null && max == null) return
 
         viewModelScope.launch {
@@ -245,15 +270,22 @@ class IndexFactoryViewModel(
                     )
                 )
                 _baseState.update { state ->
-                    val updatedItems = state.items.map {
-                        if (it.nodeId == item.nodeId)
-                            it.copy(
-                                savedMin = edit.first,
-                                savedMax = edit.second,
+                    val list = state.items
+                    val index = list.indexOfFirst { it.item.nodeId == item.nodeId }
+
+                    if (index != -1) {
+                        val current = list[index]
+                        list[index] = current.copy(
+                            userMin = uiItem.userMin,
+                            userMax = uiItem.userMax,
+                            item = current.item.copy(
+                                savedMin = uiItem.userMin,
+                                savedMax = uiItem.userMax
                             )
-                        else it
+                        )
                     }
-                    state.copy(items = updatedItems)
+
+                    state
                 }
                 _events.emit(IndexFactoryEvent.LimitSaved(item.nodeName))
             } catch (e: Exception) {
