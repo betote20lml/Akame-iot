@@ -1,6 +1,8 @@
 package com.akameiot.app.ui.indexfactory.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,7 +21,9 @@ import com.akameiot.coreui.theme.LocalAppColors
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.focus.onFocusChanged
+
 
 
 val columnHorizontalPadding = 8.dp
@@ -35,9 +39,26 @@ fun LimitEditorCard(
     modifier: Modifier = Modifier,
 ) {
     val appColors = LocalAppColors.current
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    var isSaving by remember { mutableStateOf(false) }
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    fun saveAndDismiss() {
+        isSaving = true
+
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+
+        focusRequester.requestFocus()
+
+        onSave()
+    }
+
 
     Card(
-        modifier  = modifier.fillMaxWidth(),
+        modifier  = modifier
+            .fillMaxWidth(),
         shape     = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border    = BorderStroke(width = 1.dp, color = appColors.cardBorder),
@@ -50,9 +71,12 @@ fun LimitEditorCard(
                 top = 16.dp,
                 bottom = 16.dp
             )
-        ) {
-
-            // ── Header ────────────────────────────────────────────────────────
+        ) {Box(
+            modifier = Modifier
+                .size(0.dp)
+                .focusRequester(focusRequester)
+                .focusable()
+        )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
@@ -66,9 +90,7 @@ fun LimitEditorCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-
                 }
-                // Metric badge
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -86,7 +108,6 @@ fun LimitEditorCard(
 
             Spacer(Modifier.height(14.dp))
 
-
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
@@ -103,24 +124,19 @@ fun LimitEditorCard(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.End,
-                    modifier = Modifier
-                        .weight(1f, fill = true),
+                    modifier = Modifier.weight(1f, fill = true),
                 )
-
                 Text(
                     "Máximo",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.End,
-                    modifier = Modifier
-                        .weight(1f, fill = true),
+                    modifier = Modifier.weight(1f, fill = true),
                 )
             }
 
             Spacer(Modifier.height(4.dp))
-            HorizontalDivider(
-                thickness = 1.dp,
-            )
+            HorizontalDivider(thickness = 1.dp)
             Spacer(Modifier.height(4.dp))
 
             item.stats.forEach { stat -> StatsRow(stat = stat) }
@@ -129,8 +145,7 @@ fun LimitEditorCard(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f))
                 Text(
@@ -144,9 +159,7 @@ fun LimitEditorCard(
 
             Spacer(Modifier.height(12.dp))
 
-
             val isDirty = userMin.isNotBlank() || userMax.isNotBlank()
-
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -157,6 +170,8 @@ fun LimitEditorCard(
                     onValueChange = onUserMinChange,
                     label = "Mínimo",
                     placeholder = item.savedMin,
+                    onDone = { if (isDirty) saveAndDismiss() else { keyboardController?.hide(); focusManager.clearFocus(force = true) } },
+                    isSaving = isSaving,
                     modifier = Modifier.weight(1f),
                 )
                 LimitTextField(
@@ -164,6 +179,8 @@ fun LimitEditorCard(
                     onValueChange = onUserMaxChange,
                     label = "Máximo",
                     placeholder = item.savedMax,
+                    onDone = { if (isDirty) saveAndDismiss() else { keyboardController?.hide(); focusManager.clearFocus(force = true) } },
+                    isSaving = isSaving,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -171,7 +188,7 @@ fun LimitEditorCard(
             Spacer(Modifier.height(12.dp))
 
             Button(
-                onClick = onSave,
+                onClick = { saveAndDismiss() },
                 enabled = isDirty,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -227,9 +244,10 @@ private fun LimitTextField(
     onValueChange: (String) -> Unit,
     label: String,
     placeholder: String,
+    onDone: () -> Unit,
+    isSaving: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val focusManager = LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
@@ -249,6 +267,7 @@ private fun LimitTextField(
                 }
                 onValueChange(if (filtered == ".") "" else filtered)
             },
+            enabled = !isSaving,
             label = { Text(label, style = MaterialTheme.typography.labelSmall) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
@@ -256,7 +275,7 @@ private fun LimitTextField(
                 imeAction = ImeAction.Done,
             ),
             keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
+                onDone = { onDone() }
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
