@@ -13,14 +13,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.akameiot.app.ui.indexfactory.NodeLimitItem
 import com.akameiot.app.ui.indexfactory.RangeStats
 import com.akameiot.coreui.theme.LocalAppColors
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.focus.onFocusChanged
 
 
 val columnHorizontalPadding = 8.dp
@@ -146,7 +145,8 @@ fun LimitEditorCard(
             Spacer(Modifier.height(12.dp))
 
 
-            val isDirty = userMin != item.savedMin || userMax != item.savedMax
+            val isDirty = userMin.isNotBlank() || userMax.isNotBlank()
+
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -156,14 +156,14 @@ fun LimitEditorCard(
                     value = userMin,
                     onValueChange = onUserMinChange,
                     label = "Mínimo",
-                    placeholder   = item.savedMin,
+                    placeholder = item.savedMin,
                     modifier = Modifier.weight(1f),
                 )
                 LimitTextField(
                     value = userMax,
                     onValueChange = onUserMaxChange,
                     label = "Máximo",
-                    placeholder   = item.savedMax,
+                    placeholder = item.savedMax,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -199,7 +199,7 @@ private fun StatsRow(stat: RangeStats) {
             modifier = Modifier.weight(1f, fill = true),
         )
         Text(
-            text = stat.min,   // ← ya es String, sin format
+            text = stat.min,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                 alpha = if (stat.min != "—") 1f else 0.4f
@@ -209,7 +209,7 @@ private fun StatsRow(stat: RangeStats) {
             modifier = Modifier.weight(1f, fill = true),
         )
         Text(
-            text = stat.max,   // ← ya es String, sin format
+            text = stat.max,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                 alpha = if (stat.max != "—") 1f else 0.4f
@@ -226,57 +226,58 @@ private fun LimitTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    placeholder: String,       // ← nuevo: valor previo como placeholder
+    placeholder: String,
     modifier: Modifier = Modifier,
 ) {
-    var isFocused by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    var isFocused by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
-        value = value,
-        onValueChange = { newValue ->
-            val normalized = newValue.replace(',', '.')
-            val filtered = buildString {
-                var hasDot = false
-                for (char in normalized) {
-                    if (char.isDigit()) append(char)
-                    else if (char == '.' && !hasDot) { append(char); hasDot = true }
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { newValue ->
+                val normalized = newValue.replace(',', '.')
+                val filtered = buildString {
+                    var hasDot = false
+                    for (char in normalized) {
+                        if (char.isDigit()) append(char)
+                        else if (char == '.' && !hasDot) {
+                            append(char)
+                            hasDot = true
+                        }
+                    }
                 }
-            }
-            onValueChange(if (filtered == ".") "" else filtered)
-        },
-        label = { Text(label, fontSize = 12.sp) },
-        placeholder = {
-            if (placeholder.isNotEmpty()) {
-                Text(
-                    text = placeholder,
-                    style = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                )
-            }
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Decimal,
-            imeAction    = ImeAction.Done,
-        ),
-        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-        shape = RoundedCornerShape(12.dp),
-        modifier = modifier.onFocusChanged { focusState ->
-            if (focusState.isFocused && !isFocused) {
-                // Al ganar foco: limpiar para que el usuario escriba desde cero
-                onValueChange("")
-            }
-            if (!focusState.isFocused && isFocused && value.isEmpty()) {
-                // Al perder foco sin escribir nada: restaurar placeholder como valor
-                onValueChange(placeholder)
-            }
-            isFocused = focusState.isFocused
-        },
-        textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor   = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-        ),
-    )
+                onValueChange(if (filtered == ".") "" else filtered)
+            },
+            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Decimal,
+                imeAction = ImeAction.Done,
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { focusManager.clearFocus() }
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isFocused = it.isFocused },
+            textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
+        )
+
+        if (value.isEmpty() && placeholder.isNotEmpty() && !isFocused) {
+            Text(
+                text = placeholder,
+                style = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 16.dp, top = 8.dp)
+            )
+        }
+    }
 }

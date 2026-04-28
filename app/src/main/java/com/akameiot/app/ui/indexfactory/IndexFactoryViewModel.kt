@@ -231,8 +231,8 @@ class IndexFactoryViewModel(
                     addAll(items.map { item ->
                         NodeLimitItemUi(
                             item = item,
-                            userMin = item.savedMin,
-                            userMax = item.savedMax
+                            userMin = "",
+                            userMax = ""
                         )
                     })
                 }
@@ -254,8 +254,21 @@ class IndexFactoryViewModel(
     fun saveLimit(item: NodeLimitItem) {
         val uiItem = _baseState.value.items.find { it.item.nodeId == item.nodeId } ?: return
 
-        val min = uiItem.userMin.toDoubleOrNull()
-        val max = uiItem.userMax.toDoubleOrNull()
+        val existingMin = _baseState.value.items
+            .find { it.item.nodeId == item.nodeId }?.item?.savedMin
+        val existingMax = _baseState.value.items
+            .find { it.item.nodeId == item.nodeId }?.item?.savedMax
+
+        val min = uiItem.userMin
+            .takeIf { it.isNotBlank() }
+            ?.toDoubleOrNull()
+            ?: existingMin?.toDoubleOrNull()
+
+        val max = uiItem.userMax
+            .takeIf { it.isNotBlank() }
+            ?.toDoubleOrNull()
+            ?: existingMax?.toDoubleOrNull()
+
         if (min == null && max == null) return
 
         viewModelScope.launch {
@@ -276,11 +289,11 @@ class IndexFactoryViewModel(
                     if (index != -1) {
                         val current = list[index]
                         list[index] = current.copy(
-                            userMin = uiItem.userMin,
-                            userMax = uiItem.userMax,
+                            userMin = "",
+                            userMax = "",
                             item = current.item.copy(
-                                savedMin = uiItem.userMin,
-                                savedMax = uiItem.userMax
+                                savedMin = uiItem.userMin.ifBlank { current.item.savedMin },
+                                savedMax = uiItem.userMax.ifBlank { current.item.savedMax },
                             )
                         )
                     }
