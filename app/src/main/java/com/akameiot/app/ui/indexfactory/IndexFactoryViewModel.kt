@@ -103,29 +103,29 @@ class IndexFactoryViewModel(
 
     fun onUserMinChange(nodeId: Int, value: String) {
         _baseState.update { state ->
-            val list = state.items
-            val index = list.indexOfFirst { it.item.nodeId == nodeId }
+            val index = state.items.indexOfFirst { it.item.nodeId == nodeId }
+            if (index == -1) return@update state
 
-            if (index != -1) {
-                val current = list[index]
-                list[index] = current.copy(userMin = value)
-            }
-
-            state
+            val current = state.items[index]
+            state.copy(
+                items = state.items.toMutableList().also {
+                    it[index] = current.copy(userMin = value)
+                }
+            )
         }
     }
 
     fun onUserMaxChange(nodeId: Int, value: String) {
         _baseState.update { state ->
-            val list = state.items
-            val index = list.indexOfFirst { it.item.nodeId == nodeId }
+            val index = state.items.indexOfFirst { it.item.nodeId == nodeId }
+            if (index == -1) return@update state
 
-            if (index != -1) {
-                val current = list[index]
-                list[index] = current.copy(userMax = value)
-            }
-
-            state
+            val current = state.items[index]
+            state.copy(
+                items = state.items.toMutableList().also {
+                    it[index] = current.copy(userMax = value)
+                }
+            )
         }
     }
 
@@ -227,20 +227,11 @@ class IndexFactoryViewModel(
                     )
                 }.sortedWith(compareBy({ it.networkName }, { it.nodeId }))
 
-                val itemsUi = mutableStateListOf<NodeLimitItemUi>().apply {
-                    addAll(items.map { item ->
-                        NodeLimitItemUi(
-                            item = item,
-                            userMin = "",
-                            userMax = ""
-                        )
-                    })
-                }
-
                 _baseState.update { state ->
-                    state.items.clear()
-                    state.items.addAll(itemsUi)
-                    state.copy(isLoading = false)
+                    state.copy(
+                        items = items.map { item -> NodeLimitItemUi(item = item, userMin = "", userMax = "") },
+                        isLoading = false,
+                    )
                 }
 
 
@@ -283,22 +274,22 @@ class IndexFactoryViewModel(
                     )
                 )
                 _baseState.update { state ->
-                    val list = state.items
-                    val index = list.indexOfFirst { it.item.nodeId == item.nodeId }
+                    val index = state.items.indexOfFirst { it.item.nodeId == item.nodeId }
+                    if (index == -1) return@update state
 
-                    if (index != -1) {
-                        val current = list[index]
-                        list[index] = current.copy(
-                            userMin = "",
-                            userMax = "",
-                            item = current.item.copy(
-                                savedMin = uiItem.userMin.ifBlank { current.item.savedMin },
-                                savedMax = uiItem.userMax.ifBlank { current.item.savedMax },
+                    val current = state.items[index]
+                    state.copy(
+                        items = state.items.toMutableList().also {
+                            it[index] = current.copy(
+                                userMin = "",
+                                userMax = "",
+                                item = current.item.copy(
+                                    savedMin = uiItem.userMin.ifBlank { current.item.savedMin },
+                                    savedMax = uiItem.userMax.ifBlank { current.item.savedMax },
+                                )
                             )
-                        )
-                    }
-
-                    state
+                        }
+                    )
                 }
                 _events.emit(IndexFactoryEvent.LimitSaved(item.nodeName))
             } catch (e: Exception) {

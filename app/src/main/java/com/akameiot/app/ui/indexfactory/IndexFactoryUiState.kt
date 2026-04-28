@@ -1,8 +1,6 @@
 package com.akameiot.app.ui.indexfactory
 
 import com.akameiot.domain.model.AppUser
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 
 // ── Historical stats for a single time-range ──────────────────────────────────
 data class RangeStats(
@@ -43,7 +41,7 @@ data class IndexFactoryUiState(
     val searchQuery: String = "",
     val searchActive: Boolean = false,
 
-    val items: SnapshotStateList<NodeLimitItemUi> = mutableStateListOf(),
+    val items: List<NodeLimitItemUi> = emptyList(),
     val visibleItems: List<NodeLimitItemUi> = emptyList(),
 )
 
