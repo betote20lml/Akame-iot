@@ -32,6 +32,7 @@ fun QrScannerComposable(
 
             val previewView = PreviewView(ctx).apply {
                 scaleType = PreviewView.ScaleType.FILL_CENTER
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             }
 
             val cameraProviderFuture =

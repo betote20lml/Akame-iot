@@ -67,8 +67,10 @@ class AkameApp : Application() {
                                     .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
 
                                 Log.d(
-                                    "MeshSync",
-                                    "mesh=${network.thingName} age=${ageSeconds}s threshold=${threshold}s"
+                                    "MeshWindow",
+                                    "mesh=${network.thingName} window=${window}s " +
+                                            "age=${ageSeconds}s threshold=${threshold}s " +
+                                            "isStale=${ageSeconds > threshold}"
                                 )
 
                                 if (ageSeconds > threshold) {

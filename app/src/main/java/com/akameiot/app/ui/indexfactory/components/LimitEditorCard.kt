@@ -45,13 +45,9 @@ fun LimitEditorCard(
     val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
 
     fun saveAndDismiss() {
-        isSaving = true
-
         focusManager.clearFocus(force = true)
         keyboardController?.hide()
-
         focusRequester.requestFocus()
-
         onSave()
     }
 

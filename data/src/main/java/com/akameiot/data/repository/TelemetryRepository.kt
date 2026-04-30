@@ -1,5 +1,6 @@
 package com.akameiot.data.repository
 
+import android.util.Log
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.mapper.toEntities
 import com.akameiot.data.remote.api.TelemetryApiService
@@ -37,13 +38,34 @@ class TelemetryRepository(
         val windowSec = nowSec - fromTs
 
         if (windowSec < 24 * 3600) {
-            val response = api.getRecentTelemetry(
-                bearerToken = "Bearer $bearerToken",
-                meshId = meshId,
-                sinceTs = fromTs
-            )
-            val entities = response.items.flatMap { it.toEntities() }
-            insertAndAggregate(entities)  // ← reemplaza dao.insertAll
+            try {
+                val response = api.getRecentTelemetry(
+                    bearerToken = "Bearer $bearerToken",
+                    meshId = meshId,
+                    sinceTs = fromTs
+                )
+
+                val entities = response.items.flatMap { it.toEntities() }
+                insertAndAggregate(entities)
+
+            } catch (e: retrofit2.HttpException) {
+
+                when (e.code()) {
+                    429 -> {
+                        Log.w("Since", "429 rate limit → ignorando (mesh=$meshId)")
+                        return
+                    }
+
+                    in 500..599 -> {
+                        Log.e("Since", "Server error ${e.code()} → ignorando")
+                        return
+                    }
+
+                    else -> throw e
+                }
+
+            }
+
         } else {
             coldFetchAndSave(
                 bearerToken = bearerToken,
@@ -94,17 +116,16 @@ class TelemetryRepository(
                 nextToken = nextToken
             )
             val entities = page.items.flatMap { it.toEntities() }
-            insertAndAggregate(entities)  // ← reemplaza dao.insertAll
+            insertAndAggregate(entities)
             nextToken = page.nextToken
         } while (nextToken != null)
     }
 
     suspend fun saveTelemetry(dtos: List<TelemetryDto>) {
         val entities = dtos.flatMap { it.toEntities() }
-        insertAndAggregate(entities)  // ← reemplaza dao.insertAll
+        insertAndAggregate(entities)
     }
 
-    // ── Punto único de inserción ──────────────────────────────────────────────
     private suspend fun insertAndAggregate(entities: List<TelemetryEntity>) {
         dao.insertAll(entities)
 
