@@ -49,4 +49,5 @@ data class NodeLimitItemUi(
     val item: NodeLimitItem,
     val userMin: String,
     val userMax: String,
+    val normalizedName: String,
 )

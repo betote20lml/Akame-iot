@@ -24,6 +24,14 @@ class IndexFactoryViewModel(
 
     private val _baseState = MutableStateFlow(IndexFactoryUiState(isLoading = true))
 
+    private fun normalize(text: String): String {
+        return text
+            .lowercase()
+            .replace("·", "")
+            .replace(spaceRegex, " ")
+            .trim()
+    }
+
 
     val uiState: StateFlow<IndexFactoryUiState> =
         _baseState
@@ -34,23 +42,18 @@ class IndexFactoryViewModel(
                 val visible = if (raw.isEmpty()) {
                     state.items
                 } else {
-                    val normalizedQuery = raw
-                        .replace("·", "")
-                        .replace(spaceRegex, " ")
-                        .trim()
+                    val normalizedQuery = normalize(raw)
 
                     state.items.filter { uiItem ->
-                        val normalizedName = uiItem.item.nodeName
-                            .lowercase()
-                            .replace("·", "")
-                            .replace(spaceRegex, " ")
-                            .trim()
-
-                        normalizedName.contains(normalizedQuery)
+                        uiItem.normalizedName.contains(normalizedQuery)
                     }
                 }
 
-                state.copy(visibleItems = visible)
+                if (visible === state.visibleItems) {
+                    state
+                } else {
+                    state.copy(visibleItems = visible)
+                }
             }
             .stateIn(
                 viewModelScope,
@@ -225,7 +228,20 @@ class IndexFactoryViewModel(
 
                 _baseState.update { state ->
                     state.copy(
-                        items = items.map { item -> NodeLimitItemUi(item = item, userMin = "", userMax = "") },
+                        items = items.map { item ->
+                            val normalized = item.nodeName
+                                .lowercase()
+                                .replace("·", "")
+                                .replace(spaceRegex, " ")
+                                .trim()
+
+                            NodeLimitItemUi(
+                                item = item,
+                                userMin = "",
+                                userMax = "",
+                                normalizedName = normalized
+                            )
+                        },
                         isLoading = false,
                     )
                 }
