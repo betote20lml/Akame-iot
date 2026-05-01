@@ -20,7 +20,7 @@ class IndexFactoryViewModel(
     private val nodeLimitRepository: com.akameiot.domain.repository.NodeLimitRepository,
 ) : ViewModel() {
 
-    private val spaceRegex = Regex("\\s+")
+    private val separatorRegex = Regex("[\\s.\\-·]+")
 
     private val _baseState = MutableStateFlow(IndexFactoryUiState(isLoading = true))
 
@@ -28,7 +28,7 @@ class IndexFactoryViewModel(
         return text
             .lowercase()
             .replace("·", "")
-            .replace(spaceRegex, " ")
+            .replace(separatorRegex, "")
             .trim()
     }
 
@@ -42,7 +42,7 @@ class IndexFactoryViewModel(
                 val visible = if (raw.isEmpty()) {
                     state.items
                 } else {
-                    val normalizedQuery = normalize(raw)
+                    val normalizedQuery = normalize(state.searchQuery)
 
                     state.items.filter { uiItem ->
                         uiItem.normalizedName.contains(normalizedQuery)
@@ -229,11 +229,7 @@ class IndexFactoryViewModel(
                 _baseState.update { state ->
                     state.copy(
                         items = items.map { item ->
-                            val normalized = item.nodeName
-                                .lowercase()
-                                .replace("·", "")
-                                .replace(spaceRegex, " ")
-                                .trim()
+                            val normalized = normalize(item.nodeName)
 
                             NodeLimitItemUi(
                                 item = item,
