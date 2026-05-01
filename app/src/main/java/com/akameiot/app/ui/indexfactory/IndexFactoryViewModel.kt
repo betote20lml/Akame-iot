@@ -23,40 +23,35 @@ class IndexFactoryViewModel(
     private val spaceRegex = Regex("\\s+")
 
     private val _baseState = MutableStateFlow(IndexFactoryUiState(isLoading = true))
-    private val searchQuery = MutableStateFlow("")
+
 
     val uiState: StateFlow<IndexFactoryUiState> =
-        combine(
-            _baseState,
-            searchQuery.debounce(300)
-        ) { state, query ->
+        _baseState
+            .map { state ->
 
-            val raw = query.trim().lowercase()
+                val raw = state.searchQuery.trim().lowercase()
 
-            val visible = if (raw.isEmpty()) {
-                state.items
-            } else {
-                val normalizedQuery = raw
-                    .replace("·", "")
-                    .replace(spaceRegex, " ")
-                    .trim()
-
-                state.items.filter { uiItem ->
-                    val normalizedName = uiItem.item.nodeName
-                        .lowercase()
+                val visible = if (raw.isEmpty()) {
+                    state.items
+                } else {
+                    val normalizedQuery = raw
                         .replace("·", "")
                         .replace(spaceRegex, " ")
                         .trim()
 
-                    normalizedName.contains(normalizedQuery)
-                }
-            }
+                    state.items.filter { uiItem ->
+                        val normalizedName = uiItem.item.nodeName
+                            .lowercase()
+                            .replace("·", "")
+                            .replace(spaceRegex, " ")
+                            .trim()
 
-            state.copy(
-                searchQuery = query,
-                visibleItems = visible
-            )
-        }
+                        normalizedName.contains(normalizedQuery)
+                    }
+                }
+
+                state.copy(visibleItems = visible)
+            }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
@@ -92,11 +87,12 @@ class IndexFactoryViewModel(
                 searchActive = active,
             )
         }
-        if (!active) searchQuery.value = ""
+
     }
 
     fun onSearchQueryChange(query: String) {
-        searchQuery.value = query
+        _baseState.update {it.copy(searchQuery = query)}
+
     }
 
     // ── Limit editing ─────────────────────────────────────────────────────────
