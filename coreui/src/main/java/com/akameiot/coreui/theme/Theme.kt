@@ -1,6 +1,6 @@
 package com.akameiot.coreui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.collectAsState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -12,6 +12,7 @@ import android.app.Activity
 import androidx.core.view.WindowCompat
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 
 data class AppColors(
     val cardBackground: Color,
@@ -84,11 +85,11 @@ private val DarkAppColors = AppColors(
 
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    val appColors   = if (darkTheme) DarkAppColors else LightAppColors
+    val isDark by ThemeController.isDark.collectAsState()
+    val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
+    val appColors   = if (isDark) DarkAppColors else LightAppColors
     val view = LocalView.current
 
     // Manejo correcto del sistema de ventanas

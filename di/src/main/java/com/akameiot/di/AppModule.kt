@@ -39,6 +39,7 @@ import com.akameiot.data.repository_impl.TelemetryWindowRepositoryImpl
 import com.akameiot.data.session.FilterPreferencesStore
 import com.akameiot.data.session.GlobalTimeStore
 import com.akameiot.data.session.MeshUpdateWindowStore
+import com.akameiot.data.session.ThemePreferencesStore
 import com.akameiot.domain.repository.SessionRepository
 import com.akameiot.domain.repository.TelemetryAggRepository
 import com.akameiot.domain.usecase.AggregateInsertUseCase
@@ -247,6 +248,10 @@ object AppModule {
 
     val globalTimeStore by lazy {
         GlobalTimeStore(appContext)
+    }
+
+    val themeStore by lazy {
+        ThemePreferencesStore(appContext)
     }
 
 }

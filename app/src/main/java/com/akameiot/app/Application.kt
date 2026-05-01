@@ -20,6 +20,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
+import com.akameiot.coreui.theme.ThemeController
 
 
 
@@ -31,6 +32,7 @@ class AkameApp : Application() {
         super.onCreate()
         FirebaseApp.initializeApp(this)
         AppModule.init(this)
+        ThemeController.bind(AppModule.themeStore.isDark)
 
         try {
             Amplify.addPlugin(AWSCognitoAuthPlugin())

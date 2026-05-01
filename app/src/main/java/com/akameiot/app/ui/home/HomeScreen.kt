@@ -95,11 +95,33 @@ fun HomeScreen(
 
     MainScaffold(
         titleContent = {
-            val title = when {
-                uiState.filterNetworks.size == 1 -> uiState.filterNetworks.first().displayName
-                uiState.filterNetworks.size > 1  -> "${uiState.filterNetworks.size} Redes Seleccionadas"
-                uiState.networks.size == 1       -> uiState.networks.first().displayName
-                else                             -> "Telemetría"
+            val title = when (uiState.viewMode) {
+
+                HomeViewMode.CARDS -> {
+                    when {
+                        uiState.filterNetworks.size == 1 ->
+                            uiState.filterNetworks.first().displayName
+
+                        uiState.filterNetworks.size > 1 ->
+                            "${uiState.filterNetworks.size} Redes Seleccionadas"
+
+                        uiState.networks.size == 1 ->
+                            uiState.networks.first().displayName
+
+                        else -> "Telemetría"
+                    }
+                }
+
+                else -> {
+                    when (uiState.viewMode) {
+                        HomeViewMode.CHARTS_24H -> "Gráficas · 24h"
+                        HomeViewMode.CHARTS_7D  -> "Gráficas · 7 días"
+                        HomeViewMode.CHARTS_1M  -> "Gráficas · 1 mes"
+                        HomeViewMode.CHARTS_3M  -> "Gráficas · 3 meses"
+                        HomeViewMode.CHARTS_1Y  -> "Gráficas · 1 año"
+                        else -> "Gráficas"
+                    }
+                }
             }
             Text(
                 text  = title,

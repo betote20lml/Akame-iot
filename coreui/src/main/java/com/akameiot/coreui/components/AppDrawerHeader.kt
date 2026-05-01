@@ -18,7 +18,8 @@ fun AppDrawerHeader(
     networkName: String,
     connectionStatus: String,
     isOnline: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    appIcon: (@Composable () -> Unit)? = null
 ) {
 
     val spacing = LocalSpacing.current
@@ -39,10 +40,17 @@ fun AppDrawerHeader(
             verticalArrangement = Arrangement.spacedBy(spacing.sm)
         ) {
 
-            Text(
-                text = networkName,
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(spacing.md)
+            ) {
+                appIcon?.invoke()
+
+                Text(
+                    text = networkName,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
