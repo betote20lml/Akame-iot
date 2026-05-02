@@ -57,9 +57,7 @@ fun QrAuthScreen(
             when (event) {
                 QrAuthEvent.Success -> {
                     navController.navigate(Routes.HOME) {
-                        popUpTo(navController.graph.id) {
-                            inclusive = true
-                        }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
                 is QrAuthEvent.Error -> {

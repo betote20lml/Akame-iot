@@ -54,9 +54,7 @@ fun VerificationScreen(
 
                 VerificationEvent.Success -> {
                     navController.navigate(Routes.HOME) {
-                        popUpTo(navController.graph.id) {
-                            inclusive = true
-                        }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
 

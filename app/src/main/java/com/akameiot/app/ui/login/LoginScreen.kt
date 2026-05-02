@@ -52,9 +52,7 @@ fun LoginScreen(
 
                     navController.navigate(Routes.HOME) {
                         launchSingleTop = true
-                        popUpTo(Routes.LOGIN) {
-                            inclusive = true
-                        }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
 
