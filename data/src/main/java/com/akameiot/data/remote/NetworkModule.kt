@@ -1,5 +1,6 @@
 package com.akameiot.data.remote
 
+import com.akameiot.data.remote.api.NodeLimitApiService
 import com.akameiot.data.remote.api.SnsApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -81,6 +82,15 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(TelemetryApiService::class.java)
+    }
+
+    val nodeLimitApi: NodeLimitApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://vmbenviu2m.execute-api.us-east-2.amazonaws.com/prod/")
+            .client(okHttp)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NodeLimitApiService::class.java)
     }
 
 }

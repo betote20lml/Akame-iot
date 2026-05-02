@@ -129,12 +129,55 @@ class IndexFactoryViewModel(
     }
 
     // ── Menu actions (stubs) ──────────────────────────────────────────────────
+    fun exportChanges() {
+        val meshIds = _baseState.value.items
+            .map { it.item.meshId }
+            .distinct()
 
-    fun exportChanges() =
-        viewModelScope.launch { _events.emit(IndexFactoryEvent.ExportChanges) }
+        if (meshIds.isEmpty()) {
+            viewModelScope.launch {
+                _events.emit(IndexFactoryEvent.ShowError("No hay límites para exportar"))
+            }
+            return
+        }
 
-    fun recoverFromCloud() =
-        viewModelScope.launch { _events.emit(IndexFactoryEvent.RecoverFromCloud) }
+        viewModelScope.launch {
+            try {
+                meshIds.forEach { meshId ->
+                    nodeLimitRepository.exportToCloud(meshId)
+                }
+                _events.emit(IndexFactoryEvent.ExportChanges)
+            } catch (e: Exception) {
+                _events.emit(IndexFactoryEvent.ShowError(e.message ?: "Error al exportar"))
+            }
+        }
+    }
+
+    fun recoverFromCloud() {
+        val metric = _baseState.value.selectedMetric ?: return
+        val meshIds = _baseState.value.items
+            .map { it.item.meshId }
+            .distinct()
+
+        if (meshIds.isEmpty()) {
+            viewModelScope.launch {
+                _events.emit(IndexFactoryEvent.ShowError("Selecciona una métrica primero"))
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                meshIds.forEach { meshId ->
+                    nodeLimitRepository.pullFromCloud(meshId)
+                }
+                loadItemsForMetric(metric)
+                _events.emit(IndexFactoryEvent.RecoverFromCloud)
+            } catch (e: Exception) {
+                _events.emit(IndexFactoryEvent.ShowError(e.message ?: "Error al recuperar"))
+            }
+        }
+    }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 

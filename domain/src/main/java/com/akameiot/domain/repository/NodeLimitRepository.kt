@@ -16,4 +16,8 @@ interface NodeLimitRepository {
     suspend fun getAll(): List<NodeLimit>
 
     fun observeLimitsForMetric(meshId: String, metric: String): Flow<List<NodeLimit>>
+
+    suspend fun exportToCloud(meshId: String)
+    suspend fun pullFromCloud(meshId: String)
+
 }

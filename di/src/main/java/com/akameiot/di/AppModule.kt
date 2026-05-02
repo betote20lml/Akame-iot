@@ -187,7 +187,11 @@ object AppModule {
     }
 
     val nodeLimitRepository: com.akameiot.domain.repository.NodeLimitRepository by lazy {
-        com.akameiot.data.repository_impl.NodeLimitRepositoryImpl(nodeLimitDao)
+        com.akameiot.data.repository_impl.NodeLimitRepositoryImpl(
+            dao         = nodeLimitDao,
+            api         = NetworkModule.nodeLimitApi,
+            authSession = authSessionManager,
+        )
     }
 
     val calculateIndexUseCase by lazy {

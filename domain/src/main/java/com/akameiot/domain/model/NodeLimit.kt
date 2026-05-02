@@ -6,4 +6,5 @@ data class NodeLimit(
     val metric  : String,
     val userMin : Double?,
     val userMax : Double?,
+    val updatedAt : Long = System.currentTimeMillis() / 1000L,
 )

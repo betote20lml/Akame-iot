@@ -59,15 +59,16 @@ fun IndexFactoryScreen(
 
                 IndexFactoryEvent.ExportChanges ->
                     snackbarHostState.showSnackbar(
-                        "Exportar cambios — próximamente",
+                        "Límites exportados correctamente",
                         duration = SnackbarDuration.Short,
                     )
 
                 IndexFactoryEvent.RecoverFromCloud ->
                     snackbarHostState.showSnackbar(
-                        "Recuperar desde la nube — próximamente",
+                        "Límites recuperados desde la nube",
                         duration = SnackbarDuration.Short,
                     )
+
                 is IndexFactoryEvent.LimitSaved ->
                     snackbarHostState.showSnackbar(
                         "Límites guardados para ${event.nodeName}",

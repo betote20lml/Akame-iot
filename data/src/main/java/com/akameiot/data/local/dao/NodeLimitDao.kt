@@ -55,4 +55,21 @@ interface NodeLimitDao {
 
     @Query("SELECT * FROM node_limits ORDER BY meshId, metric, nodeId")
     suspend fun getAll(): List<NodeLimitEntity>
+
+    @Query("SELECT * FROM node_limits WHERE meshId = :meshId")
+    suspend fun getAllByMesh(meshId: String): List<NodeLimitEntity>
+
+    @Query("DELETE FROM node_limits WHERE meshId = :meshId")
+    suspend fun deleteAllByMesh(meshId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(limits: List<NodeLimitEntity>)
+
+    @Query("SELECT * FROM node_limits WHERE meshId = :meshId AND metric = :metric")
+    suspend fun getAllByMeshAndMetric(meshId: String, metric: String): List<NodeLimitEntity>
+
+    @Query("DELETE FROM node_limits WHERE meshId = :meshId AND metric = :metric")
+    suspend fun deleteAllByMeshAndMetric(meshId: String, metric: String)
+
+
 }
