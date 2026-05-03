@@ -115,6 +115,21 @@ fun AppNavHost(
             val metricKey = backStackEntry.arguments?.getString("metricKey")
             IndexFactoryScreen(navController, metricKey)
         }
+
+        composable(
+            route = Routes.HOME_WITH_ARG,
+            arguments = listOf(
+                navArgument("loginMode") {
+                    type     = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val loginMode = backStackEntry.arguments?.getString("loginMode")
+            HomeScreen(navController = navController, loginMode = loginMode)
+        }
+
     }
 }
 

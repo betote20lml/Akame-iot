@@ -56,7 +56,7 @@ fun QrAuthScreen(
         viewModel.events.collectLatest { event ->
             when (event) {
                 QrAuthEvent.Success -> {
-                    navController.navigate(Routes.HOME) {
+                    navController.navigate(Routes.home(Routes.LOGIN_MODE_TOKEN)) {
                         popUpTo(0) { inclusive = true }
                     }
                 }

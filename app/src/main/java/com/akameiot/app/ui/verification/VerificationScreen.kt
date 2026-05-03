@@ -53,7 +53,12 @@ fun VerificationScreen(
 
 
                 VerificationEvent.Success -> {
-                    navController.navigate(Routes.HOME) {
+                    val loginMode = if (password.isNullOrBlank())
+                        Routes.LOGIN_MODE_NEW
+                    else
+                        Routes.LOGIN_MODE_RETURNING
+
+                    navController.navigate(Routes.home(loginMode)){
                         popUpTo(0) { inclusive = true }
                     }
                 }

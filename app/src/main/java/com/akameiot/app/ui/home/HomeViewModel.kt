@@ -28,6 +28,7 @@ import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.akameiot.app.ui.home.model.ChartPointsKey
+import com.akameiot.app.ui.navigation.Routes
 import com.akameiot.data.session.GlobalTimeStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
@@ -68,6 +69,27 @@ class HomeViewModel(
         observeCharts()
         preloadChartFlows()
 
+    }
+
+    fun onLoginMode(loginMode: String?) {
+        if (loginMode.isNullOrEmpty()) return
+
+        viewModelScope.launch {
+            if (loginMode == Routes.LOGIN_MODE_RETURNING) {
+                try {
+                    val networks = AppModule.networkStore.getNetworks()
+                    networks.forEach { network ->
+                        try {
+                            AppModule.nodeLimitRepository.pullFromCloud(network.thingName)
+                        } catch (_: Exception) { }
+                    }
+                } catch (_: Exception) { }
+
+                tokenStore.markNeedsResubscribe()
+            }
+
+            checkPendingFcmResubscribe()
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

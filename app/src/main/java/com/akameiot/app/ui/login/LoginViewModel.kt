@@ -119,7 +119,6 @@ class LoginViewModel(
                 try {
                     val token = authSessionManager.fetchIdToken()
                     syncUserDevicesUseCase(token)
-                    fcmTokenStore.markNeedsResubscribe()
                 } catch (_: Exception) { }
 
                 sendEvent(LoginEvent.Success)

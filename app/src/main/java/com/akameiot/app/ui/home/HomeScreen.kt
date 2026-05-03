@@ -30,7 +30,9 @@ import androidx.compose.animation.*
 @Composable
 fun HomeScreen(
     navController: NavController,
+    loginMode: String? = null,
 ) {
+
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory())
     val uiState by viewModel.uiState.collectAsState()
 
@@ -43,6 +45,10 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(loginMode) {
+        viewModel.onLoginMode(loginMode)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->

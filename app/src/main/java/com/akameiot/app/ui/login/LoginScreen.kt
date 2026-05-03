@@ -50,7 +50,7 @@ fun LoginScreen(
 
                     sharedViewModel.clear()
 
-                    navController.navigate(Routes.HOME) {
+                    navController.navigate(Routes.home(Routes.LOGIN_MODE_RETURNING)) {
                         launchSingleTop = true
                         popUpTo(0) { inclusive = true }
                     }
