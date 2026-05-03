@@ -8,6 +8,7 @@ data class NodeLimitPayload(
     val userMin   : Double?,
     val userMax   : Double?,
     val updatedAt : Long,
+    val clientUpdatedAt : Long = 0L,
 )
 
 data class ExportRequest(

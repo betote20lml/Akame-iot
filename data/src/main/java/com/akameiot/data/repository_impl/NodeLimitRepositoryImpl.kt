@@ -55,7 +55,7 @@ class NodeLimitRepositoryImpl(
                         metric    = entity.metric,
                         userMin   = entity.userMin,
                         userMax   = entity.userMax,
-                        updatedAt = entity.updatedAt,
+                        updatedAt       = entity.updatedAt,
                     )
                 }
             )
@@ -79,7 +79,7 @@ class NodeLimitRepositoryImpl(
                     metric    = payload.metric,
                     userMin   = payload.userMin,
                     userMax   = payload.userMax,
-                    updatedAt = payload.updatedAt,
+                    updatedAt = payload.clientUpdatedAt,
                 )
             }
         )
@@ -102,5 +102,6 @@ class NodeLimitRepositoryImpl(
         metric  = metric,
         userMin = userMin,
         userMax = userMax,
+        updatedAt = updatedAt,
     )
 }

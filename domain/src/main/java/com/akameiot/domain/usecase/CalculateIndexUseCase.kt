@@ -31,6 +31,7 @@ class CalculateIndexUseCase(
 
             items.forEach { point ->
                 val limit = limitsMap[point.nodeId] ?: return@forEach
+                if (point.timestamp < limit.updatedAt) { return@forEach }
                 val min   = limit.userMin            ?: return@forEach
                 val max   = limit.userMax            ?: return@forEach
                 if (max == min) return@forEach
