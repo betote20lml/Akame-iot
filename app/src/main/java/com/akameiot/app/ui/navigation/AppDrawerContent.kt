@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.Modifier
@@ -35,16 +34,14 @@ fun AppDrawerContent(
     drawerState: DrawerState,
     drawerUiState: DrawerUiState,
     appUser: AppUser? = null,
-    //networkName: String = "Red Akame",
-    connectionStatus: String = "Broker MQTT conectado",
-    isOnline: Boolean = true,
+
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
 
         val isDark by ThemeController.isDark.collectAsState()
         AppDrawerHeader(
-            connectionStatus = connectionStatus,
-            isOnline = isOnline,
+            connectionStatus = drawerUiState.connectionStatus,
+            connectionLevel = drawerUiState.connectionLevel,
             appIcon = {
                 Image(
                     painter = painterResource(

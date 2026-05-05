@@ -21,7 +21,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.theme.ThemeController
-
+import kotlinx.coroutines.withTimeoutOrNull
 
 
 class AkameApp : Application() {
@@ -42,6 +42,69 @@ class AkameApp : Application() {
         }
 
         checkAndSyncStaleData()
+        watchNetworkFreshness()
+    }
+
+    private fun watchNetworkFreshness() {
+        appScope.launch {
+            val meshWindows = try {
+                AppModule.meshWindowStore.getAllWindows()
+            } catch (_: Exception) { emptyMap() }
+
+            while (true) {
+                try {
+                    val networks = AppModule.networkStore.getNetworks()
+
+                    if (networks.isNotEmpty()) {
+                        val nowSeconds = System.currentTimeMillis() / 1000L
+                        val lastSeen = AppModule.lastSeenPerMesh.value
+                        var minTimeToExpiry = Long.MAX_VALUE
+
+                        var staleCount = 0
+                        networks.forEach { network ->
+                            val lastTs = lastSeen[network.thingName]
+                                ?: AppModule.telemetryDao.getLatestTimestamp(network.thingName)
+                                ?: run { staleCount++; return@forEach }
+
+                            val windowSeconds = meshWindows[network.thingName]
+                                ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
+
+                            val threshold = (windowSeconds * 1.2)
+                                .toLong()
+                                .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
+
+                            val timeToExpiry = threshold - (nowSeconds - lastTs)
+                            if (timeToExpiry in 1 until minTimeToExpiry) {
+                                minTimeToExpiry = timeToExpiry
+                            }
+
+                            if ((nowSeconds - lastTs) > threshold) staleCount++
+                        }
+
+                        AppModule.networkStatusFlow.value = when {
+                            staleCount == 0              -> AppModule.NetworkStatus.ALL_ONLINE
+                            staleCount < networks.size   -> AppModule.NetworkStatus.PARTIAL
+                            else                         -> AppModule.NetworkStatus.ALL_OFFLINE
+                        }
+
+                        val waitMillis = when {
+                            minTimeToExpiry == Long.MAX_VALUE -> 60_000L
+                            else -> minTimeToExpiry * 1000L
+                        }
+
+                        withTimeoutOrNull(waitMillis) {
+                            AppModule.freshnessWakeUp.receive()
+                        }
+                        continue
+                    }
+
+                } catch (_: Exception) { }
+
+                withTimeoutOrNull(60_000L) {
+                    AppModule.freshnessWakeUp.receive()
+                }
+            }
+        }
     }
 
     private fun checkAndSyncStaleData() {

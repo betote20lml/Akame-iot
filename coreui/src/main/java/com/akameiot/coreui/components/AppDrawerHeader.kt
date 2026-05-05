@@ -15,21 +15,25 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.akameiot.coreui.theme.LocalAppColors
 import com.akameiot.coreui.theme.LocalSpacing
+
+enum class ConnectionLevel { OK, PARTIAL, OFFLINE }
 
 @Composable
 fun AppDrawerHeader(
     connectionStatus: String,
-    isOnline: Boolean,
     modifier: Modifier = Modifier,
+    connectionLevel: ConnectionLevel = ConnectionLevel.OK,
     appIcon: (@Composable () -> Unit)? = null
 ) {
+    val colors = LocalAppColors.current
+    val statusColor = when (connectionLevel) {
+        ConnectionLevel.OK      -> MaterialTheme.colorScheme.primary
+        ConnectionLevel.PARTIAL -> colors.staleBorder
+        ConnectionLevel.OFFLINE -> MaterialTheme.colorScheme.error
+    }
     val spacing = LocalSpacing.current
-    val statusColor = if (isOnline)
-        MaterialTheme.colorScheme.primary
-    else
-        MaterialTheme.colorScheme.error
-
     val textureColor = MaterialTheme.colorScheme.primary
 
     Surface(
@@ -166,7 +170,7 @@ fun AppDrawerHeader(
                     Text(
                         text = connectionStatus,
                         style = MaterialTheme.typography.bodySmall,
-                        color = statusColor
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

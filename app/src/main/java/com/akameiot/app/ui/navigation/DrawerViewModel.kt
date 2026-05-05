@@ -10,10 +10,14 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Locale
 import com.akameiot.domain.policy.isIndexMetric
+import com.akameiot.coreui.components.ConnectionLevel
 
 data class DrawerUiState(
     val metrics: List<String> = emptyList(),
     val metricsDisplay: Map<String, String> = emptyMap(),
+    val connectionStatus: String = "Cargando...",
+    val isOnline: Boolean = true,
+    val connectionLevel: ConnectionLevel = ConnectionLevel.OK,
 )
 
 class DrawerViewModel(
@@ -25,6 +29,7 @@ class DrawerViewModel(
 
     init {
         observeMetrics()
+        observeConnectionStatus()
     }
 
     private fun observeMetrics() {
@@ -47,6 +52,25 @@ class DrawerViewModel(
                         it.copy(metrics = keys, metricsDisplay = display)
                     }
                 }
+        }
+    }
+
+    private fun observeConnectionStatus() {
+        viewModelScope.launch {
+            AppModule.networkStatusFlow.collect { status ->
+                val (connectionStatus, isOnline, level) = when (status) {
+                    AppModule.NetworkStatus.ALL_ONLINE  -> Triple("Redes actualizadas",        true,  ConnectionLevel.OK)
+                    AppModule.NetworkStatus.PARTIAL     -> Triple("Actualización incompleta",  false, ConnectionLevel.PARTIAL)
+                    AppModule.NetworkStatus.ALL_OFFLINE -> Triple("Redes desactualizadas",     false, ConnectionLevel.OFFLINE)
+                }
+                _uiState.update {
+                    it.copy(
+                        connectionStatus = connectionStatus,
+                        isOnline = isOnline,
+                        connectionLevel = level
+                    )
+                }
+            }
         }
     }
 }

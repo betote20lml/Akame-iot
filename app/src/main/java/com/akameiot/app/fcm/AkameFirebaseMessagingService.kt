@@ -13,6 +13,7 @@ import com.akameiot.di.AppModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AkameFirebaseMessagingService : FirebaseMessagingService() {
@@ -34,6 +35,11 @@ class AkameFirebaseMessagingService : FirebaseMessagingService() {
 
         Log.d("FCM", "Mensaje recibido: meshid=$meshid ts=$notifTs")
 
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        AppModule.lastSeenPerMesh.update { current ->
+            current + (meshid to nowSeconds)
+        }
+        AppModule.freshnessWakeUp.trySend(Unit)
         enqueueSync(meshid, notifTs)
     }
 

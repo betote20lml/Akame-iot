@@ -49,6 +49,8 @@ import com.akameiot.domain.usecase.CheckLocalSessionUseCase
 import com.akameiot.domain.usecase.PropagateAggBucketsUseCase
 import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.channels.Channel
 
 object AppModule {
 
@@ -257,5 +259,10 @@ object AppModule {
     val themeStore by lazy {
         ThemePreferencesStore(appContext)
     }
+
+    val lastSeenPerMesh = MutableStateFlow<Map<String, Long>>(emptyMap())
+    enum class NetworkStatus { ALL_ONLINE, PARTIAL, ALL_OFFLINE }
+    val networkStatusFlow = MutableStateFlow(NetworkStatus.ALL_ONLINE)
+    val freshnessWakeUp = Channel<Unit>(Channel.CONFLATED)
 
 }
