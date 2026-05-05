@@ -1,6 +1,7 @@
 package com.akameiot.app.ui.navigation
 
 
+import androidx.compose.foundation.Image
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
@@ -16,12 +17,15 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.akameiot.coreui.theme.ThemeController
 import com.akameiot.di.AppModule
+import com.akameiot.app.R
 
 
 @Composable
@@ -31,20 +35,29 @@ fun AppDrawerContent(
     drawerState: DrawerState,
     drawerUiState: DrawerUiState,
     appUser: AppUser? = null,
-    networkName: String = "Akame Network",
+    //networkName: String = "Red Akame",
     connectionStatus: String = "Broker MQTT conectado",
     isOnline: Boolean = true,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
+
+        val isDark by ThemeController.isDark.collectAsState()
         AppDrawerHeader(
-            networkName = networkName,
             connectionStatus = connectionStatus,
             isOnline = isOnline,
-
-            )
+            appIcon = {
+                Image(
+                    painter = painterResource(
+                        id = if (isDark) R.drawable.logo_dark else R.drawable.logo_light
+                    ),
+                    contentDescription = "App logo",
+                    modifier = Modifier.size(110.dp)
+                )
+            }
+        )
 
         HorizontalDivider()
-        val isDark by ThemeController.isDark.collectAsState()
+
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
         var showIndexFactorySubmenu by remember { mutableStateOf(false) }
 
