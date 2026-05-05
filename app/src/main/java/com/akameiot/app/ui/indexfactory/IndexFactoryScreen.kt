@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -26,7 +27,7 @@ import com.akameiot.app.ui.navigation.AppDrawerContent
 import com.akameiot.app.ui.navigation.DrawerViewModel
 import com.akameiot.app.ui.navigation.DrawerViewModelFactory
 import com.akameiot.coreui.components.*
-import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,6 +84,7 @@ fun IndexFactoryScreen(
     }
 
     MainScaffold(
+        navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
         titleContent = {
             AnimatedContent(
                 targetState = uiState.searchActive,
@@ -118,7 +120,7 @@ fun IndexFactoryScreen(
                 } else {
                     // selectedMetricDisplay is already resolved in the ViewModel — no DrawerViewModel needed here
                     Text(
-                        text = uiState.selectedMetricDisplay ?: "Editar límites",
+                        text = "Crear Índice",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimary,
                         maxLines = 1,
@@ -138,7 +140,8 @@ fun IndexFactoryScreen(
                 drawerUiState  = drawerUiState,
             )
         },
-        onNavigationClick = { scope.launch { drawerState.open() } },
+
+        onNavigationClick = { navController.popBackStack() },
         actions = {
             // Search toggle
             IconButton(onClick = { viewModel.setSearchActive(!uiState.searchActive) }) {

@@ -211,7 +211,16 @@ fun HomeScreen(
                 AnimatedContent(
                     targetState = currentMode,
                     transitionSpec = {
-                        val forward = targetState.indexIn() > initialState.indexIn()
+                        val fromIndex = initialState.indexIn()
+                        val toIndex = targetState.indexIn()
+                        val lastIndex = VIEW_MODE_ORDER.lastIndex
+
+                        val forward = when {
+                            fromIndex == lastIndex && toIndex == 0 -> true
+                            fromIndex == 0 && toIndex == lastIndex -> false
+                            else -> toIndex > fromIndex
+                        }
+
                         if (forward) {
                             slideInHorizontally { it } + fadeIn() togetherWith
                                     slideOutHorizontally { -it } + fadeOut()
@@ -228,9 +237,8 @@ fun HomeScreen(
                                 .fillMaxSize()
                                 .padding(horizontal = 8.dp)
                                 .swipeToChangeMode(
-                                    onSwipeLeft  = { uiState.viewMode.next()?.let { viewModel.setViewMode(it) } },
-                                    onSwipeRight = { uiState.viewMode.previous()?.let { viewModel.setViewMode(it) } },
-                                    swipeRightEnabled = uiState.viewMode.previous() != null,
+                                    onSwipeLeft  = { viewModel.setViewMode(uiState.viewMode.next()) },
+                                    onSwipeRight = { viewModel.setViewMode(uiState.viewMode.previous()) },
                                 ),
                             contentPadding      = PaddingValues(vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -248,9 +256,8 @@ fun HomeScreen(
                                 .fillMaxSize()
                                 .padding(horizontal = 8.dp)
                                 .swipeToChangeMode(
-                                    onSwipeLeft  = { uiState.viewMode.next()?.let { viewModel.setViewMode(it) } },
-                                    onSwipeRight = { uiState.viewMode.previous()?.let { viewModel.setViewMode(it) } },
-                                    swipeRightEnabled = uiState.viewMode.previous() != null,
+                                    onSwipeLeft  = { viewModel.setViewMode(uiState.viewMode.next()) },
+                                    onSwipeRight = { viewModel.setViewMode(uiState.viewMode.previous()) },
                                 ),
                             contentPadding      = PaddingValues(vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),

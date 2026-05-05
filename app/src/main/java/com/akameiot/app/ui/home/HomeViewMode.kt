@@ -21,10 +21,10 @@ val VIEW_MODE_ORDER = listOf(
     HomeViewMode.CHARTS_1Y,
 )
 
-fun HomeViewMode.next(): HomeViewMode? =
-    VIEW_MODE_ORDER.getOrNull(VIEW_MODE_ORDER.indexOf(this) + 1)
+fun HomeViewMode.next(): HomeViewMode =
+    VIEW_MODE_ORDER.getOrElse(VIEW_MODE_ORDER.indexOf(this) + 1) { VIEW_MODE_ORDER.first() }
 
-fun HomeViewMode.previous(): HomeViewMode? =
-    VIEW_MODE_ORDER.getOrNull(VIEW_MODE_ORDER.indexOf(this) - 1)
+fun HomeViewMode.previous(): HomeViewMode =
+    VIEW_MODE_ORDER.getOrElse(VIEW_MODE_ORDER.indexOf(this) - 1) { VIEW_MODE_ORDER.last() }
 
 fun HomeViewMode.indexIn() = VIEW_MODE_ORDER.indexOf(this)
