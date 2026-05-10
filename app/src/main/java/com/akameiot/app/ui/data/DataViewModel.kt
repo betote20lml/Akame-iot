@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.session.DeviceNetworkStore
 import com.akameiot.domain.formatter.MetricFormatter
+import com.akameiot.domain.policy.DevicePermissions
+import com.akameiot.domain.usecase.GetAppUserUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,6 +23,7 @@ import java.util.*
 class DataViewModel(
     private val telemetryDao: TelemetryDao,
     private val networkStore: DeviceNetworkStore,
+    private val getAppUserUseCase: GetAppUserUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DataUiState(isLoading = true))
@@ -49,7 +52,9 @@ class DataViewModel(
             val locale = Locale.getDefault()
             val display = metricKeys.associateWith { MetricFormatter.formatName(it, locale) }
 
-            val count = telemetryDao.countAll()
+
+            val appUser = getAppUserUseCase()
+            val canRecover = DevicePermissions.canRecoverHistoricalData(appUser)
 
             _state.update {
                 it.copy(
@@ -57,7 +62,7 @@ class DataViewModel(
                     networks = nets,
                     metrics = metricKeys,
                     metricsDisplay = display,
-                    rowCount = count,
+                    canRecoverHistoricalData = canRecover,
                 )
             }
         }

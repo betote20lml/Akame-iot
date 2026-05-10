@@ -6,14 +6,14 @@ data class DataUiState(
 
     // Filtros
     val networks: List<NetworkOption> = emptyList(),
-    val selectedNetworkId: String? = null,   // null = todas
+    val selectedNetworkId: String? = null,
 
     val metrics: List<String> = emptyList(),
     val metricsDisplay: Map<String, String> = emptyMap(),
-    val selectedMetric: String? = null,      // null = todas
+    val selectedMetric: String? = null,
 
-    // Info
-    val rowCount: Long = 0L,
+    val canRecoverHistoricalData: Boolean = false,
+
 )
 
 data class NetworkOption(

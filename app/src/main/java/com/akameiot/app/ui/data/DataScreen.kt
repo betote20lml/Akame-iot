@@ -20,7 +20,10 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.ui.text.style.TextAlign
 import com.akameiot.coreui.components.PrimaryButton
+import com.akameiot.coreui.components.SecondaryButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +109,6 @@ fun DataScreen(navController: NavController) {
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
 
-            // ── Filtro: Red ────────────────────────────────────────────────
             FilterDropdown(
                 label       = "Red",
                 allLabel    = "Todas las redes",
@@ -115,7 +117,7 @@ fun DataScreen(navController: NavController) {
                 onSelect    = { viewModel.selectNetwork(it) },
             )
 
-            // ── Filtro: Variable ──────────────────────────────────────────
+
             FilterDropdown(
                 label    = "Variable",
                 allLabel = "Todas las variables",
@@ -126,36 +128,43 @@ fun DataScreen(navController: NavController) {
                 onSelect = { viewModel.selectMetric(it) },
             )
 
-            Spacer(Modifier.height(4.dp))
 
-            // ── Info de registros ─────────────────────────────────────────
-            val countLabel = when {
-                uiState.selectedNetworkId == null && uiState.selectedMetric == null ->
-                    "${uiState.rowCount} registros totales"
-                else ->
-                    "Filtro aplicado · ${uiState.rowCount} registros base"
-            }
-            Text(
-                text  = countLabel,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Spacer(Modifier.weight(1f))
-
-            // ── Botón exportar ────────────────────────────────────────────
             PrimaryButton(
                 text    = "Respaldo de datos",
                 onClick = { requestExport() },
-                enabled = !uiState.isExporting && uiState.rowCount > 0,
+                enabled = !uiState.isExporting,
                 loading = uiState.isExporting,
                 icon    = Icons.Default.Download,
             )
+
+
+            Spacer(Modifier.weight(1f))
+
+
+            if (uiState.canRecoverHistoricalData) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                    Text(
+                        text  = "Si las sincronizaciones automáticas fallaron, puedes recuperar los datos históricos desde la nube.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    SecondaryButton(
+                        text    = "Recuperar datos históricos",
+                        onClick = { /* TODO */ },
+                        icon    = Icons.Default.CloudDownload,
+                    )
+                }
+
+             }
         }
     }
 }
 
-// ── Componente: Dropdown de filtro ────────────────────────────────────────────
+// ── Componente: Dropdown de filtro
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -187,6 +196,8 @@ private fun FilterDropdown(
                 unfocusedBorderColor    = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                 focusedLabelColor       = MaterialTheme.colorScheme.primary,
                 unfocusedLabelColor     = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedTextColor        = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedTextColor      = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
             shape    = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
             modifier = Modifier
@@ -199,13 +210,13 @@ private fun FilterDropdown(
             onDismissRequest = { expanded = false },
         ) {
             DropdownMenuItem(
-                text    = { Text(allLabel) },
+                text    = { Text(allLabel, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 onClick = { onSelect(null); expanded = false },
             )
             HorizontalDivider()
             options.forEach { (key, display) ->
                 DropdownMenuItem(
-                    text    = { Text(display) },
+                    text    = { Text(display, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     onClick = { onSelect(key); expanded = false },
                 )
             }

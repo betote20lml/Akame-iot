@@ -10,5 +10,6 @@ class DataViewModelFactory : ViewModelProvider.Factory {
         DataViewModel(
             telemetryDao = AppModule.telemetryDao,
             networkStore = AppModule.networkStore,
+            getAppUserUseCase = AppModule.getAppUserUseCase,
         ) as T
 }

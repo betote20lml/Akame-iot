@@ -58,6 +58,7 @@ fun AppDrawerContent(
         HorizontalDivider()
 
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+            ?.substringBefore("?")
         var showIndexFactorySubmenu by remember { mutableStateOf(false) }
 
         DrawerDestinations.items

@@ -11,4 +11,9 @@ object DevicePermissions {
     fun canLinkDevice(user: AppUser): Boolean {
         return user is AppUser.Owner || user is AppUser.Limited
     }
+
+    fun canRecoverHistoricalData(user: AppUser): Boolean {
+        return user is AppUser.Owner
+    }
+
 }
