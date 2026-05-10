@@ -50,55 +50,73 @@ fun AppDrawerHeader(
             ) {
                 val w = size.width
                 val h = size.height
-                val curveStroke = Stroke(width = 1.8f)  // un poco más grueso
+                val curveStroke = Stroke(width = 1.8f)
                 val nodeStroke  = Stroke(width = 1.2f)
 
-                // Nodos de circuito — 10 puntos distribuidos
+                // Nodos de circuito — 12 puntos con tamaños variables
+                data class Node(val offset: Offset, val radiusOuter: Float, val radiusInner: Float)
+
+                val maxOuter = 10.dp.toPx()
+                val maxInner = 4.dp.toPx()
+
                 val nodes = listOf(
-                    Offset(w * 0.12f, h * 0.15f),
-                    Offset(w * 0.30f, h * 0.40f),
-                    Offset(w * 0.55f, h * 0.20f),
-                    Offset(w * 0.75f, h * 0.50f),
-                    Offset(w * 0.90f, h * 0.25f),
-                    Offset(w * 0.65f, h * 0.75f),
-                    Offset(w * 0.45f, h * 0.85f),
-                    Offset(w * 0.20f, h * 0.70f),
-                    Offset(w * 0.85f, h * 0.88f),
-                    Offset(w * 0.38f, h * 0.55f),
+                    Node(Offset(w * 0.12f, h * 0.15f), maxOuter * 0.60f, maxInner * 0.55f),
+                    Node(Offset(w * 0.30f, h * 0.40f), maxOuter * 1.00f, maxInner * 1.00f),
+                    Node(Offset(w * 0.55f, h * 0.20f), maxOuter * 0.75f, maxInner * 0.75f),
+                    Node(Offset(w * 0.75f, h * 0.50f), maxOuter * 0.85f, maxInner * 0.85f),
+                    Node(Offset(w * 0.90f, h * 0.25f), maxOuter * 0.50f, maxInner * 0.50f),
+                    Node(Offset(w * 0.65f, h * 0.75f), maxOuter * 0.90f, maxInner * 0.90f),
+                    Node(Offset(w * 0.45f, h * 0.85f), maxOuter * 0.65f, maxInner * 0.65f),
+                    Node(Offset(w * 0.20f, h * 0.70f), maxOuter * 0.80f, maxInner * 0.80f),
+                    Node(Offset(w * 0.85f, h * 0.88f), maxOuter * 0.55f, maxInner * 0.55f),
+                    Node(Offset(w * 0.38f, h * 0.55f), maxOuter * 0.70f, maxInner * 0.70f),
+                    Node(Offset(w * 0.05f, h * 0.48f), maxOuter * 0.45f, maxInner * 0.45f),
+                    Node(Offset(w * 0.72f, h * 0.08f), maxOuter * 0.60f, maxInner * 0.60f),
                 )
 
-                // Líneas entre nodos consecutivos
+                // Helper: extiende una línea más allá de [end] respecto a [start] por un factor
+                fun extendedEnd(start: Offset, end: Offset, factor: Float): Offset {
+                    val dx = end.x - start.x
+                    val dy = end.y - start.y
+                    return Offset(start.x + dx * factor, start.y + dy * factor)
+                }
+
+                // Líneas entre nodos consecutivos, extendidas 40 % más allá del nodo en cada extremo
                 for (i in 0 until nodes.size - 1) {
+                    val s = nodes[i].offset
+                    val e = nodes[i + 1].offset
                     drawLine(
                         color = textureColor.copy(alpha = 0.09f),
-                        start = nodes[i],
-                        end = nodes[i + 1],
+                        start = extendedEnd(e, s, 1.40f), // extensión hacia atrás
+                        end   = extendedEnd(s, e, 1.40f), // extensión hacia adelante
                         strokeWidth = 1f
                     )
                 }
-                // Algunas conexiones extra no consecutivas para dar densidad
-                val extraLinks = listOf(0 to 4, 2 to 9, 5 to 8, 1 to 7, 3 to 6)
+                // Conexiones extra no consecutivas — también extendidas
+                val extraLinks = listOf(0 to 4, 2 to 9, 5 to 8, 1 to 7, 3 to 6, 10 to 3, 11 to 6)
                 extraLinks.forEach { (a, b) ->
+                    val s = nodes[a].offset
+                    val e = nodes[b].offset
                     drawLine(
                         color = textureColor.copy(alpha = 0.07f),
-                        start = nodes[a],
-                        end = nodes[b],
+                        start = extendedEnd(e, s, 1.35f),
+                        end   = extendedEnd(s, e, 1.35f),
                         strokeWidth = 1f
                     )
                 }
 
-                // Círculos en cada nodo
-                nodes.forEach { offset ->
+                // Círculos en cada nodo con radio variable
+                nodes.forEach { node ->
                     drawCircle(
                         color = textureColor.copy(alpha = 0.14f),
-                        radius = 4.dp.toPx(),
-                        center = offset,
+                        radius = node.radiusInner,
+                        center = node.offset,
                         style = nodeStroke
                     )
                     drawCircle(
                         color = textureColor.copy(alpha = 0.06f),
-                        radius = 10.dp.toPx(),
-                        center = offset,
+                        radius = node.radiusOuter,
+                        center = node.offset,
                     )
                 }
 

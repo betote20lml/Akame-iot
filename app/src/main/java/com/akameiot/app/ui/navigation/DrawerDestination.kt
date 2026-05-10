@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -32,6 +33,11 @@ object DrawerDestinations {
             route = "alerts",
             label = "Alertas",
             icon  = Icons.Default.Notifications,
+        ),
+        DrawerDestination(
+            route = "data",
+            label = "Datos",
+            icon  = Icons.Default.Storage,
         ),
 
         DrawerDestination(

@@ -23,6 +23,7 @@ import com.akameiot.app.ui.terms.TermsScreen
 import com.akameiot.app.ui.token.PairingTokenScreen
 import com.akameiot.app.ui.verification.VerificationScreen
 import com.akameiot.domain.model.AppUser
+import com.akameiot.app.ui.data.DataScreen
 
 @Composable
 fun AppNavHost(
@@ -128,6 +129,10 @@ fun AppNavHost(
         ) { backStackEntry ->
             val loginMode = backStackEntry.arguments?.getString("loginMode")
             HomeScreen(navController = navController, loginMode = loginMode)
+        }
+
+        composable(Routes.DATA) {
+            DataScreen(navController)
         }
 
     }

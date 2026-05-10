@@ -19,6 +19,8 @@ object Routes {
     const val VERIFICATION = "verification"
     const val TOKEN      = "token"
 
+    const val DATA = "data"
+
 
 
     const val INDEX_FACTORY_WITH_ARG = "index_factory/{metricKey}"

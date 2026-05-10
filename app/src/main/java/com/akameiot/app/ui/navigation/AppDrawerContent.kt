@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -108,20 +110,28 @@ fun AppDrawerContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 8.dp, vertical = 4.dp), // ← menos padding vertical
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { ThemeController.toggle { newValue ->
-                    AppModule.themeStore.setDark(newValue)
-                } }
+                onClick = { 
+                    ThemeController.toggle { newValue ->
+                        AppModule.themeStore.setDark(newValue)
+                    }
+                }
             ) {
                 Icon(
-                    imageVector = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
+                    imageVector     = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
                     contentDescription = "Toggle theme"
                 )
             }
+
+            Text(
+                text  = "v0.1.14",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
         }
     }
 }

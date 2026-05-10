@@ -302,5 +302,15 @@ interface TelemetryDao {
         fromTs : Long,
     ): List<NodeMinMax>
 
+    @Query("SELECT COUNT(*) FROM telemetry")
+    suspend fun countAll(): Long
+    @Query("""
+    SELECT * FROM telemetry
+    WHERE (:meshId IS NULL OR meshid = :meshId)
+      AND (:metric IS NULL OR metric = :metric)
+    ORDER BY timestamp ASC
+""")
+    suspend fun getFiltered(meshId: String?, metric: String?): List<TelemetryEntity>
+
 
 }

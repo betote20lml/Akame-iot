@@ -17,7 +17,6 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -69,10 +68,10 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.github.alexzhirkevich:qrose:1.0.1")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("androidx.camera:camera-camera2:1.4.2")
+    implementation("androidx.camera:camera-lifecycle:1.4.2")
+    implementation("androidx.camera:camera-view:1.4.2")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
