@@ -39,6 +39,7 @@ import com.akameiot.data.repository_impl.TelemetryWindowRepositoryImpl
 import com.akameiot.data.session.FilterPreferencesStore
 import com.akameiot.data.session.GlobalTimeStore
 import com.akameiot.data.session.MeshUpdateWindowStore
+import com.akameiot.data.session.RecoveryStateStore
 import com.akameiot.data.session.ThemePreferencesStore
 import com.akameiot.domain.repository.SessionRepository
 import com.akameiot.domain.repository.TelemetryAggRepository
@@ -260,9 +261,15 @@ object AppModule {
         ThemePreferencesStore(appContext)
     }
 
+    val recoveryStateStore by lazy {
+        RecoveryStateStore(appContext)
+    }
+
     val lastSeenPerMesh = MutableStateFlow<Map<String, Long>>(emptyMap())
     enum class NetworkStatus { ALL_ONLINE, PARTIAL, ALL_OFFLINE }
     val networkStatusFlow = MutableStateFlow(NetworkStatus.ALL_ONLINE)
     val freshnessWakeUp = Channel<Unit>(Channel.CONFLATED)
+
+    val syncInProgress = MutableStateFlow(false)
 
 }

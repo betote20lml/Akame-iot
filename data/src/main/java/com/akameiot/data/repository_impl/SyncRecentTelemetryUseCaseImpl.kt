@@ -30,7 +30,7 @@ class SyncRecentTelemetryUseCaseImpl(
 
         val lastTs = repository.getLatestTimestamp(meshId)
 
-        if (notifTs > 0 && notifTs <= lastTs) return
+        if (notifTs in 1..lastTs) return
 
         val fromTs = if (lastTs > 0L) lastTs else
             System.currentTimeMillis() / 1000L - (30 * 60L)
@@ -148,4 +148,34 @@ class SyncRecentTelemetryUseCaseImpl(
             inFlightGlobal.set(false)
         }
     }
+
+    override suspend fun recoverWindow(
+        meshId: String,
+        fromTs: Long,
+        toTs: Long
+    ) {
+
+        while (!inFlightGlobal.compareAndSet(false, true)) {
+            kotlinx.coroutines.delay(500)
+        }
+
+        try {
+
+            val token = authSessionManager.fetchIdToken()
+
+            repository.coldFetchWindow(
+                bearerToken = token,
+                meshId = meshId,
+                meshIds = listOf(meshId),
+                fromTs = fromTs,
+                toTs = toTs,
+            )
+
+        } finally {
+
+            inFlightGlobal.set(false)
+        }
+    }
+
+
 }

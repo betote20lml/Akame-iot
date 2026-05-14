@@ -1,10 +1,17 @@
 package com.akameiot.app.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.akameiot.app.fcm.worker.InitialSyncFinalizerWorker
+import com.akameiot.app.fcm.worker.RecoverHistoricalDataWorker
 import com.akameiot.app.ui.home.mapper.toUiModel
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.network.NetworkManager
@@ -86,6 +93,7 @@ class HomeViewModel(
                 } catch (_: Exception) { }
 
                 tokenStore.markNeedsResubscribe()
+                AppModule.recoveryStateStore.markPendingInitialSync()
             }
 
             checkPendingFcmResubscribe()
@@ -587,25 +595,91 @@ class HomeViewModel(
     private fun checkPendingFcmResubscribe() {
         viewModelScope.launch {
             if (!tokenStore.needsResubscribe()) return@launch
+
+            val isInitialLogin = AppModule.recoveryStateStore.consumePendingInitialSync()
+
             try {
                 val authToken = authSessionManager.fetchIdToken()
                 networkManager.resubscribeAll(authToken)
                 tokenStore.clearResubscribeFlag()
 
-                // Sync inicial de 3 días por cada red después de resubscribe exitoso
-                AppModule.networkStore.getNetworks().forEach { network ->
-                    launch {
-                        AppModule.syncRecentTelemetryUseCase.forceSync(network.thingName)
+                val networks = AppModule.networkStore.getNetworks()
+
+                if (isInitialLogin) {
+                    enqueueInitialSync(networks)
+                } else {
+                    networks.forEach { network ->
+                        launch {
+                            AppModule.syncRecentTelemetryUseCase.forceSync(network.thingName)
+                        }
                     }
                 }
+
             } catch (e: SessionExpiredException) {
                 handleSessionExpired()
-
-            } catch (e: Exception)  {
-
+            } catch (e: Exception) {
+                if (isInitialLogin) {
+                    AppModule.recoveryStateStore.setInitialSyncFailed(true)
+                }
             }
         }
     }
+
+    private fun enqueueInitialSync(networks: List<Network>) {
+
+        viewModelScope.launch(Dispatchers.IO) {
+
+            if (networks.isEmpty()) {
+                AppModule.syncInProgress.value = false
+                AppModule.recoveryStateStore.setInitialSyncFailed(false)
+                return@launch
+            }
+
+            AppModule.recoveryStateStore.setInitialSyncFailed(true)
+            AppModule.syncInProgress.value = true
+
+            val nowSec = System.currentTimeMillis() / 1000L
+            val fromTs = nowSec - (90 * 86400L)
+
+            val workManager =
+                WorkManager.getInstance(AppModule.appContext)
+
+            workManager.cancelUniqueWork("global_initial_sync")
+
+            var continuation = workManager.beginUniqueWork(
+                "global_initial_sync",
+                ExistingWorkPolicy.REPLACE,
+                createRecoverRequest(
+                    networks.first().thingName,
+                    fromTs,
+                    nowSec
+                )
+            )
+
+            networks.drop(1).forEach { network ->
+
+                continuation = continuation.then(
+                    createRecoverRequest(
+                        network.thingName,
+                        fromTs,
+                        nowSec
+                    )
+                )
+            }
+
+            continuation
+                .then(
+                    OneTimeWorkRequestBuilder<InitialSyncFinalizerWorker>()
+                        .build()
+                )
+                .enqueue()
+        }
+    }
+
+    private fun createRecoverRequest(meshId: String, fromTs: Long, toTs: Long) =
+        OneTimeWorkRequestBuilder<RecoverHistoricalDataWorker>()
+            .setInputData(workDataOf("meshId" to meshId, "fromTs" to fromTs, "toTs" to toTs))
+            .build()
 
 
     fun setViewMode(mode: HomeViewMode) {

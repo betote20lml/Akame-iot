@@ -311,5 +311,14 @@ interface TelemetryDao {
 """)
     suspend fun getFiltered(meshId: String?, metric: String?): List<TelemetryEntity>
 
+    @Query("""
+    SELECT MIN(timestamp) FROM (
+        SELECT MIN(timestamp) as timestamp
+        FROM telemetry
+        GROUP BY meshid
+    )
+""")
+    suspend fun getOldestTimestampGlobal(): Long?
+
 
 }

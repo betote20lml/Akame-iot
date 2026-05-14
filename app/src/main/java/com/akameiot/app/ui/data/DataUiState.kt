@@ -13,6 +13,7 @@ data class DataUiState(
     val selectedMetric: String? = null,
 
     val canRecoverHistoricalData: Boolean = false,
+    val isRecovering: Boolean = false,
 
 )
 

@@ -50,7 +50,7 @@ fun LandingScreen(
         ) {
 
             Image(
-                painter = painterResource(id = R.drawable.akame_logo_text1),
+                painter = painterResource(id = R.drawable.logo_light),
                 contentDescription = "Akame Logo",
                 modifier = Modifier.size(230.dp)
             )

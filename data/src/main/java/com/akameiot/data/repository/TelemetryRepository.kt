@@ -25,6 +25,21 @@ class TelemetryRepository(
     private val calculateIndexUseCase: com.akameiot.domain.usecase.CalculateIndexUseCase,
 ) : TelemetryRepositoryDomain {
 
+    suspend fun coldFetchWindow(
+        bearerToken: String,
+        meshId: String,
+        meshIds: List<String>,
+        fromTs: Long,
+        toTs: Long,
+    ) {
+        coldFetchAndSave(
+            bearerToken = bearerToken,
+            meshIds     = meshIds,
+            fromTs      = fromTs,
+            toTs        = toTs,
+        )
+    }
+
     suspend fun getLatestTimestamp(meshId: String): Long =
         dao.getLatestTimestamp(meshId) ?: 0L
 

@@ -19,10 +19,12 @@ fun SecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-
+    enabled: Boolean = true,
+    loading: Boolean = false
 ) {
     OutlinedButton(
         onClick = onClick,
+        enabled  = enabled,
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp),

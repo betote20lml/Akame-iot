@@ -1,11 +1,13 @@
 package com.akameiot.app.ui.data
 
+import android.app.Application
 import android.content.ContentValues
 import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import androidx.lifecycle.ViewModel
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.session.DeviceNetworkStore
@@ -18,13 +20,25 @@ import kotlinx.coroutines.launch
 import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.akameiot.app.fcm.worker.InitialSyncFinalizerWorker
+import com.akameiot.app.fcm.worker.RecoverHistoricalDataWorker
+import com.akameiot.di.AppModule
 
 
 class DataViewModel(
+    application: Application,
     private val telemetryDao: TelemetryDao,
     private val networkStore: DeviceNetworkStore,
     private val getAppUserUseCase: GetAppUserUseCase,
-) : ViewModel() {
+) : AndroidViewModel(application) {
+
+    private val context get() = getApplication<Application>()
 
     private val _state = MutableStateFlow(DataUiState(isLoading = true))
     val uiState: StateFlow<DataUiState> = _state.asStateFlow()
@@ -52,18 +66,38 @@ class DataViewModel(
             val locale = Locale.getDefault()
             val display = metricKeys.associateWith { MetricFormatter.formatName(it, locale) }
 
-
             val appUser = getAppUserUseCase()
-            val canRecover = DevicePermissions.canRecoverHistoricalData(appUser)
+            val isOwner = DevicePermissions.canRecoverHistoricalData(appUser)
+
+            Log.d("DataViewModel", "isOwner=$isOwner")
 
             _state.update {
                 it.copy(
-                    isLoading = false,
-                    networks = nets,
-                    metrics = metricKeys,
+                    isLoading      = false,
+                    networks       = nets,
+                    metrics        = metricKeys,
                     metricsDisplay = display,
-                    canRecoverHistoricalData = canRecover,
                 )
+            }
+
+            if (isOwner) {
+                val syncFailed = AppModule.recoveryStateStore.hasInitialSyncFailed()
+                val inProgress = AppModule.syncInProgress.value
+                Log.d("DataViewModel", "syncFailed=$syncFailed inProgress=$inProgress canRecover=${!inProgress && syncFailed}")
+
+                _state.update {
+                    it.copy(
+                        canRecoverHistoricalData = !inProgress && syncFailed
+                    )
+                }
+
+                AppModule.syncInProgress.collect { inProgressUpdate ->
+                    val failed = AppModule.recoveryStateStore.hasInitialSyncFailed()
+                    Log.d("DataViewModel", "syncInProgress changed → inProgress=$inProgressUpdate failed=$failed")
+                    _state.update {
+                        it.copy(canRecoverHistoricalData = !inProgressUpdate && failed)
+                    }
+                }
             }
         }
     }
@@ -75,6 +109,26 @@ class DataViewModel(
     fun selectMetric(metric: String?) {
         _state.update { it.copy(selectedMetric = metric) }
     }
+
+    private fun createRecoverRequest(
+        meshId: String,
+        fromTs: Long,
+        toTs: Long,
+    ) =
+        OneTimeWorkRequestBuilder<RecoverHistoricalDataWorker>()
+            .setInputData(
+                workDataOf(
+                    "meshId" to meshId,
+                    "fromTs" to fromTs,
+                    "toTs"   to toTs,
+                )
+            )
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
 
     fun exportCsv(context: Context) {
         val s = _state.value
@@ -137,6 +191,66 @@ class DataViewModel(
                 _events.emit(DataEvent.ShowError(e.message ?: "Error al exportar"))
             } finally {
                 _state.update { it.copy(isExporting = false) }
+            }
+        }
+    }
+    fun recoverHistoricalData() {
+        if (_state.value.isRecovering) return
+        _state.update { it.copy(isRecovering = true) }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val networks = networkStore.getNetworks()
+                if (networks.isEmpty()) {
+                    _events.emit(DataEvent.ShowError("No hay redes disponibles"))
+                    return@launch
+                }
+
+                val oldestTs = telemetryDao.getOldestTimestampGlobal()
+                    ?: (System.currentTimeMillis() / 1000L)
+
+                val fromTs = oldestTs - (90 * 86400L)
+
+                val workManager = WorkManager.getInstance(context)  // ← necesitamos context
+
+                AppModule.recoveryStateStore.setInitialSyncFailed(true)
+                AppModule.syncInProgress.value = true
+
+                workManager.cancelUniqueWork("manual_recovery")
+
+                var continuation = workManager.beginUniqueWork(
+                    "manual_recovery",
+                    ExistingWorkPolicy.REPLACE,
+                    createRecoverRequest(
+                        meshId = networks.first().thingName,
+                        fromTs = fromTs,
+                        toTs   = oldestTs,
+                    )
+                )
+
+                networks.drop(1).forEach { network ->
+                    continuation = continuation.then(
+                        createRecoverRequest(
+                            meshId = network.thingName,
+                            fromTs = fromTs,
+                            toTs   = oldestTs,
+                        )
+                    )
+                }
+
+                continuation
+                    .then(
+                        OneTimeWorkRequestBuilder<InitialSyncFinalizerWorker>()
+                            .build()
+                    )
+                    .enqueue()
+
+                _events.emit(DataEvent.RecoverySuccess)
+
+            } catch (e: Exception) {
+                _events.emit(DataEvent.ShowError(e.message ?: "Error al recuperar datos"))
+            } finally {
+                _state.update { it.copy(isRecovering = false) }
             }
         }
     }

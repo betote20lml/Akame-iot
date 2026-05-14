@@ -55,6 +55,7 @@ fun DataScreen(navController: NavController) {
 
     // Eventos
     LaunchedEffect(Unit) {
+
         viewModel.events.collect { event ->
             when (event) {
                 is DataEvent.ExportSuccess ->
@@ -65,6 +66,11 @@ fun DataScreen(navController: NavController) {
                 is DataEvent.ShowError ->
                     snackbarHostState.showSnackbar(
                         event.message,
+                        duration = SnackbarDuration.Long,
+                    )
+                is DataEvent.RecoverySuccess ->
+                    snackbarHostState.showSnackbar(
+                        "Iniciando Recuperación",
                         duration = SnackbarDuration.Long,
                     )
             }
@@ -154,7 +160,9 @@ fun DataScreen(navController: NavController) {
                     )
                     SecondaryButton(
                         text    = "Recuperar datos históricos",
-                        onClick = { /* TODO */ },
+                        onClick = { viewModel.recoverHistoricalData() },
+                        enabled = !uiState.isRecovering,
+                        loading = uiState.isRecovering,
                         icon    = Icons.Default.CloudDownload,
                     )
                 }
