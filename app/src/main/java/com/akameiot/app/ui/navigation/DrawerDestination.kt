@@ -24,16 +24,18 @@ object DrawerDestinations {
             label = "Dashboard",
             icon  = Icons.Default.Dashboard,
         ),
+
         //DrawerDestination(
         //    route = "account",
         //    label = "Cuenta",
         //    icon  = Icons.Default.Person,
         //),
-        DrawerDestination(
-            route = "alerts",
-            label = "Alertas",
-            icon  = Icons.Default.Notifications,
-        ),
+        //DrawerDestination(
+        //    route = "alerts",
+        //    label = "Alertas",
+        //   icon  = Icons.Default.Notifications,
+        //),
+
         DrawerDestination(
             route = "data",
             label = "Datos",

@@ -13,6 +13,8 @@ data class DataUiState(
     val selectedMetric: String? = null,
 
     val canRecoverHistoricalData: Boolean = false,
+    val networkDisplayNames: Map<String, String> = emptyMap(),
+
     val isRecovering: Boolean = false,
 
 )

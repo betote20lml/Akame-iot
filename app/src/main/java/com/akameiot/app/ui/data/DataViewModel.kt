@@ -55,6 +55,8 @@ class DataViewModel(
             val nets = networkStore.getNetworks()
                 .map { NetworkOption(it.thingName, it.displayName) }
 
+            val nameMap = nets.associate { it.thingName to it.displayName }
+
             val metricKeys = telemetryDao.observeLatestPerMetric()
                 .map { list ->
                     list.map { it.metric }
@@ -73,10 +75,11 @@ class DataViewModel(
 
             _state.update {
                 it.copy(
-                    isLoading      = false,
-                    networks       = nets,
-                    metrics        = metricKeys,
-                    metricsDisplay = display,
+                    isLoading           = false,
+                    networks            = nets,
+                    networkDisplayNames = nameMap,
+                    metrics             = metricKeys,
+                    metricsDisplay      = display,
                 )
             }
 
@@ -86,9 +89,7 @@ class DataViewModel(
                 Log.d("DataViewModel", "syncFailed=$syncFailed inProgress=$inProgress canRecover=${!inProgress && syncFailed}")
 
                 _state.update {
-                    it.copy(
-                        canRecoverHistoricalData = !inProgress && syncFailed
-                    )
+                    it.copy(canRecoverHistoricalData = !inProgress && syncFailed)
                 }
 
                 AppModule.syncInProgress.collect { inProgressUpdate ->
@@ -141,7 +142,8 @@ class DataViewModel(
                     metric = s.selectedMetric,
                 )
 
-                val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                val sdf     = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                val isoFmt  = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 val fileName = "akame_datos_${sdf.format(Date())}.csv"
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -158,9 +160,13 @@ class DataViewModel(
 
                     context.contentResolver.openOutputStream(uri)?.use { out ->
                         OutputStreamWriter(out, Charsets.UTF_8).use { writer ->
-                            writer.write("meshid,nodeId,metric,timestamp,value\n")
+                            writer.write("timestamp,datetime,node,metric,value\n")
                             rows.forEach { row ->
-                                writer.write("${row.meshid},${row.nodeId},${row.metric},${row.timestamp},${row.value}\n")
+                                val displayName = s.networkDisplayNames[row.meshid] ?: row.meshid
+                                val nodeLabel   = "${displayName}_${row.nodeId}"
+                                val metricLabel = MetricFormatter.formatName(row.metric, Locale.getDefault())
+                                val datetime    = isoFmt.format(Date(row.timestamp * 1000L))
+                                writer.write("${row.timestamp},$datetime,$nodeLabel,$metricLabel,${row.value}\n")
                             }
                         }
                     } ?: throw Exception("No se pudo abrir el stream de escritura")

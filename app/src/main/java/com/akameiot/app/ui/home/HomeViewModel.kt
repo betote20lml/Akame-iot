@@ -523,7 +523,10 @@ class HomeViewModel(
                 displayName.ifBlank { thingName }
             )
 
-            // Sync inicial de 3 días después de suscripción exitosa
+            try {
+                AppModule.nodeLimitRepository.pullFromCloud(thingName)
+            } catch (_: Exception) { }
+
             AppModule.syncRecentTelemetryUseCase.forceSync(thingName)
 
             _events.emit(HomeEvent.SubscribedToDevice(thingName))
