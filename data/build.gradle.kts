@@ -44,6 +44,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     debugImplementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("com.google.firebase:firebase-config-ktx")
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
     api(libs.androidx.room.runtime)

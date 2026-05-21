@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
 import com.akameiot.app.ui.home.model.ChartPointsKey
 import com.akameiot.app.ui.navigation.Routes
 import com.akameiot.data.session.GlobalTimeStore
+import com.akameiot.domain.exceptions.NetworkOfflineException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 
@@ -152,6 +153,8 @@ class HomeViewModel(
                 authSessionManager.fetchIdToken()
             } catch (e: SessionExpiredException) {
                 handleSessionExpired()
+            } catch (_: NetworkOfflineException) {
+                // sin internet — quedarse offline, no hacer nada
             } catch (_: Exception) {
             }
         }
@@ -367,6 +370,14 @@ class HomeViewModel(
         }
     }
 
+    private suspend fun hasAnyLocalTelemetry(): Boolean {
+        return try {
+            telemetryDao.hasTelemetry()
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     private fun loadMeshWindows() {
         viewModelScope.launch {
             try {
@@ -440,14 +451,14 @@ class HomeViewModel(
     private fun loadUser() {
         viewModelScope.launch {
             try {
+                authSessionManager.fetchIdToken()
                 val user = getAppUserUseCase()
                 _uiState.update { it.copy(appUser = user) }
-
+                AppModule.currentUser.value = user
             } catch (e: SessionExpiredException) {
                 handleSessionExpired()
-
+            } catch (_: NetworkOfflineException) {
             } catch (e: Exception) {
-
             }
         }
     }
@@ -533,6 +544,8 @@ class HomeViewModel(
 
         } catch (e: SessionExpiredException) {
             handleSessionExpired()
+        } catch (_: NetworkOfflineException) {
+            // sin internet — quedarse offline, no hacer nada
 
         } catch (e: Exception) {
 
@@ -608,18 +621,23 @@ class HomeViewModel(
 
                 val networks = AppModule.networkStore.getNetworks()
 
-                if (isInitialLogin) {
+                if (isInitialLogin && !hasAnyLocalTelemetry()) {
                     enqueueInitialSync(networks)
                 } else {
                     networks.forEach { network ->
+
                         launch {
-                            AppModule.syncRecentTelemetryUseCase.forceSync(network.thingName)
+                            AppModule.syncRecentTelemetryUseCase.forceSync(
+                                network.thingName
+                            )
                         }
                     }
                 }
 
             } catch (e: SessionExpiredException) {
                 handleSessionExpired()
+            } catch (_: NetworkOfflineException) {
+                // sin internet — quedarse offline, no hacer nada
             } catch (e: Exception) {
                 if (isInitialLogin) {
                     AppModule.recoveryStateStore.setInitialSyncFailed(true)
@@ -649,39 +667,39 @@ class HomeViewModel(
 
             workManager.cancelUniqueWork("global_initial_sync")
 
-            var continuation = workManager.beginUniqueWork(
-                "global_initial_sync",
-                ExistingWorkPolicy.REPLACE,
-                createRecoverRequest(
-                    networks.first().thingName,
-                    fromTs,
-                    nowSec
-                )
-            )
-
-            networks.drop(1).forEach { network ->
-
-                continuation = continuation.then(
+            workManager
+                .beginUniqueWork(
+                    "global_initial_sync",
+                    ExistingWorkPolicy.REPLACE,
                     createRecoverRequest(
-                        network.thingName,
-                        fromTs,
-                        nowSec
+                        meshIds = networks.map { it.thingName },
+                        fromTs = fromTs,
+                        toTs = nowSec
                     )
                 )
-            }
-
-            continuation
                 .then(
                     OneTimeWorkRequestBuilder<InitialSyncFinalizerWorker>()
                         .build()
                 )
                 .enqueue()
+
+
         }
     }
 
-    private fun createRecoverRequest(meshId: String, fromTs: Long, toTs: Long) =
+    private fun createRecoverRequest(
+        meshIds: List<String>,
+        fromTs: Long,
+        toTs: Long
+    ) =
         OneTimeWorkRequestBuilder<RecoverHistoricalDataWorker>()
-            .setInputData(workDataOf("meshId" to meshId, "fromTs" to fromTs, "toTs" to toTs))
+            .setInputData(
+                workDataOf(
+                    "meshIds" to meshIds.toTypedArray(),
+                    "fromTs" to fromTs,
+                    "toTs" to toTs
+                )
+            )
             .build()
 
 

@@ -56,12 +56,12 @@ class DrawerViewModel(
     }
 
     private fun observeConnectionStatus() {
-        viewModelScope.launch {
-            AppModule.networkStatusFlow.collect { status ->
+        AppModule.networkStatusFlow
+            .onEach { status ->
                 val (connectionStatus, isOnline, level) = when (status) {
-                    AppModule.NetworkStatus.ALL_ONLINE  -> Triple("Redes actualizadas",        true,  ConnectionLevel.OK)
-                    AppModule.NetworkStatus.PARTIAL     -> Triple("Actualización incompleta",  false, ConnectionLevel.PARTIAL)
-                    AppModule.NetworkStatus.ALL_OFFLINE -> Triple("Redes desactualizadas",     false, ConnectionLevel.OFFLINE)
+                    AppModule.NetworkStatus.ALL_ONLINE  -> Triple("Redes actualizadas",       true,  ConnectionLevel.OK)
+                    AppModule.NetworkStatus.PARTIAL     -> Triple("Actualización incompleta", false, ConnectionLevel.PARTIAL)
+                    AppModule.NetworkStatus.ALL_OFFLINE -> Triple("Redes desactualizadas",    false, ConnectionLevel.OFFLINE)
                 }
                 _uiState.update {
                     it.copy(
@@ -71,7 +71,7 @@ class DrawerViewModel(
                     )
                 }
             }
-        }
+            .launchIn(viewModelScope)
     }
 }
 

@@ -1,6 +1,7 @@
 package com.akameiot.data.session
 
 
+import com.akameiot.domain.exceptions.NetworkOfflineException
 import com.akameiot.domain.exceptions.SessionExpiredException
 import com.akameiot.domain.session.AuthSessionManager
 import com.amplifyframework.core.Amplify
@@ -12,6 +13,8 @@ import com.amplifyframework.auth.cognito.options.AWSCognitoAuthSignInOptions
 import com.amplifyframework.auth.result.step.AuthSignInStep
 import kotlin.coroutines.resumeWithException
 import com.amplifyframework.auth.cognito.options.AuthFlowType
+import java.net.UnknownHostException
+import java.net.SocketTimeoutException
 
 
 class CognitoAuthSessionManager(
@@ -61,21 +64,44 @@ class CognitoAuthSessionManager(
             Amplify.Auth.fetchAuthSession(
                 { session ->
                     val cognitoSession = session as? AWSCognitoAuthSession
-                    val idToken = cognitoSession
-                        ?.userPoolTokensResult
-                        ?.value
-                        ?.idToken
+                    val tokenResult = cognitoSession?.userPoolTokensResult
+                    val idToken = tokenResult?.value?.idToken
 
-                    if (!session.isSignedIn || idToken == null) {
-                        if (cont.isActive) {
-                            cont.resumeWithException(SessionExpiredException())
+                    when {
+                        idToken != null -> {
+                            if (cont.isActive) cont.resume(idToken)
                         }
-                    } else {
-                        if (cont.isActive) cont.resume(idToken)
+                        tokenResult?.error != null -> {
+                            val cause = tokenResult.error?.cause
+                            val rootCause = cause?.cause
+                            val isNetworkError = rootCause is UnknownHostException
+                                    || rootCause is SocketTimeoutException
+                                    || cause is UnknownHostException
+                                    || cause is SocketTimeoutException
+                            if (cont.isActive) {
+                                if (isNetworkError) cont.resumeWithException(NetworkOfflineException())
+                                else cont.resumeWithException(SessionExpiredException())
+                            }
+                        }
+                        else -> {
+                            if (cont.isActive) cont.resumeWithException(SessionExpiredException())
+                        }
                     }
                 },
                 { error ->
-                    if (cont.isActive) cont.resumeWithException(error)
+                    if (cont.isActive) {
+                        val cause = error.cause
+                        val isNetworkError = cause is UnknownHostException
+                                || cause is SocketTimeoutException
+                                || error.message?.contains("Unable to execute HTTP request", ignoreCase = true) == true
+                                || error.message?.contains("Failed to connect", ignoreCase = true) == true
+
+                        if (isNetworkError) {
+                            cont.resumeWithException(NetworkOfflineException())
+                        } else {
+                            cont.resumeWithException(SessionExpiredException())
+                        }
+                    }
                 }
             )
         }

@@ -14,31 +14,33 @@ class RecoverHistoricalDataWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val meshId = inputData.getString("meshId") ?: return@withContext Result.failure()
+        val meshIds = inputData.getStringArray("meshIds")
+            ?.toList()
+            ?: return@withContext Result.failure()
         val fromTs = inputData.getLong("fromTs", 0L)
         val toTs   = inputData.getLong("toTs", 0L)
 
         if (fromTs == 0L || toTs == 0L) return@withContext Result.failure()
 
         AppModule.syncInProgress.value = true
-        Log.d("RecoverWorker", "meshId=$meshId iniciando")
+        Log.d("RecoverWorker", "meshIds=$meshIds iniciando")
 
         return@withContext try {
             AppModule.syncRecentTelemetryUseCase.recoverWindow(
-                meshId = meshId,
+                meshIds = meshIds,
                 fromTs = fromTs,
-                toTs   = toTs,
+                toTs = toTs,
             )
 
             Log.d(
                 "RecoverWorker",
-                "meshId=$meshId recovery completada."
+                "meshIds=$meshIds recovery completada."
             )
 
             Result.success()
 
         } catch (e: Exception) {
-            Log.e("RecoverWorker", "meshId=$meshId error: ${e.message}")
+            Log.e("RecoverWorker", "meshIds=$meshIds error: ${e.message}")
             Result.failure()
         }
     }

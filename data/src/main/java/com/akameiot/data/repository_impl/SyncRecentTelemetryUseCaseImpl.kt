@@ -56,24 +56,24 @@ class SyncRecentTelemetryUseCaseImpl(
                     fromTs = fromTs
                 )
             } finally {
-
-                if (pendingGlobalTs.getAndSet(false)) {
-
-                    val token = authSessionManager.fetchIdToken()
-                    val meshIdsRetry = networkStore.getNetworks()
-                        .map { it.thingName }
-                        .ifEmpty { listOf(meshId) }
-
-                    val retryFromTs = System.currentTimeMillis() / 1000L - (30 * 60L)
-
-                    repository.fetchAndSaveWindow(
-                        bearerToken = token,
-                        meshId = meshId,
-                        meshIds = meshIdsRetry,
-                        fromTs = retryFromTs
-                    )
+                try {
+                    if (pendingGlobalTs.getAndSet(false)) {
+                        val token = authSessionManager.fetchIdToken()
+                        val meshIdsRetry = networkStore.getNetworks()
+                            .map { it.thingName }
+                            .ifEmpty { listOf(meshId) }
+                        val retryFromTs = System.currentTimeMillis() / 1000L - (30 * 60L)
+                        repository.fetchAndSaveWindow(
+                            bearerToken = token,
+                            meshId = meshId,
+                            meshIds = meshIdsRetry,
+                            fromTs = retryFromTs
+                        )
+                    }
+                } catch (_: Exception) {
+                } finally {
+                    inFlightGlobal.set(false)
                 }
-                inFlightGlobal.set(false)
             }
 
         } else {
@@ -96,9 +96,11 @@ class SyncRecentTelemetryUseCaseImpl(
                 inFlightMesh.remove(meshId)
                 val pending = pendingTsMesh.remove(meshId)
                 if (pending != null) {
-                    invoke(meshId, pending)
+                    try {
+                        invoke(meshId, pending)
+                    } catch (_: Exception) {
+                    }
                 }
-
             }
         }
 
@@ -128,29 +130,29 @@ class SyncRecentTelemetryUseCaseImpl(
                 fromTs = fromTs
             )
         } finally {
-
-            if (pendingGlobalTs.getAndSet(false)) {
-
-                val token = authSessionManager.fetchIdToken()
-                val meshIdsRetry = networkStore.getNetworks()
-                    .map { it.thingName }
-                    .ifEmpty { listOf(meshId) }
-
-                val retryFromTs = System.currentTimeMillis() / 1000L - (30 * 60L)
-
-                repository.fetchAndSaveWindow(
-                    bearerToken = token,
-                    meshId = meshId,
-                    meshIds = meshIdsRetry,
-                    fromTs = retryFromTs
-                )
+            try {
+                if (pendingGlobalTs.getAndSet(false)) {
+                    val token = authSessionManager.fetchIdToken()
+                    val meshIdsRetry = networkStore.getNetworks()
+                        .map { it.thingName }
+                        .ifEmpty { listOf(meshId) }
+                    val retryFromTs = System.currentTimeMillis() / 1000L - (30 * 60L)
+                    repository.fetchAndSaveWindow(
+                        bearerToken = token,
+                        meshId = meshId,
+                        meshIds = meshIdsRetry,
+                        fromTs = retryFromTs
+                    )
+                }
+            } catch (_: Exception) {
+            } finally {
+                inFlightGlobal.set(false)
             }
-            inFlightGlobal.set(false)
         }
     }
 
     override suspend fun recoverWindow(
-        meshId: String,
+        meshIds: List<String>,
         fromTs: Long,
         toTs: Long
     ) {
@@ -165,8 +167,8 @@ class SyncRecentTelemetryUseCaseImpl(
 
             repository.coldFetchWindow(
                 bearerToken = token,
-                meshId = meshId,
-                meshIds = listOf(meshId),
+                meshId = meshIds.firstOrNull().orEmpty(),
+                meshIds = meshIds,
                 fromTs = fromTs,
                 toTs = toTs,
             )

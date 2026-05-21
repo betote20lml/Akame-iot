@@ -35,6 +35,15 @@ interface TelemetryDao {
     """)
     suspend fun getLatestTimestamp(meshid: String): Long?
 
+    @Query("""
+    SELECT EXISTS(
+        SELECT 1
+        FROM telemetry
+        LIMIT 1
+    )
+""")
+    suspend fun hasTelemetry(): Boolean
+
 
     @Query("""
     SELECT * FROM telemetry t
@@ -319,6 +328,7 @@ interface TelemetryDao {
     )
 """)
     suspend fun getOldestTimestampGlobal(): Long?
+
 
 
 }

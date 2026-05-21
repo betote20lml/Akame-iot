@@ -22,6 +22,7 @@ import com.akameiot.domain.usecase.ConsumeTokenUseCase
 import com.akameiot.domain.usecase.GeneratePairingTokenUseCase
 import com.akameiot.domain.usecase.GetAppUserUseCase
 import android.content.Context
+import com.akameiot.data.remote.RemoteConfigService
 import com.akameiot.data.session.SessionDataStore
 import com.akameiot.data.fcm.FcmTokenProvider
 import com.akameiot.data.local.db.DatabaseProvider
@@ -52,6 +53,7 @@ import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.channels.Channel
+
 
 object AppModule {
 
@@ -261,6 +263,10 @@ object AppModule {
         ThemePreferencesStore(appContext)
     }
 
+    val remoteConfigService by lazy {
+        RemoteConfigService()
+    }
+
     val recoveryStateStore by lazy {
         RecoveryStateStore(appContext)
     }
@@ -271,5 +277,7 @@ object AppModule {
     val freshnessWakeUp = Channel<Unit>(Channel.CONFLATED)
 
     val syncInProgress = MutableStateFlow(false)
+
+    val currentUser = MutableStateFlow<com.akameiot.domain.model.AppUser?>(null)
 
 }

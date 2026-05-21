@@ -13,7 +13,7 @@ interface SyncRecentTelemetryUseCase {
     )
 
     suspend fun recoverWindow(
-        meshId: String,
+        meshIds: List<String>,
         fromTs: Long,
         toTs: Long
     )

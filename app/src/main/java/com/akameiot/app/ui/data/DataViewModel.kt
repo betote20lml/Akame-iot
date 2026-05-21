@@ -6,14 +6,11 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.akameiot.data.local.dao.TelemetryDao
 import com.akameiot.data.session.DeviceNetworkStore
 import com.akameiot.domain.formatter.MetricFormatter
-import com.akameiot.domain.policy.DevicePermissions
-import com.akameiot.domain.usecase.GetAppUserUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -35,7 +32,6 @@ class DataViewModel(
     application: Application,
     private val telemetryDao: TelemetryDao,
     private val networkStore: DeviceNetworkStore,
-    private val getAppUserUseCase: GetAppUserUseCase,
 ) : AndroidViewModel(application) {
 
     private val context get() = getApplication<Application>()
@@ -68,11 +64,6 @@ class DataViewModel(
             val locale = Locale.getDefault()
             val display = metricKeys.associateWith { MetricFormatter.formatName(it, locale) }
 
-            val appUser = getAppUserUseCase()
-            val isOwner = DevicePermissions.canRecoverHistoricalData(appUser)
-
-            Log.d("DataViewModel", "isOwner=$isOwner")
-
             _state.update {
                 it.copy(
                     isLoading           = false,
@@ -83,21 +74,16 @@ class DataViewModel(
                 )
             }
 
-            if (isOwner) {
-                val syncFailed = AppModule.recoveryStateStore.hasInitialSyncFailed()
-                val inProgress = AppModule.syncInProgress.value
-                Log.d("DataViewModel", "syncFailed=$syncFailed inProgress=$inProgress canRecover=${!inProgress && syncFailed}")
+            val syncFailed = AppModule.recoveryStateStore.hasInitialSyncFailed()
+            val inProgress = AppModule.syncInProgress.value
+            _state.update {
+                it.copy(canRecoverHistoricalData = !inProgress && syncFailed)
+            }
 
+            AppModule.syncInProgress.collect { inProgressUpdate ->
+                val failed = AppModule.recoveryStateStore.hasInitialSyncFailed()
                 _state.update {
-                    it.copy(canRecoverHistoricalData = !inProgress && syncFailed)
-                }
-
-                AppModule.syncInProgress.collect { inProgressUpdate ->
-                    val failed = AppModule.recoveryStateStore.hasInitialSyncFailed()
-                    Log.d("DataViewModel", "syncInProgress changed → inProgress=$inProgressUpdate failed=$failed")
-                    _state.update {
-                        it.copy(canRecoverHistoricalData = !inProgressUpdate && failed)
-                    }
+                    it.copy(canRecoverHistoricalData = !inProgressUpdate && failed)
                 }
             }
         }

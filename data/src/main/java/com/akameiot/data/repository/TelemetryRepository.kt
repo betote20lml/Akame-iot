@@ -66,16 +66,17 @@ class TelemetryRepository(
             } catch (e: retrofit2.HttpException) {
 
                 when (e.code()) {
+                    401 -> {
+                        throw com.akameiot.domain.exceptions.SessionExpiredException()
+                    }
                     429 -> {
                         Log.w("Since", "429 rate limit → ignorando (mesh=$meshId)")
                         return
                     }
-
                     in 500..599 -> {
                         Log.e("Since", "Server error ${e.code()} → ignorando")
                         return
                     }
-
                     else -> throw e
                 }
 
