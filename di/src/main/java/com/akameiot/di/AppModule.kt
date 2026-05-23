@@ -210,6 +210,7 @@ object AppModule {
             aggregateInsertUseCase     = aggregateInsertUseCase,
             propagateAggBucketsUseCase = propagateAggBucketsUseCase,
             calculateIndexUseCase      = calculateIndexUseCase,
+            onDataInserted             = { freshnessWakeUp.trySend(Unit) },
         )
     }
 

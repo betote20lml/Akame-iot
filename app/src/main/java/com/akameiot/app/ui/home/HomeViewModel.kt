@@ -451,10 +451,10 @@ class HomeViewModel(
     private fun loadUser() {
         viewModelScope.launch {
             try {
-                authSessionManager.fetchIdToken()
                 val user = getAppUserUseCase()
                 _uiState.update { it.copy(appUser = user) }
                 AppModule.currentUser.value = user
+                authSessionManager.fetchIdToken()
             } catch (e: SessionExpiredException) {
                 handleSessionExpired()
             } catch (_: NetworkOfflineException) {
@@ -627,9 +627,45 @@ class HomeViewModel(
                     networks.forEach { network ->
 
                         launch {
-                            AppModule.syncRecentTelemetryUseCase.forceSync(
-                                network.thingName
-                            )
+
+                            try {
+
+                                AppModule.syncRecentTelemetryUseCase.forceSync(
+                                    network.thingName
+                                )
+
+                            } catch (e: SessionExpiredException) {
+
+                                handleSessionExpired()
+
+                            } catch (_: NetworkOfflineException) {
+
+                                // sin internet — ignorar silenciosamente
+
+                            } catch (e: java.net.SocketTimeoutException) {
+
+                                Log.e(
+                                    "HomeViewModel",
+                                    "Timeout sync ${network.thingName}",
+                                    e
+                                )
+
+                            } catch (e: java.io.IOException) {
+
+                                Log.e(
+                                    "HomeViewModel",
+                                    "IO sync ${network.thingName}: ${e.message}",
+                                    e
+                                )
+
+                            } catch (e: Exception) {
+
+                                Log.e(
+                                    "HomeViewModel",
+                                    "Unexpected sync ${network.thingName}: ${e.message}",
+                                    e
+                                )
+                            }
                         }
                     }
                 }

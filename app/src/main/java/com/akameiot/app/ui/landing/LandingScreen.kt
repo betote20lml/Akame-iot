@@ -17,6 +17,7 @@ import com.akameiot.app.ui.navigation.Routes
 import com.akameiot.coreui.components.PrimaryButton
 import com.akameiot.coreui.components.SecondaryButton
 import com.akameiot.coreui.theme.LocalSpacing
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @Composable
 fun LandingScreen(
@@ -49,8 +50,16 @@ fun LandingScreen(
             modifier = Modifier.weight(1f)
         ) {
 
+            val isDark = isSystemInDarkTheme()
+
             Image(
-                painter = painterResource(id = R.drawable.logo_light),
+                painter = painterResource(
+                    id = if (isDark) {
+                        R.drawable.logo_dark
+                    } else {
+                        R.drawable.logo_light
+                    }
+                ),
                 contentDescription = "Akame Logo",
                 modifier = Modifier.size(230.dp)
             )
@@ -60,7 +69,6 @@ fun LandingScreen(
 
         }
 
-        // BLOQUE INFERIOR — BOTONES
 
         Column(
             modifier = Modifier

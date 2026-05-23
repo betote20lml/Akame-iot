@@ -23,6 +23,7 @@ class TelemetryRepository(
     private val aggregateInsertUseCase: AggregateInsertUseCase,
     private val propagateAggBucketsUseCase: com.akameiot.domain.usecase.PropagateAggBucketsUseCase,
     private val calculateIndexUseCase: com.akameiot.domain.usecase.CalculateIndexUseCase,
+    private val onDataInserted: () -> Unit = {},
 ) : TelemetryRepositoryDomain {
 
     suspend fun coldFetchWindow(
@@ -193,7 +194,7 @@ class TelemetryRepository(
                 )
             }
         }
-
+        onDataInserted()
     }
 
     suspend fun cleanOldData(days: Int) {

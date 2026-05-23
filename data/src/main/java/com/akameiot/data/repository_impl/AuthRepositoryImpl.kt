@@ -35,7 +35,9 @@ class AuthRepositoryImpl(
         remote.login(email, password)
         authSessionManager.setLimitedSession(false)
         authSessionManager.setLocalSession(true)
-
+        authSessionManager.getCurrentUserId()?.let {
+            authSessionManager.setUserId(it)
+        }
     }
 
     override suspend fun isUserLoggedIn(): Boolean {
@@ -61,5 +63,7 @@ class AuthRepositoryImpl(
             newPassword
         )
     }
+
+
 
 }

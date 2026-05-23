@@ -36,6 +36,7 @@ class CognitoAuthSessionManager(
     }
 
     override suspend fun getCurrentUserId(): String? {
+        sessionDataStore.getUserId()?.let { return it }
         return suspendCancellableCoroutine { cont ->
             Amplify.Auth.getCurrentUser(
                 { user -> if (cont.isActive) cont.resume(user.userId) },
@@ -57,6 +58,7 @@ class CognitoAuthSessionManager(
         }
         sessionDataStore.setHasSession(false)
         sessionDataStore.setLimitedSession(false)
+        sessionDataStore.setUserId("")
     }
 
     override suspend fun fetchIdToken(): String =
@@ -151,7 +153,20 @@ class CognitoAuthSessionManager(
             )
         }
         sessionDataStore.setHasSession(true)
+        suspendCancellableCoroutine { cont ->
+            Amplify.Auth.getCurrentUser(
+                { user -> if (cont.isActive) cont.resume(user.userId) },
+                { if (cont.isActive) cont.resume(null) }
+            )
+        }?.let { sessionDataStore.setUserId(it) }
+
     }
+
+    override suspend fun getUserId(): String? =
+        sessionDataStore.getUserId()
+
+    override suspend fun setUserId(userId: String) =
+        sessionDataStore.setUserId(userId)
 }
 
 

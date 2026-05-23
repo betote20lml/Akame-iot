@@ -9,8 +9,33 @@ import retrofit2.converter.gson.GsonConverterFactory
 import com.akameiot.data.remote.api.SessionApi
 import com.akameiot.data.remote.api.TelemetryApiService
 import java.util.concurrent.TimeUnit
+import okhttp3.Interceptor
+import okhttp3.Response
+import java.io.IOException
+
 
 object NetworkModule {
+
+    private val retryInterceptor = Interceptor { chain ->
+        val request = chain.request()
+        var response: Response? = null
+        var lastException: IOException? = null
+        val maxRetries = 3
+        val delaysMs = listOf(1_000L, 2_000L, 4_000L)
+
+        for (attempt in 0 until maxRetries) {
+            try {
+                response?.close()
+                response = chain.proceed(request)
+                if (response.isSuccessful) return@Interceptor response
+                if (response.code in 400..499) return@Interceptor response
+            } catch (e: IOException) {
+                lastException = e
+            }
+            if (attempt < maxRetries - 1) Thread.sleep(delaysMs[attempt])
+        }
+        response ?: throw lastException ?: IOException("Unknown network error")
+    }
 
     private const val BASE_URL =
         "https://k1erdfmr11.execute-api.us-east-2.amazonaws.com/"
@@ -24,6 +49,7 @@ object NetworkModule {
 
     private val okHttp by lazy {
         OkHttpClient.Builder()
+            .addInterceptor(retryInterceptor)
             .addInterceptor(logging)
             .retryOnConnectionFailure(true)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -92,5 +118,7 @@ object NetworkModule {
             .build()
             .create(NodeLimitApiService::class.java)
     }
+
+
 
 }

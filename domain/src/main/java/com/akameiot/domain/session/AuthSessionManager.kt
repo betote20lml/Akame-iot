@@ -20,5 +20,9 @@ interface AuthSessionManager {
 
     suspend fun setLocalSession(active: Boolean)
 
+    suspend fun getUserId(): String?
+
+    suspend fun setUserId(userId: String)
+
 
 }

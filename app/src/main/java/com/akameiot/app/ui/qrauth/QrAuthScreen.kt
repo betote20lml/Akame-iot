@@ -61,7 +61,10 @@ fun QrAuthScreen(
                     }
                 }
                 is QrAuthEvent.Error -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = SnackbarDuration.Long
+                    )
                 }
             }
         }
@@ -145,7 +148,7 @@ fun QrAuthScreen(
         Spacer(modifier = Modifier.height(spacing.xl))
 
         PrimaryButton(
-            text = if (state.isLoading) "Procesando..." else "Pegar token desde portapapeles",
+            text = state.statusMessage ?: if (state.isLoading) "Procesando..." else "Pegar token desde portapapeles",
             onClick = {
                 scope.launch {
                     val clip = clipboard.getClipEntry()

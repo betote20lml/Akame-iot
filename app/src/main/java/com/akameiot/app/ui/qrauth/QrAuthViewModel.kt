@@ -1,7 +1,9 @@
 package com.akameiot.app.ui.qrauth
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.akameiot.data.remote.isNetworkAvailable
 import com.akameiot.domain.session.AuthSessionManager
 import com.akameiot.domain.usecase.ConsumeTokenUseCase
 import kotlinx.coroutines.flow.*
@@ -10,8 +12,8 @@ import kotlinx.coroutines.launch
 class QrAuthViewModel(
     private val consumeTokenUseCase: ConsumeTokenUseCase,
     private val authSessionManager: AuthSessionManager,
-
-    ) : ViewModel() {
+    private val app: Application,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QrAuthUiState())
     val uiState = _uiState.asStateFlow()
@@ -22,24 +24,23 @@ class QrAuthViewModel(
     )
     val events = _events.asSharedFlow()
 
-    fun pasteToken(token: String) {
-        consumeToken(token)
-    }
-
-    fun onQrScanned(token: String) {
-        consumeToken(token)
-    }
+    fun pasteToken(token: String) = consumeToken(token)
+    fun onQrScanned(token: String) = consumeToken(token)
 
     private fun consumeToken(token: String) {
         if (_uiState.value.isLoading) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            if (!isNetworkAvailable(app)) {
+                _events.emit(QrAuthEvent.Error("Sin conexión a internet.\nVerifica tu WiFi o datos móviles."))
+                return@launch
+            }
+
+            _uiState.update { it.copy(isLoading = true, statusMessage = "Conectando...") }
             try {
-                // Paso 1 — obtener owner_email del backend
                 val result = consumeTokenUseCase("", token)
 
-                // Paso 2 — iniciar sesión en Cognito con Custom Auth Flow
+                _uiState.update { it.copy(statusMessage = "Autenticando...") }
                 authSessionManager.signInWithCustomAuth(
                     username = result.ownerEmail,
                     token = token
@@ -49,9 +50,14 @@ class QrAuthViewModel(
                 _events.emit(QrAuthEvent.Success)
 
             } catch (e: Exception) {
-                _events.emit(QrAuthEvent.Error(e.message ?: "Token inválido o expirado"))
+                val errorMsg = buildString {
+                    appendLine("${e::class.simpleName}")
+                    appendLine("${e.message}")
+                    e.cause?.let { appendLine("Cause: ${it.message}") }
+                }
+                _events.emit(QrAuthEvent.Error(errorMsg))
             } finally {
-                _uiState.update { it.copy(isLoading = false) }
+                _uiState.update { it.copy(isLoading = false, statusMessage = null) }
             }
         }
     }

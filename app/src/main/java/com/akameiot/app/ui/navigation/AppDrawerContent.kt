@@ -63,8 +63,11 @@ fun AppDrawerContent(
 
         DrawerDestinations.items
             .filter { destination ->
-                // Hide token screen for limited users
-                destination.route != Routes.TOKEN || appUser !is AppUser.Limited
+                if (destination.route == Routes.TOKEN) {
+                    appUser is AppUser.Owner
+                } else {
+                    true
+                }
             }
             .forEach { destination ->
                 if (destination.isIndexFactory) {
