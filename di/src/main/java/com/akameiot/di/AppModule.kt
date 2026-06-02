@@ -52,7 +52,7 @@ import com.akameiot.domain.usecase.PropagateAggBucketsUseCase
 import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 
 object AppModule {
@@ -210,7 +210,7 @@ object AppModule {
             aggregateInsertUseCase     = aggregateInsertUseCase,
             propagateAggBucketsUseCase = propagateAggBucketsUseCase,
             calculateIndexUseCase      = calculateIndexUseCase,
-            onDataInserted             = { freshnessWakeUp.trySend(Unit) },
+            onDataInserted             = { freshnessWakeUp.tryEmit(Unit) },
         )
     }
 
@@ -275,7 +275,10 @@ object AppModule {
     val lastSeenPerMesh = MutableStateFlow<Map<String, Long>>(emptyMap())
     enum class NetworkStatus { ALL_ONLINE, PARTIAL, ALL_OFFLINE }
     val networkStatusFlow = MutableStateFlow(NetworkStatus.ALL_ONLINE)
-    val freshnessWakeUp = Channel<Unit>(Channel.CONFLATED)
+    val freshnessWakeUp = MutableSharedFlow<Unit>(
+        replay = 0,
+        extraBufferCapacity = 1
+    )
 
     val syncInProgress = MutableStateFlow(false)
 

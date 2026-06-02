@@ -198,48 +198,20 @@ class DataViewModel(
                     return@launch
                 }
 
-                val oldestTs = telemetryDao.getOldestTimestampGlobal()
-                    ?: (System.currentTimeMillis() / 1000L)
-
-                val fromTs = oldestTs - (90 * 86400L)
-
-                val workManager = WorkManager.getInstance(context)  // ← necesitamos context
-
                 AppModule.recoveryStateStore.setInitialSyncFailed(true)
                 AppModule.syncInProgress.value = true
 
-                workManager.cancelUniqueWork("manual_recovery")
-
-                var continuation = workManager.beginUniqueWork(
-                    "manual_recovery",
-                    ExistingWorkPolicy.REPLACE,
-                    createRecoverRequest(
-                        meshId = networks.first().thingName,
-                        fromTs = fromTs,
-                        toTs   = oldestTs,
-                    )
+                AppModule.syncRecentTelemetryUseCase.resumeFailedSync(
+                    meshIds = networks.map { it.thingName }
                 )
 
-                networks.drop(1).forEach { network ->
-                    continuation = continuation.then(
-                        createRecoverRequest(
-                            meshId = network.thingName,
-                            fromTs = fromTs,
-                            toTs   = oldestTs,
-                        )
-                    )
-                }
-
-                continuation
-                    .then(
-                        OneTimeWorkRequestBuilder<InitialSyncFinalizerWorker>()
-                            .build()
-                    )
-                    .enqueue()
-
+                AppModule.recoveryStateStore.setInitialSyncFailed(false)
+                AppModule.syncInProgress.value = false
                 _events.emit(DataEvent.RecoverySuccess)
 
             } catch (e: Exception) {
+                AppModule.recoveryStateStore.setInitialSyncFailed(true)
+                AppModule.syncInProgress.value = false
                 _events.emit(DataEvent.ShowError(e.message ?: "Error al recuperar datos"))
             } finally {
                 _state.update { it.copy(isRecovering = false) }

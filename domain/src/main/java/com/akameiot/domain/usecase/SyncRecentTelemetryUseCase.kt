@@ -17,4 +17,12 @@ interface SyncRecentTelemetryUseCase {
         fromTs: Long,
         toTs: Long
     )
+
+    // Continuar sync inicial fallida: 90 días antes del dato más antiguo local
+    suspend fun resumeFailedSync(meshIds: List<String>)
+
+    // Stale normal > 24h: solo el gap desde lastTs, sin histórico
+    suspend fun syncStaleWindow(meshId: String, fromTs: Long)
+
+
 }

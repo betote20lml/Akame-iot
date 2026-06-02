@@ -179,5 +179,40 @@ class SyncRecentTelemetryUseCaseImpl(
         }
     }
 
+    override suspend fun resumeFailedSync(meshIds: List<String>) {
+        val oldestTs = repository.getOldestTimestampGlobal()
+            ?: (System.currentTimeMillis() / 1000L) // si no hay nada local, toTs = ahora
+
+        val fromTs = oldestTs - (90 * 86400L) // 90 días antes del oldest
+
+        recoverWindow(
+            meshIds = meshIds,
+            fromTs  = fromTs,
+            toTs    = oldestTs  // hasta el oldest, hacia atrás
+        )
+    }
+
+    override suspend fun syncStaleWindow(meshId: String, fromTs: Long) {
+        if (!inFlightGlobal.compareAndSet(false, true)) {
+            pendingGlobalTs.set(true)
+            return
+        }
+        try {
+            val token = authSessionManager.fetchIdToken()
+            val meshIds = networkStore.getNetworks()
+                .map { it.thingName }
+                .ifEmpty { listOf(meshId) }
+
+            repository.fetchAndSaveWindow(
+                bearerToken = token,
+                meshId      = meshId,
+                meshIds     = meshIds,
+                fromTs      = fromTs  // solo el gap real, nunca 90 días
+            )
+        } finally {
+            inFlightGlobal.set(false)
+        }
+    }
+
 
 }

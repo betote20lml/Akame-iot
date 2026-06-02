@@ -39,6 +39,7 @@ import com.akameiot.app.ui.navigation.Routes
 import com.akameiot.data.session.GlobalTimeStore
 import com.akameiot.domain.exceptions.NetworkOfflineException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 
 
 class HomeViewModel(
@@ -64,6 +65,15 @@ class HomeViewModel(
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events = _events.asSharedFlow()
+
+    private val staleTickerFlow = flow {
+        while (true) {
+            val now = System.currentTimeMillis()
+            val delayToNextMinute = 60_000L - (now % 60_000L)
+            delay(delayToNextMinute)
+            emit(Unit)
+        }
+    }
 
 
 
@@ -204,8 +214,12 @@ class HomeViewModel(
 
             combine(
                 dataFlow,
-                _uiState
-            ) { (latestTelemetry, networks), state ->
+                _uiState,
+                staleTickerFlow.onStart { emit(Unit) }
+            ) { data, state, _ ->
+
+                val (latestTelemetry, networks) = data
+
                 Triple(latestTelemetry, networks, state)
             }
                 .map { (latestTelemetry, networks, state) ->
@@ -271,7 +285,11 @@ class HomeViewModel(
 
                                 val windowSeconds = state.meshWindows[network.meshId]
                                     ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
-                                val staleThresholdSeconds = windowSeconds * 2
+                                val staleThresholdSeconds =
+                                    (windowSeconds * 2)
+                                        .coerceAtLeast(
+                                            CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS
+                                        )
 
                                 network.nodes
                                     .distinctBy { it.nodeId }
@@ -290,9 +308,11 @@ class HomeViewModel(
                                         val orderedMetrics = if (metricsOrder.isEmpty()) {
                                             originalMetrics
                                         } else {
+                                            val metricsOrderSet = metricsOrder.toHashSet()
                                             val metricsByName = originalMetrics.associateBy { it.name }
                                             val selected = metricsOrder.mapNotNull { metricsByName[it] }
-                                            val rest = originalMetrics.filter { it.name !in metricsOrder }
+                                            val rest = originalMetrics.filter { it.name !in metricsOrderSet }
+
                                             selected + rest
                                         }
 
@@ -306,7 +326,7 @@ class HomeViewModel(
                                         if (finalMetrics.isEmpty()) return@mapNotNull null
 
                                         // No recrear si nada cambió
-                                        val metricsChanged = finalMetrics !== originalMetrics
+                                        val metricsChanged = finalMetrics != originalMetrics
                                         val staleChanged = node.isStaleByTime != isStaleByTime
 
                                         if (!metricsChanged && !staleChanged) {
@@ -364,7 +384,7 @@ class HomeViewModel(
                 }
                 //  más efectivo que distinctUntilChanged plano
                 .distinctUntilChangedBy { it.visibleNodes }
-                .collect { newState ->
+                .collectLatest { newState ->
                     _uiState.value = newState
                 }
         }
@@ -534,9 +554,14 @@ class HomeViewModel(
                 displayName.ifBlank { thingName }
             )
 
+            AppModule.recoveryStateStore.setInitialSyncFailed(true)
+            AppModule.syncInProgress.value = true
+
             try {
                 AppModule.nodeLimitRepository.pullFromCloud(thingName)
             } catch (_: Exception) { }
+
+            AppModule.syncInProgress.value = false
 
             AppModule.syncRecentTelemetryUseCase.forceSync(thingName)
 
@@ -557,8 +582,8 @@ class HomeViewModel(
 
         } finally {
 
+            AppModule.syncInProgress.value = false
             _uiState.update { it.copy(isLoading = false) }
-
         }
     }
 

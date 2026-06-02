@@ -2,13 +2,6 @@ package com.akameiot.app
 
 import android.app.Application
 import android.util.Log
-import androidx.work.Constraints
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
-import com.akameiot.app.fcm.worker.SyncTelemetryWorker
 import com.akameiot.di.AppModule
 import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
 import com.amplifyframework.auth.cognito.AWSCognitoAuthPlugin
@@ -22,7 +15,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import com.akameiot.coreui.theme.ThemeController
 import kotlinx.coroutines.withTimeoutOrNull
-
 
 class AkameApp : Application() {
 
@@ -69,8 +61,7 @@ class AkameApp : Application() {
                             val windowSeconds = meshWindows[network.thingName]
                                 ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
 
-                            val threshold = (windowSeconds * 1.2)
-                                .toLong()
+                            val threshold = (windowSeconds * 2)
                                 .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
 
                             val timeToExpiry = threshold - (nowSeconds - lastTs)
@@ -93,7 +84,9 @@ class AkameApp : Application() {
                         }
 
                         withTimeoutOrNull(waitMillis) {
-                            AppModule.freshnessWakeUp.receive()
+                            AppModule.freshnessWakeUp.collect {
+                                return@collect
+                            }
                         }
                         continue
                     }
@@ -101,7 +94,9 @@ class AkameApp : Application() {
                 } catch (_: Exception) { }
 
                 withTimeoutOrNull(60_000L) {
-                    AppModule.freshnessWakeUp.receive()
+                    AppModule.freshnessWakeUp.collect {
+                        return@collect
+                    }
                 }
             }
         }
@@ -132,33 +127,17 @@ class AkameApp : Application() {
                                     .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
 
                                 Log.d(
-                                    "MeshWindow",
+                                    "MeshSync",
                                     "mesh=${network.thingName} window=${window}s " +
                                             "age=${ageSeconds}s threshold=${threshold}s " +
                                             "isStale=${ageSeconds > threshold}"
                                 )
 
                                 if (ageSeconds > threshold) {
-                                    val work = OneTimeWorkRequestBuilder<SyncTelemetryWorker>()
-                                        .setInputData(
-                                            workDataOf(
-                                                "meshId" to network.thingName,
-                                                "notifTs" to 0L
-                                            )
-                                        )
-                                        .setConstraints(
-                                            Constraints.Builder()
-                                                .setRequiredNetworkType(NetworkType.CONNECTED)
-                                                .build()
-                                        )
-                                        .build()
-
-                                    WorkManager.getInstance(this@AkameApp)
-                                        .enqueueUniqueWork(
-                                            "sync_${network.thingName}",
-                                            ExistingWorkPolicy.KEEP,
-                                            work
-                                        )
+                                    AppModule.syncRecentTelemetryUseCase.syncStaleWindow(
+                                        meshId = network.thingName,
+                                        fromTs = latestTs
+                                    )
                                 }
                             } catch (e: Exception) {
                                 Log.e("MeshSync", "Error ${network.thingName}", e)
@@ -167,7 +146,6 @@ class AkameApp : Application() {
                     }
                     .chunked(4)
                     .forEach { it.awaitAll() }
-
 
             } catch (_: Exception) { }
         }

@@ -44,6 +44,9 @@ class TelemetryRepository(
     suspend fun getLatestTimestamp(meshId: String): Long =
         dao.getLatestTimestamp(meshId) ?: 0L
 
+    suspend fun getOldestTimestampGlobal(): Long? =
+        dao.getOldestTimestampGlobal()
+
     suspend fun fetchAndSaveWindow(
         bearerToken: String,
         meshId: String,

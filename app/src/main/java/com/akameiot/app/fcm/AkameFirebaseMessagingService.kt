@@ -39,7 +39,7 @@ class AkameFirebaseMessagingService : FirebaseMessagingService() {
         AppModule.lastSeenPerMesh.update { current ->
             current + (meshid to nowSeconds)
         }
-        AppModule.freshnessWakeUp.trySend(Unit)
+        AppModule.freshnessWakeUp.tryEmit(Unit)
         enqueueSync(meshid, notifTs)
     }
 
