@@ -44,10 +44,6 @@ fun AppNavHost(
             SplashScreen(navController)
         }
 
-        composable(Routes.HOME) {
-            HomeScreen(navController)
-        }
-
         composable(Routes.TOKEN) {
             val homeViewModel: HomeViewModel =
                 androidx.lifecycle.viewmodel.compose.viewModel(factory = HomeViewModelFactory())

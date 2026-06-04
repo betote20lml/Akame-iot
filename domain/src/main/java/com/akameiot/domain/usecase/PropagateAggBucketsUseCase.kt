@@ -90,4 +90,46 @@ class PropagateAggBucketsUseCase(
             count       = all.sumOf { it.count }
         )
     }
+
+    suspend fun propagateBatch(
+        series: List<Triple<String, Int, String>>, // meshId, nodeId, metric
+        nowTs: Long = System.currentTimeMillis() / 1000L
+    ) {
+        PROPAGATION_CHAIN.forEach { (srcLevel, srcChunk, dstLevel) ->
+            val dstChunk = AggregateInsertUseCase.LEVELS[dstLevel] ?: return@forEach
+            val lookbackTs = nowTs - (dstChunk * 2)
+
+            // Una sola pasada por nivel para todas las series
+            series.forEach { (meshId, nodeId, metric) ->
+                val closedBuckets = repository.getAggHistory(
+                    level  = srcLevel,
+                    meshId = meshId,
+                    nodeId = nodeId,
+                    metric = metric,
+                    fromTs = lookbackTs
+                ).filter { it.bucketStart + srcChunk < nowTs }
+
+                if (closedBuckets.isEmpty()) return@forEach
+
+                closedBuckets
+                    .groupBy { (it.bucketStart / dstChunk) * dstChunk }
+                    .forEach { (dstBucketStart, sourceBuckets) ->
+                        val existing = repository.getAggBucket(
+                            dstLevel, meshId, nodeId, metric, dstBucketStart
+                        )
+                        repository.upsertAggBucket(
+                            mergeBuckets(
+                                level       = dstLevel,
+                                meshId      = meshId,
+                                nodeId      = nodeId,
+                                metric      = metric,
+                                bucketStart = dstBucketStart,
+                                incoming    = sourceBuckets,
+                                existing    = existing
+                            )
+                        )
+                    }
+            }
+        }
+    }
 }

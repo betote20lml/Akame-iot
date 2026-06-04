@@ -159,10 +159,7 @@ class TelemetryRepository(
             )
         }
 
-        // Calcula índices — solo para nodos con límites definidos
         val indexPoints = calculateIndexUseCase.calculate(points)
-
-        // Convierte índices de vuelta a entities e inserta
         val indexEntities = indexPoints.map { p ->
             TelemetryEntity(
                 meshid    = p.meshId,
@@ -174,29 +171,16 @@ class TelemetryRepository(
         }
         if (indexEntities.isNotEmpty()) dao.insertAll(indexEntities)
 
-        // Agrega crudos + índices
-        val allEntities = entities + indexEntities
-        allEntities.forEach { e ->
-            aggregateInsertUseCase.insert(
-                meshId = e.meshid,
-                nodeId = e.nodeId,
-                metric = e.metric,
-                ts     = e.timestamp,
-                value  = e.value,
-            )
+        aggregateInsertUseCase.insertBatch(points + indexPoints)
+
+        val uniqueSeries = (entities + indexEntities)
+            .distinctBy { Triple(it.meshid, it.nodeId, it.metric) }
+            .map { Triple(it.meshid, it.nodeId, it.metric) }
+
+        bgScope.launch {
+            propagateAggBucketsUseCase.propagateBatch(uniqueSeries)
         }
 
-        // Propagación jerárquica asíncrona
-        val series = allEntities.distinctBy { Triple(it.meshid, it.nodeId, it.metric) }
-        bgScope.launch {
-            series.forEach { e ->
-                propagateAggBucketsUseCase.propagate(
-                    meshId = e.meshid,
-                    nodeId = e.nodeId,
-                    metric = e.metric,
-                )
-            }
-        }
         onDataInserted()
     }
 

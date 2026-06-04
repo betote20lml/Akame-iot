@@ -55,6 +55,7 @@ class HomeViewModel(
     private val globalTimeStore: GlobalTimeStore,
 
 
+
     ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
@@ -74,6 +75,8 @@ class HomeViewModel(
             emit(Unit)
         }
     }
+    private var resubscribeSyncDone = false
+    private var loginModeHandled = false
 
 
 
@@ -91,6 +94,8 @@ class HomeViewModel(
 
     fun onLoginMode(loginMode: String?) {
         if (loginMode.isNullOrEmpty()) return
+        if (loginModeHandled) return
+        loginModeHandled = true
 
         viewModelScope.launch {
             if (loginMode == Routes.LOGIN_MODE_RETURNING) {
@@ -644,52 +649,37 @@ class HomeViewModel(
                 networkManager.resubscribeAll(authToken)
                 tokenStore.clearResubscribeFlag()
 
+                if (resubscribeSyncDone) return@launch
+                resubscribeSyncDone = true
+
                 val networks = AppModule.networkStore.getNetworks()
 
                 if (isInitialLogin && !hasAnyLocalTelemetry()) {
                     enqueueInitialSync(networks)
                 } else {
                     networks.forEach { network ->
-
                         launch {
-
                             try {
+                                val latestTs = AppModule.telemetryDao
+                                    .getLatestTimestamp(network.thingName)
 
-                                AppModule.syncRecentTelemetryUseCase.forceSync(
-                                    network.thingName
-                                )
-
+                                if (latestTs != null && latestTs > 0L) {
+                                    AppModule.syncRecentTelemetryUseCase.syncStaleWindow(
+                                        meshId = network.thingName,
+                                        fromTs = latestTs
+                                    )
+                                } else {
+                                    AppModule.syncRecentTelemetryUseCase.forceSync(network.thingName)
+                                }
                             } catch (e: SessionExpiredException) {
-
                                 handleSessionExpired()
-
                             } catch (_: NetworkOfflineException) {
-
-                                // sin internet — ignorar silenciosamente
-
                             } catch (e: java.net.SocketTimeoutException) {
-
-                                Log.e(
-                                    "HomeViewModel",
-                                    "Timeout sync ${network.thingName}",
-                                    e
-                                )
-
+                                Log.e("HomeViewModel", "Timeout sync ${network.thingName}", e)
                             } catch (e: java.io.IOException) {
-
-                                Log.e(
-                                    "HomeViewModel",
-                                    "IO sync ${network.thingName}: ${e.message}",
-                                    e
-                                )
-
+                                Log.e("HomeViewModel", "IO sync ${network.thingName}: ${e.message}", e)
                             } catch (e: Exception) {
-
-                                Log.e(
-                                    "HomeViewModel",
-                                    "Unexpected sync ${network.thingName}: ${e.message}",
-                                    e
-                                )
+                                Log.e("HomeViewModel", "Unexpected sync ${network.thingName}: ${e.message}", e)
                             }
                         }
                     }
@@ -698,7 +688,6 @@ class HomeViewModel(
             } catch (e: SessionExpiredException) {
                 handleSessionExpired()
             } catch (_: NetworkOfflineException) {
-                // sin internet — quedarse offline, no hacer nada
             } catch (e: Exception) {
                 if (isInitialLogin) {
                     AppModule.recoveryStateStore.setInitialSyncFailed(true)

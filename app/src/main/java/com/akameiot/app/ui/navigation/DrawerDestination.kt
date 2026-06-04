@@ -20,7 +20,7 @@ object DrawerDestinations {
 
     val items = listOf(
         DrawerDestination(
-            route = Routes.HOME,
+            route = Routes.home(),
             label = "Dashboard",
             icon  = Icons.Default.Dashboard,
         ),
