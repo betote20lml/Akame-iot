@@ -97,25 +97,6 @@ class DataViewModel(
         _state.update { it.copy(selectedMetric = metric) }
     }
 
-    private fun createRecoverRequest(
-        meshId: String,
-        fromTs: Long,
-        toTs: Long,
-    ) =
-        OneTimeWorkRequestBuilder<RecoverHistoricalDataWorker>()
-            .setInputData(
-                workDataOf(
-                    "meshId" to meshId,
-                    "fromTs" to fromTs,
-                    "toTs"   to toTs,
-                )
-            )
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-            )
-            .build()
 
     fun exportCsv(context: Context) {
         val s = _state.value
@@ -198,15 +179,41 @@ class DataViewModel(
                     return@launch
                 }
 
+                val oldestTs = telemetryDao.getOldestTimestampGlobal()
+                    ?: (System.currentTimeMillis() / 1000L)
+
+                val fromTs = oldestTs - (90 * 86400L)
+
                 AppModule.recoveryStateStore.setInitialSyncFailed(true)
                 AppModule.syncInProgress.value = true
 
-                AppModule.syncRecentTelemetryUseCase.resumeFailedSync(
-                    meshIds = networks.map { it.thingName }
-                )
+                val workManager = WorkManager.getInstance(context)
+                workManager.cancelUniqueWork("manual_recovery")
 
-                AppModule.recoveryStateStore.setInitialSyncFailed(false)
-                AppModule.syncInProgress.value = false
+                workManager
+                    .beginUniqueWork(
+                        "manual_recovery",
+                        ExistingWorkPolicy.REPLACE,
+                        OneTimeWorkRequestBuilder<RecoverHistoricalDataWorker>()
+                            .setInputData(
+                                workDataOf(
+                                    "meshIds" to networks.map { it.thingName }.toTypedArray(),
+                                    "fromTs"  to fromTs,
+                                    "toTs"    to oldestTs
+                                )
+                            )
+                            .setConstraints(
+                                Constraints.Builder()
+                                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                                    .build()
+                            )
+                            .build()
+                    )
+                    .then(
+                        OneTimeWorkRequestBuilder<InitialSyncFinalizerWorker>().build()
+                    )
+                    .enqueue()
+
                 _events.emit(DataEvent.RecoverySuccess)
 
             } catch (e: Exception) {
