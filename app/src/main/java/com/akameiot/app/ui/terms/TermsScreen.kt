@@ -1,57 +1,27 @@
 package com.akameiot.app.ui.terms
 
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TermsScreen(
     navController: NavController
 ) {
+    val context = LocalContext.current
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Términos y Condiciones") },
-                navigationIcon = {
-                    IconButton(
-                        onClick = { navController.popBackStack() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
+    LaunchedEffect(Unit) {
+
+        context.startActivity(
+            Intent(
+                Intent.ACTION_VIEW,
+                "https://cnxontle.github.io/terms.html".toUri()
             )
-        }
-    ) { padding ->
-
-        AndroidView(
-            modifier = Modifier
-                .fillMaxSize(),
-            factory = { context ->
-                WebView(context).apply {
-
-                    webViewClient = WebViewClient()
-
-                    settings.apply {
-                        javaScriptEnabled = false
-                        builtInZoomControls = true
-                        displayZoomControls = false
-                    }
-
-                    loadUrl("file:///android_asset/terms.html")
-                }
-            }
         )
+
+        navController.popBackStack()
     }
 }

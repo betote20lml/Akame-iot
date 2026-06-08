@@ -11,6 +11,8 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import com.akameiot.domain.policy.isIndexMetric
 import com.akameiot.coreui.components.ConnectionLevel
+import com.akameiot.domain.usecase.CalculateMeshWindowUseCase
+import kotlinx.coroutines.Dispatchers
 
 data class DrawerUiState(
     val metrics: List<String> = emptyList(),
@@ -52,6 +54,46 @@ class DrawerViewModel(
                         it.copy(metrics = keys, metricsDisplay = display)
                     }
                 }
+        }
+    }
+
+    fun refreshConnectionStatus() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val networks = try {
+                AppModule.networkStore.getNetworks()
+            } catch (_: Exception) { emptyList() }
+
+            if (networks.isEmpty()) return@launch
+
+            val nowSeconds = System.currentTimeMillis() / 1000L
+            val lastSeen = AppModule.lastSeenPerMesh.value
+            var staleCount = 0
+
+            val meshWindows = try {
+                AppModule.meshWindowStore.getAllWindows()
+            } catch (_: Exception) { emptyMap() }
+
+            networks.forEach { network ->
+                val lastTs = lastSeen[network.thingName]
+                    ?: AppModule.telemetryDao.getLatestTimestamp(network.thingName)
+                    ?: run { staleCount++; return@forEach }
+
+                val windowSeconds = meshWindows[network.thingName]
+                val threshold = if (windowSeconds == null) {
+                    30L * 60L * 2L
+                } else {
+                    windowSeconds * 2
+                }
+
+                if ((nowSeconds - lastTs) > threshold) staleCount++
+            }
+
+            val (connectionStatus, isOnline, level) = when {
+                staleCount == 0            -> Triple("Redes actualizadas",       true,  ConnectionLevel.OK)
+                staleCount < networks.size -> Triple("Actualización incompleta", false, ConnectionLevel.PARTIAL)
+                else                       -> Triple("Redes desactualizadas",    false, ConnectionLevel.OFFLINE)
+            }
+            _uiState.update { it.copy(connectionStatus = connectionStatus, isOnline = isOnline, connectionLevel = level) }
         }
     }
 

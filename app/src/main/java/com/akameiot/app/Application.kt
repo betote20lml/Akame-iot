@@ -59,10 +59,12 @@ class AkameApp : Application() {
                                 ?: run { staleCount++; return@forEach }
 
                             val windowSeconds = meshWindows[network.thingName]
-                                ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
 
-                            val threshold = (windowSeconds * 2)
-                                .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
+                            val threshold = if (windowSeconds == null) {
+                                CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS
+                            } else {
+                                windowSeconds * 2
+                            }
 
                             val timeToExpiry = threshold - (nowSeconds - lastTs)
                             if (timeToExpiry in 1 until minTimeToExpiry) {
@@ -122,9 +124,11 @@ class AkameApp : Application() {
                                 val window = AppModule.calculateMeshWindowUseCase
                                     .getOrCalculate(network.thingName)
 
-                                val threshold = (window * 1.2)
-                                    .toLong()
-                                    .coerceAtLeast(CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS)
+                                val threshold = if (window == CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS) {
+                                    CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS
+                                } else {
+                                    (window * 1.2).toLong()
+                                }
 
                                 Log.d(
                                     "MeshSync",

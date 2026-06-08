@@ -289,12 +289,11 @@ class HomeViewModel(
                             .flatMap { network ->
 
                                 val windowSeconds = state.meshWindows[network.meshId]
-                                    ?: CalculateMeshWindowUseCase.DEFAULT_WINDOW_SECONDS
-                                val staleThresholdSeconds =
-                                    (windowSeconds * 2)
-                                        .coerceAtLeast(
-                                            CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS
-                                        )
+                                val staleThresholdSeconds = if (windowSeconds == null) {
+                                    CalculateMeshWindowUseCase.DEFAULT_FRESHNESS_SECONDS * 2
+                                } else {
+                                    windowSeconds * 2
+                                }
 
                                 network.nodes
                                     .distinctBy { it.nodeId }

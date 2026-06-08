@@ -147,7 +147,12 @@ fun HomeScreen(
                 appUser       = uiState.appUser,
             )
         },
-        onNavigationClick = { scope.launch { drawerState.open() } },
+        onNavigationClick = {
+            scope.launch {
+                drawerViewModel.refreshConnectionStatus()
+                drawerState.open()
+            }
+        },
         actions = {
             var showFilterMenu by remember { mutableStateOf(false) }
 
