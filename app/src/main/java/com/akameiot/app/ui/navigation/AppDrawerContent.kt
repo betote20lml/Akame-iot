@@ -132,7 +132,7 @@ fun AppDrawerContent(
             }
 
             Text(
-                text  = "v 1.0.1",
+                text  = "v 1.0.2",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
