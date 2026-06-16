@@ -11,6 +11,7 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import com.akameiot.domain.policy.isIndexMetric
 import androidx.compose.runtime.mutableStateListOf
+import com.akameiot.domain.model.NodeLimit
 
 
 @OptIn(kotlinx.coroutines.FlowPreview::class)
@@ -100,9 +101,11 @@ class IndexFactoryViewModel(
 
     // ── Limit editing ─────────────────────────────────────────────────────────
 
-    fun onUserMinChange(nodeId: Int, value: String) {
+    fun onUserMinChange(meshId: String, nodeId: Int, value: String) {
         _baseState.update { state ->
-            val index = state.items.indexOfFirst { it.item.nodeId == nodeId }
+            val index = state.items.indexOfFirst {
+                it.item.meshId == meshId && it.item.nodeId == nodeId
+            }
             if (index == -1) return@update state
 
             val current = state.items[index]
@@ -114,9 +117,11 @@ class IndexFactoryViewModel(
         }
     }
 
-    fun onUserMaxChange(nodeId: Int, value: String) {
+    fun onUserMaxChange(meshId: String, nodeId: Int, value: String) {
         _baseState.update { state ->
-            val index = state.items.indexOfFirst { it.item.nodeId == nodeId }
+            val index = state.items.indexOfFirst {
+                it.item.meshId == meshId && it.item.nodeId == nodeId
+            }
             if (index == -1) return@update state
 
             val current = state.items[index]
@@ -208,11 +213,17 @@ class IndexFactoryViewModel(
 
                 // ── 5 queries totales independientemente del número de nodos ──────
 
-                val raw24h = telemetryDao.getMetricMinMaxAllNodes(
-                    meshId        = nodesForMetric.first().meshid,
-                    metric        = metricKey,
-                    fromTimestamp = nowSeconds - 86_400L,
-                ).associateBy { it.nodeId }
+                val meshIds = nodesForMetric.map { it.meshid }.distinct()
+
+                val raw24h: Map<Pair<String, Int>, TelemetryDao.NodeMinMax> = meshIds
+                    .flatMap { meshId ->
+                        telemetryDao.getMetricMinMaxAllNodes(
+                            meshId        = meshId,
+                            metric        = metricKey,
+                            fromTimestamp = nowSeconds - 86_400L,
+                        ).map { row -> (meshId to row.nodeId) to row }
+                    }
+                    .toMap()
 
                 val ranges = listOf(
                     Triple("7 días",  604_800L,    "7d"),
@@ -221,25 +232,36 @@ class IndexFactoryViewModel(
                     Triple("1 año",   31_536_000L, "1y"),
                 )
 
-                val aggByLevel = ranges.associate { (_, secondsBack, level) ->
-                    level to telemetryDao.getAggMinMaxAllNodes(
-                        level  = level,
-                        meshId = nodesForMetric.first().meshid,
-                        metric = metricKey,
-                        fromTs = nowSeconds - secondsBack,
-                    ).associateBy { it.nodeId }
-                }
+                val aggByLevel: Map<String, Map<Pair<String, Int>, TelemetryDao.NodeMinMax>> =
+                    ranges.associate { (_, secondsBack, level) ->
+                        level to meshIds
+                            .flatMap { meshId ->
+                                telemetryDao.getAggMinMaxAllNodes(
+                                    level  = level,
+                                    meshId = meshId,
+                                    metric = metricKey,
+                                    fromTs = nowSeconds - secondsBack,
+                                ).map { row -> (meshId to row.nodeId) to row }
+                            }
+                            .toMap()
+                    }
 
-                val savedLimits = nodeLimitRepository.getLimitsForMetric(
-                    meshId = nodesForMetric.first().meshid,
-                    metric = metricKey,
-                ).associateBy { it.nodeId }
+                val savedLimits: Map<Pair<String, Int>, NodeLimit> = meshIds
+                    .flatMap { meshId ->
+                        nodeLimitRepository.getLimitsForMetric(
+                            meshId = meshId,
+                            metric = metricKey,
+                        )
+                    }
+                    .associateBy { it.meshId to it.nodeId }
 
                 val items = nodesForMetric.map { entity ->
                     val networkName = networkNamesCache[entity.meshid] ?: entity.meshid
-                    val saved = savedLimits[entity.nodeId]
+                    val saved = savedLimits[entity.meshid to entity.nodeId]
 
-                    val stat24h = raw24h[entity.nodeId].let { row ->
+                    val nodeKey = entity.meshid to entity.nodeId
+
+                    val stat24h = raw24h[nodeKey].let { row ->
                         RangeStats(
                             label = "1 día",
                             min   = row?.minVal?.let { "%.2f".format(it) } ?: "—",
@@ -248,7 +270,7 @@ class IndexFactoryViewModel(
                     }
 
                     val aggStats = ranges.map { (label, _, level) ->
-                        val row = aggByLevel[level]?.get(entity.nodeId)
+                        val row = aggByLevel[level]?.get(nodeKey)
                         RangeStats(
                             label = label,
                             min   = row?.minVal?.let { "%.2f".format(it) } ?: "—",
@@ -294,12 +316,12 @@ class IndexFactoryViewModel(
     }
 
     fun saveLimit(item: NodeLimitItem) {
-        val uiItem = _baseState.value.items.find { it.item.nodeId == item.nodeId } ?: return
+        val uiItem = _baseState.value.items.find {
+            it.item.meshId == item.meshId && it.item.nodeId == item.nodeId
+        } ?: return
 
-        val existingMin = _baseState.value.items
-            .find { it.item.nodeId == item.nodeId }?.item?.savedMin
-        val existingMax = _baseState.value.items
-            .find { it.item.nodeId == item.nodeId }?.item?.savedMax
+        val existingMin = uiItem.item.savedMin
+        val existingMax = uiItem.item.savedMax
 
         val min = uiItem.userMin
             .takeIf { it.isNotBlank() }
@@ -325,7 +347,9 @@ class IndexFactoryViewModel(
                     )
                 )
                 _baseState.update { state ->
-                    val index = state.items.indexOfFirst { it.item.nodeId == item.nodeId }
+                    val index = state.items.indexOfFirst {
+                        it.item.meshId == item.meshId && it.item.nodeId == item.nodeId
+                    }
                     if (index == -1) return@update state
 
                     val current = state.items[index]

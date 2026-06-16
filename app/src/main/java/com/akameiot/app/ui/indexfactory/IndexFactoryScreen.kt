@@ -241,8 +241,8 @@ fun IndexFactoryScreen(
                                 item            = item.item,
                                 userMin         = item.userMin,
                                 userMax         = item.userMax,
-                                onUserMinChange = { viewModel.onUserMinChange(item.item.nodeId, it) },
-                                onUserMaxChange = { viewModel.onUserMaxChange(item.item.nodeId, it) },
+                                onUserMinChange = { viewModel.onUserMinChange(item.item.meshId, item.item.nodeId, it) },
+                                onUserMaxChange = { viewModel.onUserMaxChange(item.item.meshId, item.item.nodeId, it) },
                                 onSave          = { viewModel.saveLimit(item.item) },
                             )
                         }
