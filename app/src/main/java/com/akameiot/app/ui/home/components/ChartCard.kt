@@ -20,6 +20,11 @@ import com.akameiot.app.ui.home.model.ChartUiModel
 import com.akameiot.coreui.theme.LocalAppColors
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.drawscope.clipRect
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
@@ -57,6 +62,22 @@ fun ChartCard(
     val maxX = if (globalNow > 0) globalNow else System.currentTimeMillis() / 1000L
     val minX = maxX - chart.chartRange.seconds
 
+    // ── Zoom / Pan en eje X ──
+    val zoomKey = remember(chart.meshId, chart.nodeId, chart.metricName, chart.chartRange) {
+        "${chart.meshId}_${chart.nodeId}_${chart.metricName}_${chart.chartRange}"
+    }
+    var zoomScale by remember(zoomKey) { mutableFloatStateOf(1f) }
+    var zoomOffsetFraction by remember(zoomKey) { mutableFloatStateOf(0f) }
+
+    val currentMinX by rememberUpdatedState(minX)
+    val currentMaxX by rememberUpdatedState(maxX)
+
+    val fullSpan = (maxX - minX).toFloat().coerceAtLeast(1f)
+    val windowSpan = fullSpan / zoomScale
+    val maxOffset = (fullSpan - windowSpan).coerceAtLeast(0f)
+    val visibleMinX = (minX + zoomOffsetFraction * maxOffset).toLong()
+    val visibleMaxX = (visibleMinX + windowSpan).toLong()
+
     val windowInfo = LocalWindowInfo.current
     val screenWidthDp = with(LocalDensity.current) {
         windowInfo.containerSize.width.toDp()
@@ -74,23 +95,26 @@ fun ChartCard(
         SimpleDateFormat(datePattern, Locale.getDefault())
     }
 
-    val xLabelsData = remember(minX, maxX, chart.chartRange, datePattern) {
+    val xLabelsData = remember(visibleMinX, visibleMaxX, chart.chartRange, datePattern) {
         val count = if (chart.chartRange == ChartTimeRange.D7) 7 else 5
 
         (0..count).map { i ->
             val fraction = i.toFloat() / count
-            val ts = minX + ((maxX - minX) * fraction).toLong()
+            val ts = visibleMinX + ((visibleMaxX - visibleMinX) * fraction).toLong()
             ts to dateFormatter.format(Date(ts * 1000))
         }
     }
 
-    val minMax = remember(points) {
-        if (points.isEmpty()) null
+    val minMax = remember(points, visibleMinX, visibleMaxX) {
+        val visiblePoints = points.filter { it.first in visibleMinX..visibleMaxX }
+            .ifEmpty { points }
+
+        if (visiblePoints.isEmpty()) null
         else {
-            var min = points[0]
-            var max = points[0]
-            for (i in 1 until points.size) {
-                val p = points[i]
+            var min = visiblePoints[0]
+            var max = visiblePoints[0]
+            for (i in 1 until visiblePoints.size) {
+                val p = visiblePoints[i]
                 if (p.second < min.second) min = p
                 if (p.second > max.second) max = p
             }
@@ -236,6 +260,55 @@ fun ChartCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(160.dp)
+                            .pointerInput(zoomKey) {
+                                awaitEachGesture {
+                                    val widthPx = size.width.toFloat().coerceAtLeast(1f)
+
+                                    while (true) {
+                                        val event = awaitPointerEvent()
+                                        val pointerCount = event.changes.count { it.pressed }
+                                        val isZoomed = zoomScale > 1.01f
+
+                                        // 1 solo dedo Y sin zoom activo: dejar pasar al padre
+                                        // (scroll, swipe, etc.) tal como antes
+                                        if (pointerCount < 2 && !isZoomed) {
+                                            if (event.changes.none { it.pressed }) break
+                                            continue
+                                        }
+
+                                        // 2+ dedos (pellizco) SIEMPRE, o 1 dedo cuando ya
+                                        // está zoomeado (arrastrar para desplazarse)
+                                        val zoom = event.calculateZoom()
+                                        val pan = event.calculatePan()
+
+                                        if (zoom != 1f || pan != Offset.Zero) {
+                                            val fullSpanNow =
+                                                (currentMaxX - currentMinX).toFloat().coerceAtLeast(1f)
+                                            val oldWindowSpan = fullSpanNow / zoomScale
+                                            val newScale = (zoomScale * zoom).coerceIn(1f, 20f)
+                                            val newWindowSpan = fullSpanNow / newScale
+                                            val oldMaxOffset =
+                                                (fullSpanNow - oldWindowSpan).coerceAtLeast(0f)
+                                            val newMaxOffset =
+                                                (fullSpanNow - newWindowSpan).coerceAtLeast(0f)
+
+                                            val currentWindowStart = zoomOffsetFraction * oldMaxOffset
+                                            val panTimeUnits = -pan.x / widthPx * oldWindowSpan
+
+                                            val newWindowStart = (currentWindowStart + panTimeUnits)
+                                                .coerceIn(0f, newMaxOffset)
+
+                                            zoomScale = newScale
+                                            zoomOffsetFraction =
+                                                if (newMaxOffset > 0f) newWindowStart / newMaxOffset else 0f
+
+                                            event.changes.forEach { it.consume() }
+                                        }
+
+                                        if (event.changes.none { it.pressed }) break
+                                    }
+                                }
+                            }
                     ) {
                         val xLabelHeight = 22.dp.toPx()
                         val plotTop    = 8.dp.toPx()
@@ -267,11 +340,11 @@ fun ChartCard(
                         val plotHeight = plotBottom - plotTop
 
                         val xPadding = 12.dp.toPx()
-                        val xRange = (maxX - minX).toFloat().coerceAtLeast(1f)
+                        val xRange = (visibleMaxX - visibleMinX).toFloat().coerceAtLeast(1f)
                         val xScale = (plotWidth - xPadding * 2) / xRange
 
                         fun toX(ts: Long): Float =
-                            yLabelWidth + xPadding + (ts - minX) * xScale
+                            yLabelWidth + xPadding + (ts - visibleMinX) * xScale
 
                         fun toY(v: Double): Float =
                             plotBottom - ((v - yMin) / ySpan * plotHeight).toFloat()
@@ -310,30 +383,31 @@ fun ChartCard(
                             )
                         }
 
-                        // línea de datos
-                        if (sortedPoints.size >= 2) {
-                            val path = Path()
-                            path.moveTo(toX(sortedPoints[0].first), toY(sortedPoints[0].second))
-                            for (i in 1 until sortedPoints.size) {
-                                path.lineTo(toX(sortedPoints[i].first), toY(sortedPoints[i].second))
+                        // línea de datos (recortada al área del plot para que el zoom no dibuje sobre los labels)
+                        clipRect(left = yLabelWidth, top = plotTop, right = plotRight, bottom = plotBottom) {
+                            if (sortedPoints.size >= 2) {
+                                val path = Path()
+                                path.moveTo(toX(sortedPoints[0].first), toY(sortedPoints[0].second))
+                                for (i in 1 until sortedPoints.size) {
+                                    path.lineTo(toX(sortedPoints[i].first), toY(sortedPoints[i].second))
+                                }
+                                drawPath(
+                                    path  = path,
+                                    color = lineColor,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                        width = 2.dp.toPx()
+                                    )
+                                )
+                            } else if (sortedPoints.size == 1) {
+                                drawCircle(
+                                    color  = lineColor,
+                                    radius = 3.dp.toPx(),
+                                    center = Offset(
+                                        toX(sortedPoints[0].first),
+                                        toY(sortedPoints[0].second)
+                                    )
+                                )
                             }
-                            drawPath(
-                                path  = path,
-                                color = lineColor,
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(
-                                    width = 2.dp.toPx()
-                                )
-                            )
-                        } else if (sortedPoints.size == 1) {
-                            // punto único
-                            drawCircle(
-                                color  = lineColor,
-                                radius = 3.dp.toPx(),
-                                center = Offset(
-                                    toX(sortedPoints[0].first),
-                                    toY(sortedPoints[0].second)
-                                )
-                            )
                         }
                     }
                 }
