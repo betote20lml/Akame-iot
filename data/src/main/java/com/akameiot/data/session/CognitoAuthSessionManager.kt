@@ -15,14 +15,20 @@ import kotlin.coroutines.resumeWithException
 import com.amplifyframework.auth.cognito.options.AuthFlowType
 import java.net.UnknownHostException
 import java.net.SocketTimeoutException
-
+import com.akameiot.domain.network.ConnectivityMonitor
 
 class CognitoAuthSessionManager(
-    private val sessionDataStore: SessionDataStore
+    private val sessionDataStore: SessionDataStore,
+    private val connectivityMonitor: ConnectivityMonitor
     ) : AuthSessionManager{
 
 
     override suspend fun isUserLoggedIn(): Boolean {
+
+        if (!connectivityMonitor.isOnline()) {
+            return sessionDataStore.hasSession()
+        }
+
         return suspendCancellableCoroutine { cont ->
             Amplify.Auth.fetchAuthSession(
                 { result ->
@@ -61,8 +67,13 @@ class CognitoAuthSessionManager(
         sessionDataStore.setUserId("")
     }
 
-    override suspend fun fetchIdToken(): String =
-        suspendCancellableCoroutine { cont ->
+    override suspend fun fetchIdToken(): String {
+
+        if (!connectivityMonitor.isOnline()) {
+            throw NetworkOfflineException()
+        }
+
+        return suspendCancellableCoroutine { cont ->
             Amplify.Auth.fetchAuthSession(
                 { session ->
                     val cognitoSession = session as? AWSCognitoAuthSession
@@ -73,6 +84,7 @@ class CognitoAuthSessionManager(
                         idToken != null -> {
                             if (cont.isActive) cont.resume(idToken)
                         }
+
                         tokenResult?.error != null -> {
                             val cause = tokenResult.error?.cause
                             val rootCause = cause?.cause
@@ -85,6 +97,7 @@ class CognitoAuthSessionManager(
                                 else cont.resumeWithException(SessionExpiredException())
                             }
                         }
+
                         else -> {
                             if (cont.isActive) cont.resumeWithException(SessionExpiredException())
                         }
@@ -95,8 +108,14 @@ class CognitoAuthSessionManager(
                         val cause = error.cause
                         val isNetworkError = cause is UnknownHostException
                                 || cause is SocketTimeoutException
-                                || error.message?.contains("Unable to execute HTTP request", ignoreCase = true) == true
-                                || error.message?.contains("Failed to connect", ignoreCase = true) == true
+                                || error.message?.contains(
+                            "Unable to execute HTTP request",
+                            ignoreCase = true
+                        ) == true
+                                || error.message?.contains(
+                            "Failed to connect",
+                            ignoreCase = true
+                        ) == true
 
                         if (isNetworkError) {
                             cont.resumeWithException(NetworkOfflineException())
@@ -107,6 +126,7 @@ class CognitoAuthSessionManager(
                 }
             )
         }
+    }
 
     override suspend fun isLimitedSession(): Boolean {
         return sessionDataStore.isLimitedSession()

@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.akameiot.domain.formatter.MetricFormatter
 import com.akameiot.coreui.components.AppMenuCheckItem
+import java.text.Collator
 
 @Composable
 fun FilterMenu(
@@ -32,6 +33,7 @@ fun FilterMenu(
     var showNetworkOptions by remember { mutableStateOf(false) }
     var showMetricOptions by remember { mutableStateOf(false) }
     val locale = LocalConfiguration.current.locales[0]
+    val collator = remember(locale) { Collator.getInstance(locale) }
 
     AppDropdownMenu(
         expanded = expanded,
@@ -142,9 +144,9 @@ fun FilterMenu(
 
             availableMetrics
                 .filter { !filterMetrics.contains(it) }
-                .forEach { metric ->
-                    val label = MetricFormatter.formatName(metric, locale)
-
+                .map { metric -> metric to MetricFormatter.formatName(metric, locale) }
+                .sortedWith(compareBy(collator) { it.second })
+                .forEach { (metric, label) ->
                     AppSelectableSortableItem(
                         label = label,
                         selected = false,

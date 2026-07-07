@@ -13,6 +13,11 @@ import androidx.core.view.WindowCompat
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 
 data class AppColors(
     val cardBackground: Color,
@@ -88,8 +93,22 @@ fun AppTheme(
     content: @Composable () -> Unit
 ) {
     val isDark by ThemeController.isDark.collectAsState()
-    val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
-    val appColors   = if (isDark) DarkAppColors else LightAppColors
+
+    if (isDark == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+    val colorScheme =
+        if (isDark == true) DarkColorScheme
+        else LightColorScheme
+    val appColors =
+        if (isDark == true) DarkAppColors
+        else LightAppColors
     val view = LocalView.current
 
     // Manejo correcto del sistema de ventanas

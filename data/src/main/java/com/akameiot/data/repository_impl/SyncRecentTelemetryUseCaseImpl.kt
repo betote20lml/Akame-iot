@@ -7,12 +7,15 @@ import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import java.util.concurrent.atomic.AtomicBoolean
+import com.akameiot.domain.network.ConnectivityMonitor
+import com.akameiot.domain.exceptions.NetworkOfflineException
 
 
 class SyncRecentTelemetryUseCaseImpl(
     private val repository: TelemetryRepository,
     private val authSessionManager: AuthSessionManager,
     private val networkStore: DeviceNetworkStore,
+    private val connectivityMonitor: ConnectivityMonitor,
 
 ) : SyncRecentTelemetryUseCase {
 
@@ -22,7 +25,15 @@ class SyncRecentTelemetryUseCaseImpl(
     private val inFlightMesh = ConcurrentHashMap<String, Boolean>()
     private val inFlightGlobal = AtomicBoolean(false)
 
+    private fun ensureOnline() {
+        if (!connectivityMonitor.isOnline()) {
+            throw NetworkOfflineException()
+        }
+    }
+
     override suspend fun invoke(meshId: String, notifTs: Long) {
+
+        ensureOnline()
 
         val meshIds = networkStore.getNetworks()
             .map { it.thingName }
@@ -110,6 +121,8 @@ class SyncRecentTelemetryUseCaseImpl(
     }
     override suspend fun forceSync(meshId: String, days: Long) {
 
+        ensureOnline()
+
         if (!inFlightGlobal.compareAndSet(false, true)) {
             pendingGlobalTs.set(true)
             return
@@ -157,6 +170,8 @@ class SyncRecentTelemetryUseCaseImpl(
         toTs: Long
     ) {
 
+        ensureOnline()
+
         while (!inFlightGlobal.compareAndSet(false, true)) {
             kotlinx.coroutines.delay(500)
         }
@@ -193,6 +208,7 @@ class SyncRecentTelemetryUseCaseImpl(
     }
 
     override suspend fun syncStaleWindow(meshId: String, fromTs: Long) {
+        ensureOnline()
         if (!inFlightGlobal.compareAndSet(false, true)) {
             pendingGlobalTs.set(true)
             return

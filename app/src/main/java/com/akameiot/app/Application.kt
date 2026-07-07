@@ -22,7 +22,7 @@ class AkameApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        FirebaseApp.initializeApp(this)
+        //FirebaseApp.initializeApp(this)
         AppModule.init(this)
         ThemeController.bind(AppModule.themeStore.isDark)
 
@@ -106,6 +106,9 @@ class AkameApp : Application() {
 
     private fun checkAndSyncStaleData() {
         appScope.launch {
+            if (!AppModule.connectivityMonitor.isOnline()) {
+                return@launch
+            }
             try {
                 val networks = AppModule.networkStore.getNetworks()
                 val nowSeconds = System.currentTimeMillis() / 1000L

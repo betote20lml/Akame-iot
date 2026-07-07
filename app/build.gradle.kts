@@ -16,8 +16,8 @@ android {
         applicationId = "com.akameiot.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -74,6 +74,7 @@ dependencies {
     implementation("androidx.camera:camera-view:1.4.2")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+    implementation("androidx.core:core-splashscreen:1.2.0")
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.crashlytics)

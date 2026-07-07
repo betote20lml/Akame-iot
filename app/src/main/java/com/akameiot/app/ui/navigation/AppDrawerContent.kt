@@ -47,7 +47,11 @@ fun AppDrawerContent(
             appIcon = {
                 Image(
                     painter = painterResource(
-                        id = if (isDark) R.drawable.logo_dark else R.drawable.logo_light
+                        id = if (isDark == true) {
+                            R.drawable.logo_dark
+                        } else {
+                            R.drawable.logo_light
+                        }
                     ),
                     contentDescription = "App logo",
                     modifier = Modifier.size(110.dp)
@@ -126,13 +130,17 @@ fun AppDrawerContent(
                 }
             ) {
                 Icon(
-                    imageVector     = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
+                    imageVector =
+                        if (isDark == true)
+                            Icons.Default.LightMode
+                        else
+                            Icons.Default.DarkMode,
                     contentDescription = "Toggle theme"
                 )
             }
 
             Text(
-                text  = "v 1.0.2",
+                text  = "v 1.0.3",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )

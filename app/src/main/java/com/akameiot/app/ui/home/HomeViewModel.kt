@@ -40,6 +40,9 @@ import com.akameiot.data.session.GlobalTimeStore
 import com.akameiot.domain.exceptions.NetworkOfflineException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import com.akameiot.domain.formatter.MetricFormatter
+import java.util.Locale
+import java.text.Collator
 
 
 class HomeViewModel(
@@ -81,14 +84,23 @@ class HomeViewModel(
 
 
     init {
+        Log.d("HOME_INIT", "1 validateSession")
         validateSession()
+        Log.d("HOME_INIT", "2 loadUser")
         loadUser()
+        Log.d("HOME_INIT", "3 loadFilterPreferences")
         loadFilterPreferences()
+        Log.d("HOME_INIT", "4 loadMeshWindows")
         loadMeshWindows()
+        Log.d("HOME_INIT", "5 checkPendingFcmResubscribe")
         checkPendingFcmResubscribe()
+        Log.d("HOME_INIT", "6 observeTelemetry")
         observeTelemetry()
+        Log.d("HOME_INIT", "7 observeCharts")
         observeCharts()
+        Log.d("HOME_INIT", "8 preloadChartFlows")
         preloadChartFlows()
+        Log.d("HOME_INIT", "END")
 
     }
 
@@ -310,7 +322,12 @@ class HomeViewModel(
 
                                         // ordenar métricas (evita map innecesario si no hay orden)
                                         val orderedMetrics = if (metricsOrder.isEmpty()) {
-                                            originalMetrics
+                                            val collator = Collator.getInstance(Locale.getDefault())
+                                            originalMetrics.sortedWith(
+                                                compareBy(collator) {
+                                                    MetricFormatter.formatName(it.name, Locale.getDefault())
+                                                }
+                                            )
                                         } else {
                                             val metricsOrderSet = metricsOrder.toHashSet()
                                             val metricsByName = originalMetrics.associateBy { it.name }
@@ -368,7 +385,7 @@ class HomeViewModel(
                                     node.metrics.forEach { add(it.name) }
                                 }
                             }
-                        }.sorted()
+                        }.toList()
 
                         //  estado final
                         state.copy(

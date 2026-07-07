@@ -31,6 +31,7 @@ import com.akameiot.data.session.DeviceNetworkStore
 import com.akameiot.domain.repository.SnsRepository
 import com.akameiot.domain.usecase.SubscribeToDeviceTopicUseCase
 import com.akameiot.data.network.NetworkManager
+import com.akameiot.data.network.AndroidConnectivityMonitor
 import com.akameiot.data.repository.TelemetryAggRepositoryImpl
 import com.akameiot.data.repository.TelemetryRepository
 import com.akameiot.data.session.FcmTokenStore
@@ -53,6 +54,7 @@ import com.akameiot.domain.usecase.SyncRecentTelemetryUseCase
 import com.akameiot.domain.usecase.SyncUserDevicesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import com.akameiot.domain.network.ConnectivityMonitor
 
 
 object AppModule {
@@ -87,6 +89,10 @@ object AppModule {
         deviceNetworkStore
     }
 
+    val connectivityMonitor: ConnectivityMonitor by lazy {
+        AndroidConnectivityMonitor(appContext)
+    }
+
     val authRepository by lazy {
         AuthRepositoryImpl(cognitoRemote,
             authSessionManager)
@@ -101,7 +107,10 @@ object AppModule {
     }
 
     val authSessionManager: AuthSessionManager by lazy {
-        CognitoAuthSessionManager(sessionDataStore)
+        CognitoAuthSessionManager(
+            sessionDataStore = sessionDataStore,
+            connectivityMonitor = connectivityMonitor
+        )
     }
 
     val passwordValidator: PasswordValidator by lazy {
@@ -218,7 +227,8 @@ object AppModule {
         SyncRecentTelemetryUseCaseImpl(
             repository = telemetryRepository,
             authSessionManager = authSessionManager,
-            networkStore = deviceNetworkStore
+            networkStore = deviceNetworkStore,
+            connectivityMonitor = connectivityMonitor
         )
     }
 

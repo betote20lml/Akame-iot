@@ -24,6 +24,7 @@ import com.akameiot.app.ui.navigation.Routes.LOGIN
 import com.akameiot.coreui.components.*
 import kotlinx.coroutines.launch
 import com.akameiot.app.ui.home.components.ViewMenu
+import androidx.compose.ui.Alignment
 import androidx.compose.animation.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -200,12 +201,22 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            if (uiState.telemetry.isEmpty() && !uiState.isLoading) {
+
+            if (uiState.isLoading && uiState.visibleNodes.isEmpty()) {
+
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+
+            } else if (uiState.telemetry.isEmpty()) {
 
                 EmptyStateComponent(
-                    title       = "Conecta tu red IoT",
+                    title = "Conecta tu red IoT",
                     description = "Vincula tus dispositivos para comenzar a visualizar datos en tiempo real.",
-                    actionText  = "Iniciar",
+                    actionText = "Iniciar",
                     onActionClick = { showSheet = true },
                 )
 

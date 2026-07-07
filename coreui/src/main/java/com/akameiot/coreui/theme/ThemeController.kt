@@ -9,8 +9,8 @@ object ThemeController {
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    private val _isDark = MutableStateFlow(false)
-    val isDark: StateFlow<Boolean> = _isDark.asStateFlow()
+    private val _isDark = MutableStateFlow<Boolean?>(null)
+    val isDark: StateFlow<Boolean?> = _isDark.asStateFlow()
 
     fun bind(source: Flow<Boolean>) {
         scope.launch {
@@ -23,7 +23,7 @@ object ThemeController {
     }
 
     fun toggle(onToggle: suspend (Boolean) -> Unit) {
-        val newValue = !_isDark.value
+        val newValue = !(_isDark.value ?: false)
 
         scope.launch {
             onToggle(newValue)
